@@ -12,13 +12,15 @@ export default function ObryndelGame() {
   const [qrData, setQrData] = useState('');
   const [cameraError, setCameraError] = useState('');
   const [cameraStarted, setCameraStarted] = useState(false);
+  const [roundPhase, setRoundPhase] = useState('playerTurn'); // 'playerTurn' | 'scanQR'
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   const availableCharacters = ['Goblin', 'Troll', 'Cyclops', 'Witch'];
 
-  // Tile events
+  const maxQRCodes = 15; // Game Over efter 15 QR-koder
+
   const tileEvents = {
     'Tile-001': 'The world shifts beneath your feet.',
     'Tile-002': "You're all cursed and must cleanse yourselves in water.",
@@ -44,6 +46,7 @@ export default function ObryndelGame() {
     setScannedCards([]);
     setAct(1);
     setQrData('');
+    setRoundPhase('playerTurn');
     stopCamera();
     setCameraStarted(false);
   };
@@ -59,12 +62,20 @@ export default function ObryndelGame() {
     }
   };
 
-  const nextPlayer = () =>
-    setCurrentPlayer((currentPlayer + 1) % playerCount);
+  const nextPlayer = () => {
+    if (currentPlayer < playerCount - 1) {
+      setCurrentPlayer(currentPlayer + 1);
+    } else {
+      // Alla spelare har spelat, gå till QR-scanning
+      setCurrentPlayer(0);
+      setRoundPhase('scanQR');
+      setQrData('');
+    }
+  };
 
   // QR Scanner
   const scanQRCode = () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current || !canvasRef.current || roundPhase !== 'scanQR') return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -82,6 +93,7 @@ export default function ObryndelGame() {
         if (!scannedCards.includes(code.data)) {
           setQrData(code.data);
           setScannedCards((prev) => [...prev, code.data]);
+          setRoundPhase('playerTurn'); // Nästa runda börjar
         }
       }
     }
@@ -111,18 +123,9 @@ export default function ObryndelGame() {
     }
   };
 
-  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      stopCamera();
-    };
+    return () => stopCamera();
   }, []);
-
-  // Act transitions
-  useEffect(() => {
-    if (scannedCards.length === 5 && act === 1) setAct(2);
-    else if (scannedCards.length === 10 && act === 2) setAct(3);
-  }, [scannedCards, act]);
 
   // Exit Modal
   const ExitButton = () => (
@@ -182,6 +185,31 @@ export default function ObryndelGame() {
 
   // SCREENS
 
+  if (scannedCards.length >= maxQRCodes) {
+    // GAME OVER
+    return (
+      <>
+        <div style={{ minHeight: '100vh', padding: 40, textAlign: 'center' }}>
+          <h1>GAME OVER</h1>
+          <p>All {maxQRCodes} QR-cards have been scanned!</p>
+          <button onClick={confirmExit}>Main Menu</button>
+          <button
+            onClick={() => {
+              setScreen('game');
+              setCharacters([]);
+              setCurrentPlayer(0);
+              setScannedCards([]);
+              setRoundPhase('playerTurn');
+              setQrData('');
+            }}
+          >
+            Restart
+          </button>
+        </div>
+      </>
+    );
+  }
+
   // Main Menu
   if (screen === 'main') {
     return (
@@ -198,11 +226,7 @@ export default function ObryndelGame() {
       <>
         <div style={{ minHeight: '100vh', padding: 40 }}>
           <ExitButton />
-          <p>
-            The land of Obryndel is in shatters. Gather the fragments at the
-            Shrine of the Ogre.
-          </p>
-
+          <p>The land of Obryndel is in shatters. Gather the fragments at the Shrine of the Ogre.</p>
           <label>Players: {playerCount}</label>
           <input
             type="range"
@@ -211,10 +235,7 @@ export default function ObryndelGame() {
             value={playerCount}
             onChange={(e) => setPlayerCount(parseInt(e.target.value))}
           />
-
-          <button onClick={() => setScreen('instructions')}>
-            Begin Journey
-          </button>
+          <button onClick={() => setScreen('instructions')}>Begin Journey</button>
         </div>
         <ExitWarningModal />
       </>
@@ -227,11 +248,7 @@ export default function ObryndelGame() {
       <>
         <div style={{ minHeight: '100vh', padding: 40 }}>
           <ExitButton />
-          <p>
-            Shuffle the QR cards. Each player has two actions per turn. Draw a
-            card after each round.
-          </p>
-
+          <p>Shuffle the QR cards. Each player has two actions per turn. Draw a card after each round.</p>
           <button onClick={() => setScreen('game')}>Begin Act 1</button>
         </div>
         <ExitWarningModal />
@@ -243,9 +260,7 @@ export default function ObryndelGame() {
   if (screen === 'game') {
     // Character selection
     if (characters.length < playerCount) {
-      const availableChars = availableCharacters.filter(
-        (c) => !characters.includes(c)
-      );
+      const availableChars = availableCharacters.filter((c) => !characters.includes(c));
       return (
         <>
           <div style={{ minHeight: '100vh', padding: 40 }}>
@@ -262,6 +277,7 @@ export default function ObryndelGame() {
       );
     }
 
+    // Main gameplay
     return (
       <>
         <div style={{ minHeight: '100vh', padding: 40 }}>
@@ -280,15 +296,15 @@ export default function ObryndelGame() {
           <canvas ref={canvasRef} style={{ display: 'none' }} />
 
           <h2>Act {act}</h2>
-          <p>
-            Player {currentPlayer + 1}: {characters[currentPlayer]}
-          </p>
-          <p>Cards scanned: {scannedCards.length}/30</p>
-
+          <p>Player {currentPlayer + 1}: {characters[currentPlayer]}</p>
+          <p>Cards scanned: {scannedCards.length}/{maxQRCodes}</p>
           {qrData && <p>{tileEvents[qrData]}</p>}
           {cameraError && <p style={{ color: 'red' }}>{cameraError}</p>}
 
-          <button onClick={nextPlayer}>End Turn</button>
+          {roundPhase === 'playerTurn' && (
+            <button onClick={nextPlayer}>End Turn</button>
+          )}
+          {roundPhase === 'scanQR' && <p>Scan a new QR card for this round...</p>}
         </div>
         <ExitWarningModal />
       </>
