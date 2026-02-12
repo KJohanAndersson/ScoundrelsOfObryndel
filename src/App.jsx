@@ -28,6 +28,25 @@ export default function ObryndelGame() {
     'Tile-008': 'A merchant appears.',
     'Tile-009': 'The path splits.',
     'Tile-010': 'Thunder crashes.',
+    'Tile-011': 'A friendly spirit offers guidance.',
+    'Tile-012': 'Poisonous gas fills the air. Move quickly!',
+    'Tile-013': 'You discover an ancient artifact.',
+    'Tile-014': 'The temperature drops. Ice forms around you.',
+    'Tile-015': 'A puzzle door blocks the way forward.',
+    'Tile-016': 'Wild magic surges through the area.',
+    'Tile-017': 'You find a hidden cache of supplies.',
+    'Tile-018': 'The spirits of Obryndel cry out in anguish.',
+    'Tile-019': 'A powerful guardian stands in your way.',
+    'Tile-020': 'The barrier fragment pulses with energy.',
+    'Tile-021': 'Illusions cloud your vision.',
+    'Tile-022': 'A safe haven appears. Rest and recover.',
+    'Tile-023': 'The path behind you crumbles away.',
+    'Tile-024': 'You hear Baron Thobrick\'s laughter echoing.',
+    'Tile-025': 'A rift in time opens before you.',
+    'Tile-026': 'The Ogre Shrine beckons in the distance.',
+    'Tile-027': 'Twisted creatures guard the fragment.',
+    'Tile-028': 'Reality warps around the barrier piece.',
+    'Tile-029': 'You feel the pull of the shrine growing stronger.',
     'Tile-030': 'The final fragment reveals itself!',
   };
 
@@ -236,6 +255,7 @@ export default function ObryndelGame() {
     );
 
   // ---------- SCREENS ----------
+  // Game Over
   if (scannedCards.length >= maxQRCodes) {
     return (
       <div
@@ -254,18 +274,7 @@ export default function ObryndelGame() {
           All {maxQRCodes} QR cards scanned!
         </p>
         <div style={{ display: 'flex', gap: 20 }}>
-          <button
-            onClick={confirmExit}
-            style={{
-              padding: '15px 40px',
-              fontSize: '1.2rem',
-              borderRadius: 10,
-              background: 'linear-gradient(135deg, #8B4513, #A0522D)',
-              border: '2px solid #CD853F',
-              color: '#F4E4C1',
-              cursor: 'pointer',
-            }}
-          >
+          <button onClick={confirmExit} style={buttonStyle}>
             Main Menu
           </button>
           <button
@@ -277,15 +286,7 @@ export default function ObryndelGame() {
               setRoundPhase('playerTurn');
               setScreen('game');
             }}
-            style={{
-              padding: '15px 40px',
-              fontSize: '1.2rem',
-              borderRadius: 10,
-              background: 'linear-gradient(135deg, #8B4513, #A0522D)',
-              border: '2px solid #CD853F',
-              color: '#F4E4C1',
-              cursor: 'pointer',
-            }}
+            style={buttonStyle}
           >
             Restart
           </button>
@@ -294,55 +295,164 @@ export default function ObryndelGame() {
     );
   }
 
-  // --- Main Menu ---
+  // Main Menu
   if (screen === 'main') {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'linear-gradient(135deg, #1a1a2e, #0f3460)',
-          fontFamily: "'Cinzel', serif",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: 'clamp(3rem, 8vw, 5rem)',
-            color: '#F4E4C1',
-            marginBottom: 60,
-            textShadow: '3px 3px 10px rgba(0,0,0,0.7)',
-          }}
-        >
-          OBRYNDEL
-        </h1>
-        <button
-          onClick={() => setScreen('intro')}
-          style={{
-            padding: '20px 60px',
-            fontSize: '1.5rem',
-            borderRadius: 15,
-            background: 'linear-gradient(135deg, #8B4513, #A0522D)',
-            border: '3px solid #CD853F',
-            color: '#F4E4C1',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            boxShadow: '0 6px 20px rgba(0,0,0,0.4)',
-          }}
-        >
+      <div style={mainMenuStyle}>
+        <h1 style={titleStyle}>OBRYNDEL</h1>
+        <button onClick={() => setScreen('intro')} style={buttonStyle}>
           Start Game
         </button>
       </div>
     );
   }
 
-  // --- Intro / Instructions / Game --- 
-  // Behåller samma struktur som tidigare men med gradients och snyggare knappar
+  // Intro / Instructions / Character Selection / Game
+  return (
+    <>
+      {screen !== 'main' && <ExitButton />}
+      <div style={gameScreenStyle}>
+        {screen === 'intro' && (
+          <div style={textBoxStyle}>
+            <h2 style={{ color: '#FFD700' }}>Welcome to Obryndel!</h2>
+            <p>
+              The hero, Baron Thobrick, has shattered the magical barrier. Gather the fragments at the Ogre Shrine.
+            </p>
+            <button onClick={() => setScreen('instructions')} style={buttonStyle}>
+              Continue
+            </button>
+          </div>
+        )}
 
-  // ... Resten av skärmarna kan stylas på samma sätt som ovan ...
+        {screen === 'instructions' && (
+          <div style={textBoxStyle}>
+            <p>Shuffle the QR cards and place them in the holder. Each player has 2 action points per turn. After all players move, scan a QR card.</p>
+            <button onClick={() => setScreen('game')} style={buttonStyle}>
+              Begin Game
+            </button>
+          </div>
+        )}
 
-  return null;
+        {screen === 'game' && (
+          <div style={{ textAlign: 'center', width: '100%' }}>
+            {characters.length < playerCount ? (
+              <div>
+                <h2 style={{ color: '#FFD700' }}>Player {currentPlayer + 1}: Choose Character</h2>
+                <div style={gridStyle}>
+                  {availableCharacters
+                    .filter((c) => !characters.includes(c))
+                    .map((character) => (
+                      <button key={character} onClick={() => selectCharacter(character)} style={buttonStyle}>
+                        {character}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h2 style={{ color: '#FFD700' }}>
+                  {roundPhase === 'scanQR' ? 'Scan a new QR card for this round...' : `Player ${currentPlayer + 1}: ${characters[currentPlayer]}`}
+                </h2>
+
+                {roundPhase === 'playerTurn' && (
+                  <button onClick={nextPlayer} style={buttonStyle}>
+                    End Turn
+                  </button>
+                )}
+
+                <video ref={videoRef} style={{ display: 'none' }} />
+                <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+                {qrData && (
+                  <div style={qrBoxStyle}>
+                    <h3>{qrData}</h3>
+                    <p>{tileEvents[qrData] || 'Unknown event...'}</p>
+                  </div>
+                )}
+
+                {cameraError && (
+                  <div style={errorBoxStyle}>
+                    <p>⚠️ {cameraError}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <ExitWarningModal />
+    </>
+  );
 }
+
+// ---------- COMMON STYLES ----------
+const mainMenuStyle = {
+  minHeight: '100vh',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'linear-gradient(135deg, #1a1a2e, #0f3460)',
+  fontFamily: "'Cinzel', serif",
+};
+
+const titleStyle = {
+  fontSize: 'clamp(3rem, 8vw, 5rem)',
+  color: '#F4E4C1',
+  marginBottom: 60,
+  textShadow: '3px 3px 10px rgba(0,0,0,0.7)',
+};
+
+const buttonStyle = {
+  padding: '15px 40px',
+  fontSize: '1.2rem',
+  borderRadius: 10,
+  background: 'linear-gradient(135deg, #8B4513, #A0522D)',
+  border: '2px solid #CD853F',
+  color: '#F4E4C1',
+  cursor: 'pointer',
+  marginTop: 20,
+};
+
+const gameScreenStyle = {
+  minHeight: '100vh',
+  padding: 40,
+  background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
+  fontFamily: "'Cinzel', serif",
+  color: '#F4E4C1',
+  display: 'flex',
+  justifyContent: 'center',
+};
+
+const textBoxStyle = {
+  maxWidth: 800,
+  margin: '0 auto',
+  padding: 30,
+  borderRadius: 15,
+  background: 'rgba(0,0,0,0.3)',
+  border: '2px solid #8B4513',
+  textAlign: 'center',
+};
+
+const gridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+  gap: 20,
+  marginTop: 30,
+};
+
+const qrBoxStyle = {
+  marginTop: 20,
+  padding: 20,
+  borderRadius: 15,
+  background: 'rgba(139,69,19,0.6)',
+  border: '3px solid #CD853F',
+};
+
+const errorBoxStyle = {
+  marginTop: 20,
+  padding: 20,
+  borderRadius: 10,
+  background: 'rgba(139,0,0,0.6)',
+  border: '2px solid #FF4444',
+};
