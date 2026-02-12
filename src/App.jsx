@@ -10,6 +10,7 @@ export default function ObryndelGame() {
   const [act, setAct] = useState(1);
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [qrData, setQrData] = useState('');
+  const [cameraError, setCameraError] = useState('');
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -22,6 +23,7 @@ export default function ObryndelGame() {
     const startCamera = async () => {
       if (screen === 'game' && videoRef.current) {
         try {
+          setCameraError('');
           const stream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: 'environment' } 
           });
@@ -30,6 +32,15 @@ export default function ObryndelGame() {
           scanQRCode();
         } catch (err) {
           console.error('Camera error:', err);
+          if (err.name === 'NotAllowedError') {
+            setCameraError('Camera permission denied. Please allow camera access and refresh.');
+          } else if (err.name === 'NotFoundError') {
+            setCameraError('No camera found on this device.');
+          } else if (err.name === 'NotSupportedError') {
+            setCameraError('Camera requires HTTPS. Deploy to Vercel to use camera.');
+          } else {
+            setCameraError('Camera error: ' + err.message);
+          }
         }
       }
     };
@@ -178,90 +189,165 @@ export default function ObryndelGame() {
     </button>
   );
 
+  // Exit Warning Modal Component
+  const ExitWarningModal = () => (
+    showExitWarning && (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0,0,0,0.8)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 2000,
+        fontFamily: "'Cinzel', serif",
+      }}>
+        <div style={{
+          background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
+          padding: '40px',
+          borderRadius: '15px',
+          border: '3px solid #8B4513',
+          textAlign: 'center',
+          maxWidth: '500px',
+        }}>
+          <h3 style={{
+            color: '#F4E4C1',
+            fontSize: '1.8rem',
+            marginBottom: '30px',
+          }}>
+            Do you wish to go back to the main menu?
+          </h3>
+          
+          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+            <button
+              onClick={confirmExit}
+              style={{
+                padding: '15px 40px',
+                fontSize: '1.2rem',
+                background: 'linear-gradient(135deg, #8B4513, #A0522D)',
+                border: '2px solid #CD853F',
+                borderRadius: '10px',
+                color: '#F4E4C1',
+                cursor: 'pointer',
+                fontFamily: "'Cinzel', serif",
+                fontWeight: 'bold',
+              }}
+            >
+              Confirm
+            </button>
+            
+            <button
+              onClick={() => setShowExitWarning(false)}
+              style={{
+                padding: '15px 40px',
+                fontSize: '1.2rem',
+                background: 'rgba(139, 69, 19, 0.3)',
+                border: '2px solid #8B4513',
+                borderRadius: '10px',
+                color: '#F4E4C1',
+                cursor: 'pointer',
+                fontFamily: "'Cinzel', serif",
+                fontWeight: 'bold',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  );
+
   // Main Menu
   if (screen === 'main') {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
-        fontFamily: "'Cinzel', serif",
-      }}>
-        <h1 style={{
-          fontSize: 'clamp(2rem, 8vw, 4rem)',
-          color: '#F4E4C1',
-          textAlign: 'center',
-          marginBottom: '60px',
-          textShadow: '3px 3px 6px rgba(0,0,0,0.7)',
-          letterSpacing: '3px',
+      <>
+        <div style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+          fontFamily: "'Cinzel', serif",
         }}>
-          OBRYNDEL
-        </h1>
-        
-        <button
-          onClick={() => setScreen('intro')}
-          style={{
-            padding: '20px 60px',
-            fontSize: '1.5rem',
-            background: 'linear-gradient(135deg, #8B4513, #A0522D)',
-            border: '3px solid #CD853F',
-            borderRadius: '10px',
+          <h1 style={{
+            fontSize: 'clamp(2rem, 8vw, 4rem)',
             color: '#F4E4C1',
-            cursor: 'pointer',
-            marginBottom: '20px',
-            fontFamily: "'Cinzel', serif",
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            letterSpacing: '2px',
-            boxShadow: '0 6px 20px rgba(0,0,0,0.4)',
-            transition: 'all 0.3s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-3px)';
-            e.target.style.boxShadow = '0 8px 25px rgba(0,0,0,0.6)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)';
-          }}
-        >
-          Start Game
-        </button>
-        
-        <button
-          style={{
-            padding: '15px 50px',
-            fontSize: '1.2rem',
-            background: 'rgba(139, 69, 19, 0.5)',
-            border: '2px solid #8B4513',
-            borderRadius: '10px',
-            color: '#F4E4C1',
-            cursor: 'pointer',
-            fontFamily: "'Cinzel', serif",
-            letterSpacing: '2px',
-            transition: 'all 0.3s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.background = 'rgba(139, 69, 19, 0.7)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = 'rgba(139, 69, 19, 0.5)';
-          }}
-        >
-          Settings
-        </button>
-      </div>
+            textAlign: 'center',
+            marginBottom: '60px',
+            textShadow: '3px 3px 6px rgba(0,0,0,0.7)',
+            letterSpacing: '3px',
+          }}>
+            OBRYNDEL
+          </h1>
+          
+          <button
+            onClick={() => setScreen('intro')}
+            style={{
+              padding: '20px 60px',
+              fontSize: '1.5rem',
+              background: 'linear-gradient(135deg, #8B4513, #A0522D)',
+              border: '3px solid #CD853F',
+              borderRadius: '10px',
+              color: '#F4E4C1',
+              cursor: 'pointer',
+              marginBottom: '20px',
+              fontFamily: "'Cinzel', serif",
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+              letterSpacing: '2px',
+              boxShadow: '0 6px 20px rgba(0,0,0,0.4)',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-3px)';
+              e.target.style.boxShadow = '0 8px 25px rgba(0,0,0,0.6)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)';
+            }}
+          >
+            Start Game
+          </button>
+          
+          <button
+            style={{
+              padding: '15px 50px',
+              fontSize: '1.2rem',
+              background: 'rgba(139, 69, 19, 0.5)',
+              border: '2px solid #8B4513',
+              borderRadius: '10px',
+              color: '#F4E4C1',
+              cursor: 'pointer',
+              fontFamily: "'Cinzel', serif",
+              letterSpacing: '2px',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = 'rgba(139, 69, 19, 0.7)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'rgba(139, 69, 19, 0.5)';
+            }}
+          >
+            Settings
+          </button>
+        </div>
+      </>
     );
   }
 
   // Intro Screen
   if (screen === 'intro') {
     return (
-      <div style={{
+      <>
+        <div style={{
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
         padding: '40px 20px',
@@ -348,14 +434,16 @@ export default function ObryndelGame() {
             Begin Journey
           </button>
         </div>
-      </div>
+        <ExitWarningModal />
+      </>
     );
   }
 
   // Instructions Screen
   if (screen === 'instructions') {
     return (
-      <div style={{
+      <>
+        <div style={{
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
         padding: '40px 20px',
@@ -414,7 +502,8 @@ export default function ObryndelGame() {
             Begin Act 1
           </button>
         </div>
-      </div>
+        <ExitWarningModal />
+      </>
     );
   }
 
@@ -425,7 +514,8 @@ export default function ObryndelGame() {
       const availableChars = availableCharacters.filter(c => !characters.includes(c));
       
       return (
-        <div style={{
+        <>
+          <div style={{
           minHeight: '100vh',
           background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
           padding: '40px 20px',
@@ -487,12 +577,15 @@ export default function ObryndelGame() {
             </div>
           </div>
         </div>
+        <ExitWarningModal />
+      </>
       );
     }
 
     // Main gameplay
     return (
-      <div style={{
+      <>
+        <div style={{
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
         padding: '40px 20px',
@@ -548,6 +641,32 @@ export default function ObryndelGame() {
               Cards Scanned: {scannedCards.length}/30
             </p>
           </div>
+          
+          {cameraError && (
+            <div style={{
+              background: 'rgba(139, 0, 0, 0.6)',
+              padding: '20px',
+              borderRadius: '10px',
+              marginBottom: '20px',
+              border: '2px solid #FF4444',
+            }}>
+              <p style={{
+                color: '#FFD700',
+                fontSize: '1.1rem',
+                margin: 0,
+                fontWeight: 'bold',
+              }}>
+                ⚠️ {cameraError}
+              </p>
+              <p style={{
+                color: '#F4E4C1',
+                fontSize: '0.9rem',
+                margin: '10px 0 0 0',
+              }}>
+                You can still play - manually enter tile events or deploy to Vercel for camera access.
+              </p>
+            </div>
+          )}
           
           {qrData && (
             <div style={{
@@ -620,80 +739,8 @@ export default function ObryndelGame() {
           `}
         </style>
       </div>
+      <ExitWarningModal />
+    </>
     );
   }
-
-  // Exit Warning Modal
-  return (
-    <>
-      {showExitWarning && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000,
-          fontFamily: "'Cinzel', serif",
-        }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
-            padding: '40px',
-            borderRadius: '15px',
-            border: '3px solid #8B4513',
-            textAlign: 'center',
-            maxWidth: '500px',
-          }}>
-            <h3 style={{
-              color: '#F4E4C1',
-              fontSize: '1.8rem',
-              marginBottom: '30px',
-            }}>
-              Do you wish to go back to the main menu?
-            </h3>
-            
-            <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
-              <button
-                onClick={confirmExit}
-                style={{
-                  padding: '15px 40px',
-                  fontSize: '1.2rem',
-                  background: 'linear-gradient(135deg, #8B4513, #A0522D)',
-                  border: '2px solid #CD853F',
-                  borderRadius: '10px',
-                  color: '#F4E4C1',
-                  cursor: 'pointer',
-                  fontFamily: "'Cinzel', serif",
-                  fontWeight: 'bold',
-                }}
-              >
-                Confirm
-              </button>
-              
-              <button
-                onClick={() => setShowExitWarning(false)}
-                style={{
-                  padding: '15px 40px',
-                  fontSize: '1.2rem',
-                  background: 'rgba(139, 69, 19, 0.3)',
-                  border: '2px solid #8B4513',
-                  borderRadius: '10px',
-                  color: '#F4E4C1',
-                  cursor: 'pointer',
-                  fontFamily: "'Cinzel', serif",
-                  fontWeight: 'bold',
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
 }
