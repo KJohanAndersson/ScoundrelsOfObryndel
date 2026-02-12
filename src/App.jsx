@@ -11,90 +11,14 @@ export default function ObryndelGame() {
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [qrData, setQrData] = useState('');
   const [cameraError, setCameraError] = useState('');
+  const [cameraStarted, setCameraStarted] = useState(false);
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   const availableCharacters = ['Goblin', 'Troll', 'Cyclops', 'Witch'];
 
-  // QR scanning setup
-  useEffect(() => {
-    let animationId;
-
-    const startCamera = async () => {
-      if (screen === 'game' && videoRef.current) {
-        try {
-          setCameraError('');
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' },
-          });
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
-          scanQRCode();
-        } catch (err) {
-          console.error('Camera error:', err);
-          if (err.name === 'NotAllowedError') {
-            setCameraError(
-              'Camera permission denied. Please allow camera access and refresh.'
-            );
-          } else if (err.name === 'NotFoundError') {
-            setCameraError('No camera found on this device.');
-          } else if (err.name === 'NotSupportedError') {
-            setCameraError(
-              'Camera requires HTTPS. Deploy to Vercel to use camera.'
-            );
-          } else {
-            setCameraError('Camera error: ' + err.message);
-          }
-        }
-      }
-    };
-
-    const scanQRCode = () => {
-      if (!videoRef.current || !canvasRef.current) return;
-
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
-      const ctx = canvas.getContext('2d');
-
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-        if (code && code.data.startsWith('Tile-')) {
-          if (!scannedCards.includes(code.data)) {
-            setQrData(code.data);
-            setScannedCards((prev) => [...prev, code.data]);
-          }
-        }
-      }
-
-      animationId = requestAnimationFrame(scanQRCode);
-    };
-
-    if (screen === 'game') {
-      startCamera();
-    }
-
-    return () => {
-      if (animationId) cancelAnimationFrame(animationId);
-      if (videoRef.current && videoRef.current.srcObject) {
-        videoRef.current.srcObject
-          .getTracks()
-          .forEach((track) => track.stop());
-      }
-    };
-  }, [screen, scannedCards]);
-
-  // Act transitions
-  useEffect(() => {
-    if (scannedCards.length === 5 && act === 1) setAct(2);
-    else if (scannedCards.length === 10 && act === 2) setAct(3);
-  }, [scannedCards, act]);
-
+  // Tile events
   const tileEvents = {
     'Tile-001': 'The world shifts beneath your feet.',
     'Tile-002': "You're all cursed and must cleanse yourselves in water.",
@@ -109,8 +33,8 @@ export default function ObryndelGame() {
     'Tile-030': 'The final fragment reveals itself!',
   };
 
+  // Exit handlers
   const handleExitClick = () => setShowExitWarning(true);
-
   const confirmExit = () => {
     setScreen('main');
     setShowExitWarning(false);
@@ -120,8 +44,11 @@ export default function ObryndelGame() {
     setScannedCards([]);
     setAct(1);
     setQrData('');
+    stopCamera();
+    setCameraStarted(false);
   };
 
+  // Character selection
   const selectCharacter = (character) => {
     const newCharacters = [...characters];
     newCharacters[currentPlayer] = character;
@@ -135,6 +62,69 @@ export default function ObryndelGame() {
   const nextPlayer = () =>
     setCurrentPlayer((currentPlayer + 1) % playerCount);
 
+  // QR Scanner
+  const scanQRCode = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+      if (code && code.data.startsWith('Tile-')) {
+        if (!scannedCards.includes(code.data)) {
+          setQrData(code.data);
+          setScannedCards((prev) => [...prev, code.data]);
+        }
+      }
+    }
+
+    requestAnimationFrame(scanQRCode);
+  };
+
+  const startCamera = async () => {
+    if (!videoRef.current) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+      });
+      videoRef.current.srcObject = stream;
+      videoRef.current.play();
+      setCameraStarted(true);
+      scanQRCode();
+    } catch (err) {
+      console.error('Camera error:', err);
+      setCameraError('Camera error: ' + err.message);
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+    }
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
+  // Act transitions
+  useEffect(() => {
+    if (scannedCards.length === 5 && act === 1) setAct(2);
+    else if (scannedCards.length === 10 && act === 2) setAct(3);
+  }, [scannedCards, act]);
+
+  // Exit Modal
   const ExitButton = () => (
     <button
       onClick={handleExitClick}
@@ -182,7 +172,6 @@ export default function ObryndelGame() {
           <h3 style={{ color: '#F4E4C1', marginBottom: '20px' }}>
             Do you wish to go back to the main menu?
           </h3>
-
           <button onClick={confirmExit} style={{ marginRight: '15px' }}>
             Confirm
           </button>
@@ -191,7 +180,9 @@ export default function ObryndelGame() {
       </div>
     );
 
-  // MAIN MENU
+  // SCREENS
+
+  // Main Menu
   if (screen === 'main') {
     return (
       <div style={{ minHeight: '100vh', padding: 40 }}>
@@ -201,7 +192,7 @@ export default function ObryndelGame() {
     );
   }
 
-  // INTRO
+  // Intro
   if (screen === 'intro') {
     return (
       <>
@@ -230,7 +221,7 @@ export default function ObryndelGame() {
     );
   }
 
-  // INSTRUCTIONS
+  // Instructions
   if (screen === 'instructions') {
     return (
       <>
@@ -241,30 +232,25 @@ export default function ObryndelGame() {
             card after each round.
           </p>
 
-          <button onClick={() => setScreen('game')}>
-            Begin Act 1
-          </button>
+          <button onClick={() => setScreen('game')}>Begin Act 1</button>
         </div>
         <ExitWarningModal />
       </>
     );
   }
 
-  // GAME
+  // Game
   if (screen === 'game') {
+    // Character selection
     if (characters.length < playerCount) {
       const availableChars = availableCharacters.filter(
         (c) => !characters.includes(c)
       );
-
       return (
         <>
           <div style={{ minHeight: '100vh', padding: 40 }}>
             <ExitButton />
-            <h2>
-              Player {currentPlayer + 1}: Choose Character
-            </h2>
-
+            <h2>Player {currentPlayer + 1}: Choose Character</h2>
             {availableChars.map((c) => (
               <button key={c} onClick={() => selectCharacter(c)}>
                 {c}
@@ -281,6 +267,15 @@ export default function ObryndelGame() {
         <div style={{ minHeight: '100vh', padding: 40 }}>
           <ExitButton />
 
+          {!cameraStarted && (
+            <button
+              onClick={startCamera}
+              style={{ padding: '20px', fontSize: '1.2rem', marginBottom: 20 }}
+            >
+              Start Camera
+            </button>
+          )}
+
           <video ref={videoRef} style={{ display: 'none' }} />
           <canvas ref={canvasRef} style={{ display: 'none' }} />
 
@@ -288,9 +283,10 @@ export default function ObryndelGame() {
           <p>
             Player {currentPlayer + 1}: {characters[currentPlayer]}
           </p>
-          <p>Cards: {scannedCards.length}/30</p>
+          <p>Cards scanned: {scannedCards.length}/30</p>
 
           {qrData && <p>{tileEvents[qrData]}</p>}
+          {cameraError && <p style={{ color: 'red' }}>{cameraError}</p>}
 
           <button onClick={nextPlayer}>End Turn</button>
         </div>
