@@ -313,17 +313,38 @@ export default function ObryndelGame() {
       {screen !== 'main' && <ExitButton />}
       <div style={gameScreenStyle}>
         {screen === 'intro' && (
-          <div style={textBoxStyle}>
-            <h2 style={{ color: '#FFD700' }}>Welcome to Obryndel!</h2>
-            <p>
-              The hero, Baron Thobrick, has shattered the magical barrier. Gather the fragments at the Ogre Shrine.
-            </p>
-            <button onClick={() => setScreen('instructions')} style={buttonStyle}>
-              Continue
-            </button>
-          </div>
-        )}
-
+            <div style={textBoxStyle}>
+              <h2 style={{ color: '#FFD700' }}>Welcome to Obryndel!</h2>
+              <p>
+                The hero, Baron Thobrick, has shattered the magical barrier. Gather the fragments at the Ogre Shrine.
+              </p>
+          
+              <div style={{ marginTop: 30, marginBottom: 30 }}>
+                <label style={{ color: '#F4E4C1', fontSize: '1.2rem', marginBottom: 10, display: 'block' }}>
+                  Number of Players: {playerCount}
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="4"
+                  value={playerCount}
+                  onChange={(e) => setPlayerCount(parseInt(e.target.value))}
+                  style={{
+                    width: '80%',
+                    maxWidth: 400,
+                    height: 10,
+                    borderRadius: 5,
+                    background: '#8B4513',
+                    accentColor: '#FFD700', // gör slider “färgad” på moderna browsers
+                  }}
+                />
+              </div>
+          
+              <button onClick={() => setScreen('instructions')} style={buttonStyle}>
+                Continue
+              </button>
+            </div>
+          )}
         {screen === 'instructions' && (
           <div style={textBoxStyle}>
             <p>Shuffle the QR cards and place them in the holder. Each player has 2 action points per turn. After all players move, scan a QR card.</p>
@@ -332,7 +353,6 @@ export default function ObryndelGame() {
             </button>
           </div>
         )}
-
         {screen === 'game' && (
           <div style={{ textAlign: 'center', width: '100%' }}>
             {characters.length < playerCount ? (
