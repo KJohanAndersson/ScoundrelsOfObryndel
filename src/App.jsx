@@ -1,33 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
 import jsQR from 'jsqr';
 
-export default function ObryndelGame() {
-  // ---------- STATE ----------
-  const [screen, setScreen] = useState('main');
+export default function App() {
+  const [screen, setScreen] = useState('main'); // main | intro | instructions | game | gameover
   const [playerCount, setPlayerCount] = useState(2);
   const [currentPlayer, setCurrentPlayer] = useState(0);
   const [characters, setCharacters] = useState([]);
   const [scannedCards, setScannedCards] = useState([]);
-  const [roundPhase, setRoundPhase] = useState('playerTurn'); // 'playerTurn' | 'scanQR'
-  const [qrData, setQrData] = useState('');
+  const [roundPhase, setRoundPhase] = useState('playerTurn'); // playerTurn | scanQR
   const [cameraStarted, setCameraStarted] = useState(false);
+  const [qrData, setQrData] = useState('');
   const [cameraError, setCameraError] = useState('');
-  const [showExitWarning, setShowExitWarning] = useState(false);
 
-  const maxQRCodes = 15; // Game Over efter 15 QR-koder
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+
   const availableCharacters = ['Goblin', 'Troll', 'Cyclops', 'Witch'];
 
   const tileEvents = {
     'Tile-001': 'The world shifts beneath your feet.',
     'Tile-002': "You're all cursed and must cleanse yourselves in water.",
     'Tile-003': 'A mystical barrier blocks your path. Find the key to proceed.',
-    'Tile-004': 'Ancient runes glow with power.',
-    'Tile-005': 'The ground trembles.',
-    'Tile-006': 'A healing spring appears.',
-    'Tile-007': 'Shadow creatures emerge.',
-    'Tile-008': 'A merchant appears.',
-    'Tile-009': 'The path splits.',
-    'Tile-010': 'Thunder crashes.',
+    'Tile-004': 'Ancient runes glow with power. One player gains an extra action point.',
+    'Tile-005': 'The ground trembles. Everyone loses one action point this turn.',
+    'Tile-006': 'A healing spring appears. All players restore vitality.',
+    'Tile-007': 'Shadow creatures emerge from the darkness.',
+    'Tile-008': 'A merchant appears offering mysterious items.',
+    'Tile-009': 'The path splits. Choose your direction wisely.',
+    'Tile-010': 'Thunder crashes. The barrier weakens nearby.',
     'Tile-011': 'A friendly spirit offers guidance.',
     'Tile-012': 'Poisonous gas fills the air. Move quickly!',
     'Tile-013': 'You discover an ancient artifact.',
@@ -41,7 +42,7 @@ export default function ObryndelGame() {
     'Tile-021': 'Illusions cloud your vision.',
     'Tile-022': 'A safe haven appears. Rest and recover.',
     'Tile-023': 'The path behind you crumbles away.',
-    'Tile-024': 'You hear Baron Thobrick\'s laughter echoing.',
+    'Tile-024': "You hear Baron Thobrick's laughter echoing.",
     'Tile-025': 'A rift in time opens before you.',
     'Tile-026': 'The Ogre Shrine beckons in the distance.',
     'Tile-027': 'Twisted creatures guard the fragment.',
@@ -50,50 +51,25 @@ export default function ObryndelGame() {
     'Tile-030': 'The final fragment reveals itself!',
   };
 
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const animationRef = useRef(null);
+  const maxTiles = 15; // Game over efter 15 QR-koder
 
-  // ---------- EXIT HANDLERS ----------
-  const handleExitClick = () => setShowExitWarning(true);
-  const confirmExit = () => {
-    setScreen('main');
-    setShowExitWarning(false);
-    setPlayerCount(2);
-    setCurrentPlayer(0);
-    setCharacters([]);
-    setScannedCards([]);
-    setQrData('');
-    setRoundPhase('playerTurn');
-    stopCamera();
-    setCameraStarted(false);
-  };
-
-  // ---------- CHARACTER SELECTION ----------
-  const selectCharacter = (character) => {
-    const newCharacters = [...characters];
-    newCharacters[currentPlayer] = character;
-    setCharacters(newCharacters);
-
-    if (currentPlayer < playerCount - 1) {
-      setCurrentPlayer(currentPlayer + 1);
-    } else {
-      setCurrentPlayer(0);
-      setRoundPhase('playerTurn');
-    }
-  };
-
-  const nextPlayer = () => {
-    if (currentPlayer < playerCount - 1) {
-      setCurrentPlayer(currentPlayer + 1);
-    } else {
-      setCurrentPlayer(0);
+  // ------------ CAMERA FUNCTIONS ----------------
+  const startCamera = async () => {
+    if (!videoRef.current) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+      });
+      videoRef.current.srcObject = stream;
+      await videoRef.current.play();
+      setCameraStarted(true);
       setRoundPhase('scanQR');
-      setQrData('');
+    } catch (err) {
+      console.error('Camera error:', err);
+      setCameraError('Camera error: ' + err.message);
     }
   };
 
-  // ---------- CAMERA + QR SCANNING ----------
   const scanQRCodeLoop = () => {
     if (!videoRef.current || !canvasRef.current) return;
     if (roundPhase !== 'scanQR') return;
@@ -114,7 +90,7 @@ export default function ObryndelGame() {
         if (!scannedCards.includes(code.data)) {
           setQrData(code.data);
           setScannedCards((prev) => [...prev, code.data]);
-          setRoundPhase('playerTurn');
+          setRoundPhase('playerTurn'); // tillbaka till nästa spelare
         }
       }
     }
@@ -122,357 +98,251 @@ export default function ObryndelGame() {
     animationRef.current = requestAnimationFrame(scanQRCodeLoop);
   };
 
-  const startCamera = async () => {
-    if (!videoRef.current) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-      });
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
-      setCameraStarted(true);
-
-      if (roundPhase === 'scanQR') scanQRCodeLoop();
-    } catch (err) {
-      console.error('Camera error:', err);
-      setCameraError('Camera error: ' + err.message);
-    }
-  };
-
-  const stopCamera = () => {
-    if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-    }
-  };
-
   useEffect(() => {
     if (roundPhase === 'scanQR' && cameraStarted) {
       scanQRCodeLoop();
     }
+
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, [roundPhase, cameraStarted]);
 
-  useEffect(() => stopCamera, []);
+  // ------------ PLAYER FUNCTIONS ----------------
+  const nextPlayer = () => {
+    if (currentPlayer < playerCount - 1) {
+      setCurrentPlayer(currentPlayer + 1);
+    } else {
+      // Alla spelare har spelat → QR-fas
+      setCurrentPlayer(0);
+      setRoundPhase('scanQR');
+      setQrData('');
+    }
+  };
 
-  // ---------- EXIT MODAL ----------
-  const ExitButton = () => (
+  const selectCharacter = (char) => {
+    const newChars = [...characters];
+    newChars[currentPlayer] = char;
+    setCharacters(newChars);
+    if (currentPlayer < playerCount - 1) {
+      setCurrentPlayer(currentPlayer + 1);
+    }
+  };
+
+  const resetGame = () => {
+    setScreen('main');
+    setPlayerCount(2);
+    setCurrentPlayer(0);
+    setCharacters([]);
+    setScannedCards([]);
+    setRoundPhase('playerTurn');
+    setQrData('');
+    setCameraStarted(false);
+  };
+
+  // ------------ EXIT BUTTON ----------------
+  const ExitButton = ({ onClick }) => (
     <button
-      onClick={handleExitClick}
+      onClick={onClick}
       style={{
         position: 'fixed',
         top: 20,
         left: 20,
-        width: 50,
-        height: 50,
+        width: 40,
+        height: 40,
         borderRadius: '50%',
-        fontSize: '28px',
-        fontWeight: 'bold',
-        color: '#F4E4C1',
         background: 'rgba(139,69,19,0.8)',
-        border: '2px solid #8B4513',
+        color: '#F4E4C1',
+        fontSize: 24,
+        fontWeight: 'bold',
         cursor: 'pointer',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        transition: 'all 0.3s ease',
-      }}
-      onMouseEnter={(e) => {
-        e.target.style.background = 'rgba(139,69,19,1)';
-        e.target.style.transform = 'scale(1.1)';
-      }}
-      onMouseLeave={(e) => {
-        e.target.style.background = 'rgba(139,69,19,0.8)';
-        e.target.style.transform = 'scale(1)';
+        zIndex: 1000,
       }}
     >
       ×
     </button>
   );
 
-  const ExitWarningModal = () =>
-    showExitWarning && (
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000,
-        }}
-      >
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
-            padding: 40,
-            borderRadius: 20,
-            border: '3px solid #8B4513',
-            textAlign: 'center',
-            minWidth: '300px',
-          }}
-        >
-          <h3 style={{ color: '#F4E4C1', marginBottom: 30 }}>
-            Do you wish to go back to the main menu?
-          </h3>
-          <div style={{ display: 'flex', gap: 20, justifyContent: 'center' }}>
-            <button
-              onClick={confirmExit}
-              style={{
-                padding: '12px 30px',
-                fontSize: '1rem',
-                fontWeight: 'bold',
-                borderRadius: 10,
-                background: 'linear-gradient(135deg, #8B4513, #A0522D)',
-                border: '2px solid #CD853F',
-                color: '#F4E4C1',
-                cursor: 'pointer',
-              }}
-            >
-              Confirm
-            </button>
-            <button
-              onClick={() => setShowExitWarning(false)}
-              style={{
-                padding: '12px 30px',
-                fontSize: '1rem',
-                fontWeight: 'bold',
-                borderRadius: 10,
-                background: 'rgba(139,69,19,0.3)',
-                border: '2px solid #8B4513',
-                color: '#F4E4C1',
-                cursor: 'pointer',
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-
-  // ---------- SCREENS ----------
-  // Game Over
-  if (scannedCards.length >= maxQRCodes) {
-    return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'linear-gradient(135deg, #1a1a2e, #0f3460)',
-          color: '#F4E4C1',
-        }}
-      >
-        <h1 style={{ fontSize: '4rem', marginBottom: 20 }}>GAME OVER</h1>
-        <p style={{ fontSize: '1.5rem', marginBottom: 30 }}>
-          All {maxQRCodes} QR cards scanned!
-        </p>
-        <div style={{ display: 'flex', gap: 20 }}>
-          <button onClick={confirmExit} style={buttonStyle}>
-            Main Menu
-          </button>
-          <button
-            onClick={() => {
-              setCharacters([]);
-              setCurrentPlayer(0);
-              setScannedCards([]);
-              setQrData('');
-              setRoundPhase('playerTurn');
-              setScreen('game');
-            }}
-            style={buttonStyle}
-          >
-            Restart
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Main Menu
+  // ------------ MAIN MENU ----------------
   if (screen === 'main') {
     return (
-      <div style={mainMenuStyle}>
+      <div style={menuStyle}>
         <h1 style={titleStyle}>OBRYNDEL</h1>
-        <button onClick={() => setScreen('intro')} style={buttonStyle}>
+        <button style={buttonStyle} onClick={() => setScreen('intro')}>
           Start Game
         </button>
       </div>
     );
   }
 
-  // Intro / Instructions / Character Selection / Game
-  return (
-    <>
-      {screen !== 'main' && <ExitButton />}
-      <div style={gameScreenStyle}>
-        {screen === 'intro' && (
-            <div style={textBoxStyle}>
-              <h2 style={{ color: '#FFD700' }}>Welcome to Obryndel!</h2>
-              <p>
-                The hero, Baron Thobrick, has shattered the magical barrier. Gather the fragments at the Ogre Shrine.
-              </p>
-          
-              <div style={{ marginTop: 30, marginBottom: 30 }}>
-                <label style={{ color: '#F4E4C1', fontSize: '1.2rem', marginBottom: 10, display: 'block' }}>
-                  Number of Players: {playerCount}
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="4"
-                  value={playerCount}
-                  onChange={(e) => setPlayerCount(parseInt(e.target.value))}
-                  style={{
-                    width: '80%',
-                    maxWidth: 400,
-                    height: 10,
-                    borderRadius: 5,
-                    background: '#8B4513',
-                    accentColor: '#FFD700', // gör slider “färgad” på moderna browsers
-                  }}
-                />
-              </div>
-          
-              <button onClick={() => setScreen('instructions')} style={buttonStyle}>
-                Continue
-              </button>
-            </div>
-          )}
-        {screen === 'instructions' && (
-          <div style={textBoxStyle}>
-            <p>Shuffle the QR cards and place them in the holder. Each player has 2 action points per turn. After all players move, scan a QR card.</p>
-            <button onClick={() => setScreen('game')} style={buttonStyle}>
-              Begin Game
-            </button>
-          </div>
-        )}
-        {screen === 'game' && (
-          <div style={{ textAlign: 'center', width: '100%' }}>
-            {characters.length < playerCount ? (
-              <div>
-                <h2 style={{ color: '#FFD700' }}>Player {currentPlayer + 1}: Choose Character</h2>
-                <div style={gridStyle}>
-                  {availableCharacters
-                    .filter((c) => !characters.includes(c))
-                    .map((character) => (
-                      <button key={character} onClick={() => selectCharacter(character)} style={buttonStyle}>
-                        {character}
-                      </button>
-                    ))}
-                </div>
-              </div>
-            ) : (
-              <div>
-                <h2 style={{ color: '#FFD700' }}>
-                  {roundPhase === 'scanQR' ? 'Scan a new QR card for this round...' : `Player ${currentPlayer + 1}: ${characters[currentPlayer]}`}
-                </h2>
+  // ------------ INTRO ----------------
+  if (screen === 'intro') {
+    return (
+      <div style={textBoxStyle}>
+        <h2 style={{ color: '#FFD700' }}>Welcome to Obryndel!</h2>
+        <p>
+          Baron Thobrick shattered the magical barrier. Gather the fragments at the Ogre Shrine.
+        </p>
 
-                {roundPhase === 'playerTurn' && (
-                  <button onClick={nextPlayer} style={buttonStyle}>
-                    End Turn
-                  </button>
-                )}
+        <div style={{ marginTop: 30, marginBottom: 30 }}>
+          <label style={{ color: '#F4E4C1', fontSize: '1.2rem', marginBottom: 10, display: 'block' }}>
+            Number of Players: {playerCount}
+          </label>
+          <input
+            type="range"
+            min="1"
+            max="4"
+            value={playerCount}
+            onChange={(e) => setPlayerCount(parseInt(e.target.value))}
+            style={{
+              width: '80%',
+              maxWidth: 400,
+              height: 10,
+              borderRadius: 5,
+              background: '#8B4513',
+              accentColor: '#FFD700',
+            }}
+          />
+        </div>
 
-                <video ref={videoRef} style={{ display: 'none' }} />
-                <canvas ref={canvasRef} style={{ display: 'none' }} />
-
-                {qrData && (
-                  <div style={qrBoxStyle}>
-                    <h3>{qrData}</h3>
-                    <p>{tileEvents[qrData] || 'Unknown event...'}</p>
-                  </div>
-                )}
-
-                {cameraError && (
-                  <div style={errorBoxStyle}>
-                    <p>⚠️ {cameraError}</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        <button style={buttonStyle} onClick={() => setScreen('instructions')}>
+          Continue
+        </button>
       </div>
-      <ExitWarningModal />
-    </>
-  );
+    );
+  }
+
+  // ------------ INSTRUCTIONS ----------------
+  if (screen === 'instructions') {
+    return (
+      <div style={textBoxStyle}>
+        <ExitButton onClick={() => setScreen('main')} />
+        <p>
+          Shuffle the QR-cards and place them in the holder. Each player has two action points per turn.
+        </p>
+        <button style={buttonStyle} onClick={() => setScreen('game')}>
+          Begin Journey
+        </button>
+      </div>
+    );
+  }
+
+  // ------------ GAME OVER ----------------
+  if (scannedCards.length >= maxTiles) {
+    return (
+      <div style={textBoxStyle}>
+        <h2 style={{ color: '#FFD700' }}>GAME OVER!</h2>
+        <p>You have collected all fragments!</p>
+        <button style={buttonStyle} onClick={resetGame}>Main Menu</button>
+      </div>
+    );
+  }
+
+  // ------------ GAME ----------------
+  if (screen === 'game') {
+    // Character selection
+    if (characters.length < playerCount) {
+      const availableChars = availableCharacters.filter(c => !characters.includes(c));
+      return (
+        <div style={textBoxStyle}>
+          <ExitButton onClick={resetGame} />
+          <h2>Player {currentPlayer + 1}: Choose Character</h2>
+          <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {availableChars.map((char) => (
+              <button key={char} style={buttonStyle} onClick={() => selectCharacter(char)}>
+                {char}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Main game loop
+    return (
+      <div style={textBoxStyle}>
+        <ExitButton onClick={resetGame} />
+        <h2 style={{ color: '#FFD700' }}>Player {currentPlayer + 1}: {characters[currentPlayer]}</h2>
+        <p>Scanned Cards: {scannedCards.length}/{maxTiles}</p>
+
+        {/* Camera + canvas */}
+        <video ref={videoRef} style={{ display: 'none' }} />
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+        {/* Camera start button */}
+        {!cameraStarted && roundPhase === 'scanQR' && (
+          <button style={buttonStyle} onClick={startCamera}>
+            Start Camera & Scan QR
+          </button>
+        )}
+
+        {/* QR result */}
+        {qrData && (
+          <div style={{ marginTop: 20, padding: 20, border: '2px solid #CD853F', borderRadius: 10, background: '#8B4513' }}>
+            <h3 style={{ color: '#FFD700' }}>{qrData}</h3>
+            <p style={{ color: '#F4E4C1' }}>{tileEvents[qrData]}</p>
+          </div>
+        )}
+
+        {/* Next player button */}
+        {roundPhase === 'playerTurn' && (
+          <button style={buttonStyle} onClick={nextPlayer}>
+            End Turn
+          </button>
+        )}
+
+        {cameraError && <p style={{ color: 'red' }}>{cameraError}</p>}
+      </div>
+    );
+  }
+
+  return null; // fallback
 }
 
-// ---------- COMMON STYLES ----------
-const mainMenuStyle = {
+// ------------- STYLES ----------------
+const menuStyle = {
   minHeight: '100vh',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'linear-gradient(135deg, #1a1a2e, #0f3460)',
+  background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
   fontFamily: "'Cinzel', serif",
 };
 
 const titleStyle = {
-  fontSize: 'clamp(3rem, 8vw, 5rem)',
+  fontSize: 'clamp(2rem, 8vw, 4rem)',
   color: '#F4E4C1',
+  textAlign: 'center',
   marginBottom: 60,
-  textShadow: '3px 3px 10px rgba(0,0,0,0.7)',
+  textShadow: '3px 3px 6px rgba(0,0,0,0.7)',
+  letterSpacing: 3,
 };
 
 const buttonStyle = {
-  padding: '15px 40px',
-  fontSize: '1.2rem',
-  borderRadius: 10,
+  padding: '20px 60px',
+  fontSize: '1.5rem',
   background: 'linear-gradient(135deg, #8B4513, #A0522D)',
-  border: '2px solid #CD853F',
+  border: '3px solid #CD853F',
+  borderRadius: 10,
   color: '#F4E4C1',
   cursor: 'pointer',
-  marginTop: 20,
-};
-
-const gameScreenStyle = {
-  minHeight: '100vh',
-  padding: 40,
-  background: 'linear-gradient(135deg, #1a1a2e, #16213e)',
   fontFamily: "'Cinzel', serif",
-  color: '#F4E4C1',
-  display: 'flex',
-  justifyContent: 'center',
+  fontWeight: 'bold',
+  textTransform: 'uppercase',
+  letterSpacing: 2,
+  marginTop: 20,
 };
 
 const textBoxStyle = {
-  maxWidth: 800,
-  margin: '0 auto',
-  padding: 30,
-  borderRadius: 15,
-  background: 'rgba(0,0,0,0.3)',
-  border: '2px solid #8B4513',
+  minHeight: '100vh',
+  padding: 40,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
+  fontFamily: "'Cinzel', serif",
   textAlign: 'center',
-};
-
-const gridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-  gap: 20,
-  marginTop: 30,
-};
-
-const qrBoxStyle = {
-  marginTop: 20,
-  padding: 20,
-  borderRadius: 15,
-  background: 'rgba(139,69,19,0.6)',
-  border: '3px solid #CD853F',
-};
-
-const errorBoxStyle = {
-  marginTop: 20,
-  padding: 20,
-  borderRadius: 10,
-  background: 'rgba(139,0,0,0.6)',
-  border: '2px solid #FF4444',
+  color: '#F4E4C1',
 };
