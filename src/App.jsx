@@ -242,21 +242,21 @@ export default function App() {
           </>
         ) : (
           <>
-            {/* Boss Sprite Container */}
-            <div style={{ position: 'relative', width: 200, height: 200, marginBottom: 20 }}>
+            {/* Boss Sprite Container: centered layers with fixed stacking */}
+            <div style={{ position: 'relative', width: 260, height: 300, marginBottom: 20 }}>
               {/* Body */}
               {boss.body > 0 && (
                 <>
                   <img
                     src={bossBody}
                     alt="body"
-                    style={{ position: 'absolute', top: 50, left: 0, width: '100%', zIndex: 1 }}
+                    style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '100%', zIndex: 1 }}
                   />
                   <img
                     id="bodyDamage"
                     src={bossBodyDamage}
                     alt="body damage"
-                    style={{ position: 'absolute', top: 50, left: 0, width: '100%', zIndex: 2, opacity: 0 }}
+                    style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '100%', zIndex: 2, opacity: 0 }}
                   />
                 </>
               )}
@@ -266,13 +266,13 @@ export default function App() {
                   <img
                     src={bossShield}
                     alt="shield"
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 3 }}
+                    style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '100%', zIndex: 3 }}
                   />
                   <img
                     id="shieldDamage"
                     src={bossShieldDamage}
                     alt="shield damage"
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 4, opacity: 0 }}
+                    style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '100%', zIndex: 4, opacity: 0 }}
                   />
                 </>
               )}
@@ -282,13 +282,13 @@ export default function App() {
                   <img
                     src={bossHead}
                     alt="head"
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 5 }}
+                    style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '100%', zIndex: 5 }}
                   />
                   <img
                     id="headDamage"
                     src={bossHeadDamage}
                     alt="head damage"
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 6, opacity: 0 }}
+                    style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '100%', zIndex: 6, opacity: 0 }}
                   />
                 </>
               )}
