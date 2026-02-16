@@ -65,7 +65,7 @@ export default function App() {
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
       canvas.width = video.videoWidth;
@@ -231,37 +231,29 @@ export default function App() {
   };
 
   // ------------ SPEECH (ElevenLabs fantasy AI voice) ----------------
+  const speakWithBrowser = (text) => {
+    if (!('speechSynthesis' in window)) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    window.speechSynthesis.speak(utterance);
+  };
+
   const speakText = (text) => {
-    // Use ElevenLabs API for fantasy-like English voice
-    const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
-    if (!apiKey) {
-      console.warn('ElevenLabs API key not configured (VITE_ELEVENLABS_API_KEY). Add to Vercel environment variables.');
-      return;
-    }
-
-    const voiceId = 'nPczCjzI2devNBz1zQrH'; // Glados (fantasy-ish) voice ID
-    const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
-
     console.log('TTS: Speaking:', text);
 
-    fetch(url, {
+    fetch('/api/tts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'xi-api-key': apiKey,
       },
       body: JSON.stringify({
-        text: text,
-        model_id: 'eleven_monolingual_v1',
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75
-        }
+        text
       })
     })
-      .then(res => {
+      .then(async res => {
         if (!res.ok) {
-          throw new Error(`ElevenLabs API error: ${res.status} ${res.statusText}`);
+          const errorText = await res.text();
+          throw new Error(`TTS API error: ${res.status} ${res.statusText} - ${errorText}`);
         }
         return res.arrayBuffer();
       })
@@ -269,9 +261,15 @@ export default function App() {
         const audio = new Audio();
         const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
         audio.src = URL.createObjectURL(blob);
-        audio.play().catch(e => console.error('Audio play error:', e));
+        audio.play().catch(e => {
+          console.error('Audio play error:', e);
+          speakWithBrowser(text);
+        });
       })
-      .catch(e => console.error('ElevenLabs TTS error:', e));
+      .catch(e => {
+        console.error('ElevenLabs TTS error:', e);
+        speakWithBrowser(text);
+      });
   };
 
   // ------------ EXIT BUTTON ----------------
