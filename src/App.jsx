@@ -85,7 +85,9 @@ export default function App() {
           const num = parseInt(parts[1], 10);
 
           if (num === 30) {
-            setQrData('BOSS TILE: The final gate opens.');
+            const msg = 'BOSS TILE: The final gate opens.';
+            setQrData(msg);
+            try { speakText(msg); } catch (e) {}
             setScreen('boss');
             setAct(3);
             return;
@@ -95,6 +97,8 @@ export default function App() {
           if (num >= 1 && num <= 29) {
             const targetPlayer = pendingScanPlayer != null ? pendingScanPlayer : currentPlayer;
             handleTileEvent(num, targetPlayer);
+            // speak the scan result after handleTileEvent sets `qrData`
+            setTimeout(() => { if (qrData) speakText(qrData); }, 120);
 
             // advance currentPlayer after handling
             if (targetPlayer < playerCount - 1) {
@@ -220,6 +224,34 @@ export default function App() {
   // ------------ BOSS DAMAGE ----------------
   const damageBoss = (part) => {
     setBoss(prev => ({ ...prev, [part]: Math.max(prev[part] - 1, 0) }));
+  };
+
+  // ------------ SPEECH (mystical AI-voice) ----------------
+  const speakText = (text) => {
+    if (!window || !window.speechSynthesis) return;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 0.95;
+    utter.pitch = 0.8;
+    utter.volume = 1;
+
+    const pickVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices || voices.length === 0) return null;
+      // prefer an English voice with a slightly androgynous/timbre — fallback gracefully
+      const preferred = voices.find(v => /en-?us|en-?gb|english/i.test(v.lang) && /Google|Microsoft|Azure|Samantha|Alloy/i.test(v.name));
+      if (preferred) return preferred;
+      const anyEn = voices.find(v => /en-?/.test(v.lang));
+      return anyEn || voices[0];
+    };
+
+    const voice = pickVoice();
+    if (voice) utter.voice = voice;
+
+    // Add a small mystical prefix reverb by slightly delaying and using a low pitch
+    try {
+      window.speechSynthesis.cancel();
+    } catch (e) {}
+    window.speechSynthesis.speak(utter);
   };
 
   // ------------ EXIT BUTTON ----------------
@@ -418,6 +450,19 @@ export default function App() {
   if (screen === 'game') {
     return (
       <div style={textBoxStyle}>
+        <div style={{ position: 'absolute', top: 24, right: 28, color: '#D9B65A', fontWeight: 700 }}>ACT {act}</div>
+        {/* Event/scan result card */}
+        {qrData && (
+          <div style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 80 }}>
+            <div style={{ ...cardStyle, maxWidth: 720, padding: 24 }}>
+              <h3 style={{ marginTop: 0, color: '#EFD88B' }}>Event</h3>
+              <p style={{ color: '#EDE6CF' }}>{qrData}</p>
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+                <button onClick={() => { setQrData(''); try { window.speechSynthesis.cancel(); } catch(e){} }} style={buttonStyle}>Continue</button>
+              </div>
+            </div>
+          </div>
+        )}
         <ExitButton onClick={resetGame} />
         <h2>Player {currentPlayer + 1}</h2>
 
