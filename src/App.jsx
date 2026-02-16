@@ -219,26 +219,94 @@ export default function App() {
         ) : (
           <>
             {/* Boss Sprite Container */}
-            <div style={{ position: 'relative', width: 250, height: 250, marginBottom: 20 }}>
+            <div style={{ position: 'relative', width: 200, height: 200, marginBottom: 20 }}>
               {/* Body */}
               {boss.body > 0 && (
                 <>
-                  <img src={bossBody} style={{ width: '100%', zIndex: 1 }} alt="body" />
-                  <img id="bodyDamage" src={bossBodyDamage} style={{ width: '100%', zIndex: 2, position: 'absolute', top: 0, left: 0, opacity: 0 }} alt="body damage" />
+                  <img
+                    src={bossBody}
+                    alt="body"
+                    style={{
+                      position: 'absolute',
+                      top: 50, // move down to align under head/shield
+                      left: 0,
+                      width: '100%',
+                      zIndex: 1,
+                    }}
+                  />
+                  <img
+                    id="bodyDamage"
+                    src={bossBodyDamage}
+                    alt="body damage"
+                    style={{
+                      position: 'absolute',
+                      top: 50,
+                      left: 0,
+                      width: '100%',
+                      zIndex: 2,
+                      opacity: 0,
+                    }}
+                  />
                 </>
               )}
+
               {/* Shield */}
               {boss.shield > 0 && (
                 <>
-                  <img src={bossShield} style={{ width: '100%', zIndex: 3 }} alt="shield" />
-                  <img id="shieldDamage" src={bossShieldDamage} style={{ width: '100%', zIndex: 4, position: 'absolute', top: 0, left: 0, opacity: 0 }} alt="shield damage" />
+                  <img
+                    src={bossShield}
+                    alt="shield"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      zIndex: 3,
+                    }}
+                  />
+                  <img
+                    id="shieldDamage"
+                    src={bossShieldDamage}
+                    alt="shield damage"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      zIndex: 4,
+                      opacity: 0,
+                    }}
+                  />
                 </>
               )}
+
               {/* Head */}
               {boss.head > 0 && (
                 <>
-                  <img src={bossHead} style={{ width: '100%', zIndex: 5 }} alt="head" />
-                  <img id="headDamage" src={bossHeadDamage} style={{ width: '100%', zIndex: 6, position: 'absolute', top: 0, left: 0, opacity: 0 }} alt="head damage" />
+                  <img
+                    src={bossHead}
+                    alt="head"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      zIndex: 5,
+                    }}
+                  />
+                  <img
+                    id="headDamage"
+                    src={bossHeadDamage}
+                    alt="head damage"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      zIndex: 6,
+                      opacity: 0,
+                    }}
+                  />
                 </>
               )}
             </div>
@@ -338,13 +406,6 @@ const exitStyle = {
   color: '#F4E4C1',
   fontSize: 24,
   cursor: 'pointer',
-};
-
-const layerStyle = {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  width: '100%',
 };
 
 const bossButtonBar = {
