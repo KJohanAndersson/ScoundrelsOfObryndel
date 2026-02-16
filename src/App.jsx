@@ -218,107 +218,33 @@ export default function App() {
           </>
         ) : (
           <>
-            {/* Boss Sprite Container */}
-            <div style={{ position: 'relative', width: 200, height: 200, marginBottom: 20 }}>
-              {/* Body */}
+            <div style={{ position: 'relative', width: 250, height: 250, marginTop: -30 }}>
               {boss.body > 0 && (
                 <>
-                  <img
-                    src={bossBody}
-                    alt="body"
-                    style={{
-                      position: 'absolute',
-                      top: 50, // move down to align under head/shield
-                      left: 0,
-                      width: '100%',
-                      zIndex: 1,
-                    }}
-                  />
-                  <img
-                    id="bodyDamage"
-                    src={bossBodyDamage}
-                    alt="body damage"
-                    style={{
-                      position: 'absolute',
-                      top: 50,
-                      left: 0,
-                      width: '100%',
-                      zIndex: 2,
-                      opacity: 0,
-                    }}
-                  />
+                  <img src={bossBody} style={layerStyle} alt="body" />
+                  <img id="bodyDamage" src={bossBodyDamage} style={{ ...layerStyle, opacity: 0 }} alt="body damage" />
                 </>
               )}
-
-              {/* Shield */}
               {boss.shield > 0 && (
                 <>
-                  <img
-                    src={bossShield}
-                    alt="shield"
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      zIndex: 3,
-                    }}
-                  />
-                  <img
-                    id="shieldDamage"
-                    src={bossShieldDamage}
-                    alt="shield damage"
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      zIndex: 4,
-                      opacity: 0,
-                    }}
-                  />
+                  <img src={bossShield} style={layerStyle} alt="shield" />
+                  <img id="shieldDamage" src={bossShieldDamage} style={{ ...layerStyle, opacity: 0 }} alt="shield damage" />
                 </>
               )}
-
-              {/* Head */}
               {boss.head > 0 && (
                 <>
-                  <img
-                    src={bossHead}
-                    alt="head"
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      zIndex: 5,
-                    }}
-                  />
-                  <img
-                    id="headDamage"
-                    src={bossHeadDamage}
-                    alt="head damage"
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      zIndex: 6,
-                      opacity: 0,
-                    }}
-                  />
+                  <img src={bossHead} style={layerStyle} alt="head" />
+                  <img id="headDamage" src={bossHeadDamage} style={{ ...layerStyle, opacity: 0 }} alt="head damage" />
                 </>
               )}
             </div>
 
-            {/* HP Text */}
-            <div style={{ textAlign: 'center', marginBottom: 30 }}>
+            <div style={{ marginTop: 40 }}>
               <p>Head HP: {boss.head}</p>
               <p>Body HP: {boss.body}</p>
               <p>Shield HP: {boss.shield}</p>
             </div>
 
-            {/* Buttons */}
             <div style={bossButtonBar}>
               <button style={buttonStyle} onClick={() => handleDamage('head')}>Hit Head</button>
               <button style={buttonStyle} onClick={() => handleDamage('body')}>Hit Body</button>
@@ -389,7 +315,7 @@ const textBoxStyle = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: 'flex-start',
+  justifyContent: 'center',
   background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
   color: '#F4E4C1',
   textAlign: 'center',
@@ -406,6 +332,13 @@ const exitStyle = {
   color: '#F4E4C1',
   fontSize: 24,
   cursor: 'pointer',
+};
+
+const layerStyle = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
 };
 
 const bossButtonBar = {
