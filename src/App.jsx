@@ -346,57 +346,77 @@ const menuStyle = {
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
+  background: 'linear-gradient(180deg, #0f1724 0%, #071028 100%)',
+  fontFamily: "Inter, Roboto, -apple-system, 'Segoe UI', system-ui, 'Helvetica Neue', Arial",
+  padding: 20,
 };
 
 const titleStyle = {
   fontSize: '3rem',
-  color: '#F4E4C1',
-  marginBottom: 40,
+  color: '#FFF',
+  marginBottom: 24,
+  letterSpacing: 2,
+  textShadow: '0 6px 18px rgba(0,0,0,0.6)',
 };
 
 const buttonStyle = {
-  padding: '15px 30px',
-  fontSize: '1.2rem',
-  background: '#8B4513',
-  border: '2px solid #CD853F',
-  borderRadius: 10,
-  color: '#F4E4C1',
+  padding: '12px 20px',
+  fontSize: '1rem',
+  background: 'linear-gradient(180deg, #44566e, #2c3e50)',
+  border: '1px solid rgba(255,255,255,0.06)',
+  borderRadius: 12,
+  color: '#F4F7FA',
   cursor: 'pointer',
-  margin: 10,
+  margin: 8,
+  boxShadow: '0 6px 20px rgba(2,6,23,0.6)',
+  transition: 'transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease',
 };
 
 const textBoxStyle = {
+  width: '100%',
+  maxWidth: 920,
   minHeight: '100vh',
-  padding: 40,
+  padding: 32,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'flex-start',
-  background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
-  color: '#F4E4C1',
+  background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))',
+  color: '#E8EEF5',
   textAlign: 'center',
+  borderRadius: 16,
+  boxShadow: '0 8px 40px rgba(2,6,23,0.6)',
 };
 
 const exitStyle = {
   position: 'fixed',
-  top: 20,
-  left: 20,
+  top: 18,
+  left: 18,
   width: 40,
   height: 40,
-  borderRadius: '50%',
-  background: 'rgba(139,69,19,0.8)',
-  color: '#F4E4C1',
-  fontSize: 24,
+  borderRadius: 10,
+  background: 'rgba(255,255,255,0.06)',
+  color: '#FFF',
+  fontSize: 20,
   cursor: 'pointer',
+  border: 'none',
+  boxShadow: '0 4px 12px rgba(2,6,23,0.5)',
 };
 
 const bossButtonBar = {
   position: 'fixed',
-  bottom: 20,
+  bottom: 24,
   left: 0,
   right: 0,
   display: 'flex',
   justifyContent: 'center',
-  gap: 20,
+  gap: 16,
+};
+
+// Small reusable card style used for grouped controls
+const cardStyle = {
+  background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))',
+  padding: 18,
+  borderRadius: 12,
+  boxShadow: '0 8px 24px rgba(2,6,23,0.5)',
 };
