@@ -1,10 +1,12 @@
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     const hasKey = Boolean(process.env.ELEVENLABS_API_KEY);
+    const voiceId = process.env.ELEVENLABS_VOICE_ID || 'zYcjlYFOd3taleS0gkk3';
     return res.status(200).json({
       ok: true,
       service: 'tts',
       elevenlabs_configured: hasKey,
+      voice_id: voiceId,
     });
   }
 
@@ -23,7 +25,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing or invalid "text"' });
   }
 
-  const voiceId = 'nPczCjzI2devNBz1zQrH';
+  // Prefer env-configured voice, otherwise use your current library voice.
+  const voiceId = process.env.ELEVENLABS_VOICE_ID || 'zYcjlYFOd3taleS0gkk3';
   const elevenUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
 
   try {
