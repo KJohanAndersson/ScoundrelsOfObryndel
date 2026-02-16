@@ -14,6 +14,10 @@ export default function App() {
   const [playerCount, setPlayerCount] = useState(2);
   const [currentPlayer, setCurrentPlayer] = useState(0);
   const [characters, setCharacters] = useState([]);
+  const [players, setPlayers] = useState([]); // { char, hp, items }
+  const [roundsCompleted, setRoundsCompleted] = useState(0); // full rounds (all players)
+  const [pendingScanPlayer, setPendingScanPlayer] = useState(null); // which player the upcoming scan applies to
+  const [act, setAct] = useState(1);
   const [scannedCards, setScannedCards] = useState([]);
   const [roundPhase, setRoundPhase] = useState('playerTurn');
   const [cameraStarted, setCameraStarted] = useState(false);
@@ -73,14 +77,38 @@ export default function App() {
 
       if (code && code.data.startsWith('Tile-')) {
         if (!scannedCards.includes(code.data)) {
-          setQrData(code.data);
           setScannedCards(prev => [...prev, code.data]);
 
           stopCamera();
 
-          if (code.data === 'Tile-030') {
+          const parts = code.data.split('-');
+          const num = parseInt(parts[1], 10);
+
+          if (num === 30) {
+            setQrData('BOSS TILE: The final gate opens.');
             setScreen('boss');
+            setAct(3);
+            return;
+          }
+
+          // Handle event tiles 1..29
+          if (num >= 1 && num <= 29) {
+            const targetPlayer = pendingScanPlayer != null ? pendingScanPlayer : currentPlayer;
+            handleTileEvent(num, targetPlayer);
+
+            // advance currentPlayer after handling
+            if (targetPlayer < playerCount - 1) {
+              setCurrentPlayer(targetPlayer + 1);
+            } else {
+              setCurrentPlayer(0);
+              setRoundsCompleted(prev => prev + 1);
+            }
+
+            setPendingScanPlayer(null);
+            setRoundPhase('playerTurn');
           } else {
+            // default behavior for unexpected tiles
+            setQrData(code.data);
             setRoundPhase('playerTurn');
           }
         }
@@ -101,13 +129,10 @@ export default function App() {
 
   // ------------ PLAYER FUNCTIONS ----------------
   const nextPlayer = () => {
-    if (currentPlayer < playerCount - 1) {
-      setCurrentPlayer(currentPlayer + 1);
-    } else {
-      setCurrentPlayer(0);
-      setRoundPhase('scanQR');
-      setQrData('');
-    }
+    // Trigger a scan for the player who is ending their turn
+    setPendingScanPlayer(currentPlayer);
+    setRoundPhase('scanQR');
+    setQrData('');
   };
 
   const selectCharacter = (char) => {
@@ -120,6 +145,63 @@ export default function App() {
       // All players selected → start game
       setScreen('game');
       setCurrentPlayer(0);
+    }
+  };
+
+  // Initialize players when entering the game screen
+  useEffect(() => {
+    if (screen === 'game') {
+      const init = Array.from({ length: playerCount }).map((_, i) => ({
+        char: characters[i] || null,
+        hp: 5,
+        items: []
+      }));
+      setPlayers(init);
+      setRoundsCompleted(0);
+      setAct(1);
+      setPendingScanPlayer(null);
+      setRoundPhase('playerTurn');
+      setCurrentPlayer(0);
+    }
+  }, [screen]);
+
+  // Update act when roundsCompleted changes or boss screen
+  useEffect(() => {
+    if (screen === 'boss') {
+      setAct(3);
+      return;
+    }
+    if (roundsCompleted >= 7) setAct(2);
+    else setAct(1);
+  }, [roundsCompleted, screen]);
+
+  const handleTileEvent = (tileNum, playerIndex) => {
+    // tiles 1..29 produce events
+    if (tileNum < 1 || tileNum > 29) return;
+
+    const zone = Math.min(2, act); // zone corresponds to act 1 or 2
+    // danger chance: act1 = 25%, act2 = 50%
+    const dangerChance = act === 1 ? 0.25 : 0.5;
+    const isDanger = Math.random() < dangerChance;
+
+    setPlayers(prev => {
+      const copy = [...prev];
+      if (!copy[playerIndex]) return prev;
+      if (isDanger) {
+        copy[playerIndex] = { ...copy[playerIndex], hp: Math.max(copy[playerIndex].hp - 1, 0) };
+      } else {
+        // add a generic treasure from the zone
+        const newItem = `Treasure (Zone ${zone})`;
+        copy[playerIndex] = { ...copy[playerIndex], items: [...copy[playerIndex].items, newItem] };
+      }
+      return copy;
+    });
+
+    // set a message for the scan result
+    if (isDanger) {
+      setQrData(`Player ${playerIndex + 1} triggered a trap and lost 1 HP.`);
+    } else {
+      setQrData(`Player ${playerIndex + 1} found a treasure from Zone ${zone} and takes it from the item bag.`);
     }
   };
 
