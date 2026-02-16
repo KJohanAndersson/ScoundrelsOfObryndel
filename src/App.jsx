@@ -85,7 +85,7 @@ export default function App() {
           const num = parseInt(parts[1], 10);
 
           if (num === 30) {
-            const msg = 'BOSS TILE: The final gate opens.';
+            const msg = 'Scoundrels! Forging that cursed artifact have you? I shall smite ye, for I am Thobrick the Glorious knight of the realm and this is my domain! Face me in combat if ye dare!';
             setQrData(msg);
             try { speakText(msg); } catch (e) {}
             setScreen('boss');
@@ -188,16 +188,24 @@ export default function App() {
     if (tileNum < 1 || tileNum > 29) return null;
 
     const zone = Math.min(2, act); // zone corresponds to act 1 or 2
-    // danger chance: act1 = 25%, act2 = 50%
-    const dangerChance = act === 1 ? 0.25 : 0.5;
-    const isDanger = Math.random() < dangerChance;
+    // Items and traps are scarcer; neutral events are most common.
+    // Act 1 leans slightly toward items, Act 2 toward traps.
+    const weights = act === 1
+      ? { item: 0.22, trap: 0.18 } // neutral 60%
+      : { item: 0.18, trap: 0.22 }; // neutral 60%
+    const roll = Math.random();
+    const outcome = roll < weights.item
+      ? 'item'
+      : roll < weights.item + weights.trap
+        ? 'trap'
+        : 'neutral';
 
     setPlayers(prev => {
       const copy = [...prev];
       if (!copy[playerIndex]) return prev;
-      if (isDanger) {
+      if (outcome === 'trap') {
         copy[playerIndex] = { ...copy[playerIndex], hp: Math.max(copy[playerIndex].hp - 1, 0) };
-      } else {
+      } else if (outcome === 'item') {
         // add a generic treasure from the zone
         const newItem = `Treasure (Zone ${zone})`;
         copy[playerIndex] = { ...copy[playerIndex], items: [...copy[playerIndex].items, newItem] };
@@ -206,11 +214,13 @@ export default function App() {
     });
 
     // return the message for the scan result (to be spoken immediately)
-    if (isDanger) {
+    if (outcome === 'trap') {
       return `Player ${playerIndex + 1} triggered a trap and lost 1 HP.`;
-    } else {
-      return `Player ${playerIndex + 1} found a treasure from Zone ${zone} and takes it from the item bag.`;
     }
+    if (outcome === 'item') {
+      return `Player ${playerIndex + 1} found a treasure! Take an item from the loot table for Zone you are in.`;
+    }
+    return `Player ${playerIndex + 1} scouts ahead, but the room is eerily calm. Nothing happens.`;
   };
 
   const resetGame = () => {
