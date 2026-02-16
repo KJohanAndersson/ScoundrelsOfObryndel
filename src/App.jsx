@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import jsQR from 'jsqr';
 
+// Import boss sprites (safe for GitHub + builds)
+import bossHead from './assets/boss-head.png';
+import bossBody from './assets/boss-body.png';
+import bossShield from './assets/boss-shield.png';
+
 export default function App() {
-  const [screen, setScreen] = useState('main'); // main | intro | instructions | game | gameover | boss
+  const [screen, setScreen] = useState('main');
   const [playerCount, setPlayerCount] = useState(2);
   const [currentPlayer, setCurrentPlayer] = useState(0);
   const [characters, setCharacters] = useState([]);
@@ -24,10 +29,6 @@ export default function App() {
   const streamRef = useRef(null);
 
   const availableCharacters = ['Goblin', 'Troll', 'Cyclops', 'Witch'];
-
-  const tileEvents = {
-    'Tile-030': 'A rift opens. The final guardian emerges!',
-  };
 
   const maxTiles = 15;
 
@@ -145,20 +146,7 @@ export default function App() {
   const ExitButton = ({ onClick }) => (
     <button
       onClick={onClick}
-      style={{
-        position: 'fixed',
-        top: 20,
-        left: 20,
-        width: 40,
-        height: 40,
-        borderRadius: '50%',
-        background: 'rgba(139,69,19,0.8)',
-        color: '#F4E4C1',
-        fontSize: 24,
-        fontWeight: 'bold',
-        cursor: 'pointer',
-        zIndex: 1000,
-      }}
+      style={exitStyle}
     >
       ×
     </button>
@@ -180,7 +168,23 @@ export default function App() {
   if (screen === 'intro') {
     return (
       <div style={textBoxStyle}>
-        <h2>Welcome to Obryndel!</h2>
+        <h2 style={{ color: '#FFD700' }}>Welcome to Obryndel!</h2>
+        <p>Choose number of players:</p>
+
+        <div style={{ marginTop: 20, marginBottom: 30 }}>
+          <label style={{ fontSize: '1.2rem' }}>
+            Players: {playerCount}
+          </label>
+          <input
+            type="range"
+            min="1"
+            max="4"
+            value={playerCount}
+            onChange={(e) => setPlayerCount(parseInt(e.target.value))}
+            style={{ width: 250 }}
+          />
+        </div>
+
         <button style={buttonStyle} onClick={() => setScreen('instructions')}>
           Continue
         </button>
@@ -209,7 +213,6 @@ export default function App() {
     return (
       <div style={textBoxStyle}>
         <ExitButton onClick={resetGame} />
-
         <h2 style={{ color: '#FFD700' }}>ACT 3: FINAL BOSS</h2>
 
         {bossDead ? (
@@ -221,27 +224,24 @@ export default function App() {
           </>
         ) : (
           <>
-            {/* Boss sprite */}
             <div style={{ position: 'relative', width: 250, height: 250 }}>
               {boss.body > 0 && (
-                <img src="/assets/boss-body.png" style={layerStyle} alt="body" />
+                <img src={bossBody} style={layerStyle} alt="body" />
               )}
               {boss.shield > 0 && (
-                <img src="/assets/boss-shield.png" style={layerStyle} alt="shield" />
+                <img src={bossShield} style={layerStyle} alt="shield" />
               )}
               {boss.head > 0 && (
-                <img src="/assets/boss-head.png" style={layerStyle} alt="head" />
+                <img src={bossHead} style={layerStyle} alt="head" />
               )}
             </div>
 
-            {/* HP display */}
             <div style={{ marginTop: 20 }}>
               <p>Head HP: {boss.head}</p>
               <p>Body HP: {boss.body}</p>
               <p>Shield HP: {boss.shield}</p>
             </div>
 
-            {/* Bottom buttons */}
             <div style={bossButtonBar}>
               <button style={buttonStyle} onClick={() => damageBoss('head')}>
                 Hit Head
@@ -280,6 +280,8 @@ export default function App() {
             End Turn
           </button>
         )}
+
+        {cameraError && <p style={{ color: 'red' }}>{cameraError}</p>}
       </div>
     );
   }
@@ -295,7 +297,6 @@ const menuStyle = {
   alignItems: 'center',
   justifyContent: 'center',
   background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
-  fontFamily: "'Cinzel', serif",
 };
 
 const titleStyle = {
@@ -325,6 +326,19 @@ const textBoxStyle = {
   background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
   color: '#F4E4C1',
   textAlign: 'center',
+};
+
+const exitStyle = {
+  position: 'fixed',
+  top: 20,
+  left: 20,
+  width: 40,
+  height: 40,
+  borderRadius: '50%',
+  background: 'rgba(139,69,19,0.8)',
+  color: '#F4E4C1',
+  fontSize: 24,
+  cursor: 'pointer',
 };
 
 const layerStyle = {
