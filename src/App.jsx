@@ -1,359 +1,189 @@
-import React, { useState, useEffect, useRef } from 'react';
-import jsQR from 'jsqr';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Boss Phase Test</title>
 
-// Import boss sprites (safe for GitHub + builds)
-import bossHead from './assets/boss-head.png';
-import bossBody from './assets/boss-body.png';
-import bossShield from './assets/boss-shield.png';
-
-export default function App() {
-  const [screen, setScreen] = useState('main');
-  const [playerCount, setPlayerCount] = useState(2);
-  const [currentPlayer, setCurrentPlayer] = useState(0);
-  const [characters, setCharacters] = useState([]);
-  const [scannedCards, setScannedCards] = useState([]);
-  const [roundPhase, setRoundPhase] = useState('playerTurn');
-  const [cameraStarted, setCameraStarted] = useState(false);
-  const [qrData, setQrData] = useState('');
-  const [cameraError, setCameraError] = useState('');
-
-  const [boss, setBoss] = useState({
-    head: 5,
-    body: 5,
-    shield: 5,
-  });
-
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const animationRef = useRef(null);
-  const streamRef = useRef(null);
-
-  const availableCharacters = ['Goblin', 'Troll', 'Cyclops', 'Witch'];
-
-  const maxTiles = 15;
-
-  // ------------ CAMERA FUNCTIONS ----------------
-  const startCamera = async () => {
-    if (!videoRef.current) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-      });
-      streamRef.current = stream;
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
-      setCameraStarted(true);
-      setRoundPhase('scanQR');
-    } catch (err) {
-      setCameraError('Camera error: ' + err.message);
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    setCameraStarted(false);
-  };
-
-  const scanQRCodeLoop = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    if (roundPhase !== 'scanQR') return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-
-    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-      if (code && code.data.startsWith('Tile-')) {
-        if (!scannedCards.includes(code.data)) {
-          setQrData(code.data);
-          setScannedCards((prev) => [...prev, code.data]);
-
-          stopCamera();
-
-          if (code.data === 'Tile-030') {
-            setScreen('boss');
-          } else {
-            setRoundPhase('playerTurn');
-          }
-        }
-      }
-    }
-
-    animationRef.current = requestAnimationFrame(scanQRCodeLoop);
-  };
-
-  useEffect(() => {
-    if (roundPhase === 'scanQR' && cameraStarted) {
-      animationRef.current = requestAnimationFrame(scanQRCodeLoop);
-    }
-
-    return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    };
-  }, [roundPhase, cameraStarted]);
-
-  // ------------ PLAYER FUNCTIONS ----------------
-  const nextPlayer = () => {
-    if (currentPlayer < playerCount - 1) {
-      setCurrentPlayer(currentPlayer + 1);
-    } else {
-      setCurrentPlayer(0);
-      setRoundPhase('scanQR');
-      setQrData('');
-    }
-  };
-
-  const selectCharacter = (char) => {
-    const newChars = [...characters];
-    newChars[currentPlayer] = char;
-    setCharacters(newChars);
-    if (currentPlayer < playerCount - 1) {
-      setCurrentPlayer(currentPlayer + 1);
-    }
-  };
-
-  const resetGame = () => {
-    stopCamera();
-    setScreen('main');
-    setPlayerCount(2);
-    setCurrentPlayer(0);
-    setCharacters([]);
-    setScannedCards([]);
-    setRoundPhase('playerTurn');
-    setQrData('');
-    setBoss({ head: 5, body: 5, shield: 5 });
-  };
-
-  // ------------ BOSS DAMAGE ----------------
-  const damageBoss = (part) => {
-    setBoss((prev) => ({
-      ...prev,
-      [part]: Math.max(prev[part] - 1, 0),
-    }));
-  };
-
-  // ------------ EXIT BUTTON ----------------
-  const ExitButton = ({ onClick }) => (
-    <button
-      onClick={onClick}
-      style={exitStyle}
-    >
-      ×
-    </button>
-  );
-
-  // ------------ MAIN MENU ----------------
-  if (screen === 'main') {
-    return (
-      <div style={menuStyle}>
-        <h1 style={titleStyle}>OBRYNDEL</h1>
-        <button style={buttonStyle} onClick={() => setScreen('intro')}>
-          Start Game
-        </button>
-      </div>
-    );
-  }
-
-  // ------------ INTRO ----------------
-  if (screen === 'intro') {
-    return (
-      <div style={textBoxStyle}>
-        <h2 style={{ color: '#FFD700' }}>Welcome to Obryndel!</h2>
-        <p>Choose number of players:</p>
-
-        <div style={{ marginTop: 20, marginBottom: 30 }}>
-          <label style={{ fontSize: '1.2rem' }}>
-            Players: {playerCount}
-          </label>
-          <input
-            type="range"
-            min="1"
-            max="4"
-            value={playerCount}
-            onChange={(e) => setPlayerCount(parseInt(e.target.value))}
-            style={{ width: 250 }}
-          />
-        </div>
-
-        <button style={buttonStyle} onClick={() => setScreen('instructions')}>
-          Continue
-        </button>
-      </div>
-    );
-  }
-
-  // ------------ INSTRUCTIONS ----------------
-  if (screen === 'instructions') {
-    return (
-      <div style={textBoxStyle}>
-        <ExitButton onClick={() => setScreen('main')} />
-        <p>Each player has two actions. Scan tiles to progress.</p>
-        <button style={buttonStyle} onClick={() => setScreen('game')}>
-          Begin Journey
-        </button>
-      </div>
-    );
-  }
-
-  // ------------ BOSS PHASE ----------------
-  if (screen === 'boss') {
-    const bossDead =
-      boss.head === 0 && boss.body === 0 && boss.shield === 0;
-
-    return (
-      <div style={textBoxStyle}>
-        <ExitButton onClick={resetGame} />
-        <h2 style={{ color: '#FFD700' }}>ACT 3: FINAL BOSS</h2>
-
-        {bossDead ? (
-          <>
-            <h2>Victory!</h2>
-            <button style={buttonStyle} onClick={resetGame}>
-              Main Menu
-            </button>
-          </>
-        ) : (
-          <>
-            <div style={{ position: 'relative', width: 250, height: 250 }}>
-              {boss.body > 0 && (
-                <img src={bossBody} style={layerStyle} alt="body" />
-              )}
-              {boss.shield > 0 && (
-                <img src={bossShield} style={layerStyle} alt="shield" />
-              )}
-              {boss.head > 0 && (
-                <img src={bossHead} style={layerStyle} alt="head" />
-              )}
-            </div>
-
-            <div style={{ marginTop: 20 }}>
-              <p>Head HP: {boss.head}</p>
-              <p>Body HP: {boss.body}</p>
-              <p>Shield HP: {boss.shield}</p>
-            </div>
-
-            <div style={bossButtonBar}>
-              <button style={buttonStyle} onClick={() => damageBoss('head')}>
-                Hit Head
-              </button>
-              <button style={buttonStyle} onClick={() => damageBoss('body')}>
-                Hit Body
-              </button>
-              <button style={buttonStyle} onClick={() => damageBoss('shield')}>
-                Hit Shield
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  // ------------ GAME ----------------
-  if (screen === 'game') {
-    return (
-      <div style={textBoxStyle}>
-        <ExitButton onClick={resetGame} />
-        <h2>Player {currentPlayer + 1}</h2>
-
-        <video ref={videoRef} style={{ display: 'none' }} />
-        <canvas ref={canvasRef} style={{ display: 'none' }} />
-
-        {!cameraStarted && roundPhase === 'scanQR' && (
-          <button style={buttonStyle} onClick={startCamera}>
-            Scan QR
-          </button>
-        )}
-
-        {roundPhase === 'playerTurn' && (
-          <button style={buttonStyle} onClick={nextPlayer}>
-            End Turn
-          </button>
-        )}
-
-        {cameraError && <p style={{ color: 'red' }}>{cameraError}</p>}
-      </div>
-    );
-  }
-
-  return null;
+<style>
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background: #111;
+    color: white;
+    margin: 0;
+    overflow-x: hidden;
 }
 
-// ------------ STYLES ----------------
-const menuStyle = {
-  minHeight: '100vh',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
+/* Screen shake animation */
+@keyframes shake {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(-6px, 4px); }
+    50% { transform: translate(6px, -4px); }
+    75% { transform: translate(-4px, -6px); }
+    100% { transform: translate(0, 0); }
+}
+
+.shake {
+    animation: shake 0.3s;
+}
+
+#game {
+    padding: 20px;
+}
+
+#boss {
+    position: relative;
+    width: 300px;
+    margin: 20px auto;
+}
+
+.boss-part {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 300px;
+}
+
+.damage {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 300px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Flash effect */
+.flash {
+    animation: flashDamage 1s forwards;
+}
+
+@keyframes flashDamage {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+#controls {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background: #222;
+    padding: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+    <div id="setup">
+        <h2>Select Players</h2>
+        <select id="playerCount">
+            <option>1</option>
+            <option>2</option>
+            <option>3</option>
+            <option>4</option>
+        </select>
+        <br><br>
+        <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <div id="bossPhase" style="display:none;">
+        <h2>Act 3 – Boss Fight</h2>
+
+        <div id="boss">
+
+            <!-- Shield -->
+            <img id="shield" class="boss-part"
+                 src="ScoundrelsOfObryndel/assets/boss-shield.png">
+            <img id="shieldDamage" class="damage"
+                 src="ScoundrelsOfObryndel/assets/boss-shield-damage.png">
+
+            <!-- Body -->
+            <img id="body" class="boss-part"
+                 src="ScoundrelsOfObryndel/assets/boss-body.png">
+            <img id="bodyDamage" class="damage"
+                 src="ScoundrelsOfObryndel/assets/boss-body-damage.png">
+
+            <!-- Head -->
+            <img id="head" class="boss-part"
+                 src="ScoundrelsOfObryndel/assets/boss-head.png">
+            <img id="headDamage" class="damage"
+                 src="ScoundrelsOfObryndel/assets/boss-head-damage.png">
+
+        </div>
+
+        <div id="hpDisplay">
+            <p>Shield HP: <span id="shieldHP">5</span></p>
+            <p>Body HP: <span id="bodyHP">5</span></p>
+            <p>Head HP: <span id="headHP">5</span></p>
+        </div>
+    </div>
+
+</div>
+
+<div id="controls" style="display:none;">
+    <button onclick="damagePart('shield')">Damage Shield</button>
+    <button onclick="damagePart('body')">Damage Body</button>
+    <button onclick="damagePart('head')">Damage Head</button>
+</div>
+
+<script>
+let players = 1;
+
+let hp = {
+    shield: 5,
+    body: 5,
+    head: 5
 };
 
-const titleStyle = {
-  fontSize: '3rem',
-  color: '#F4E4C1',
-  marginBottom: 40,
-};
+function startGame() {
+    players = document.getElementById("playerCount").value;
+    document.getElementById("setup").style.display = "none";
 
-const buttonStyle = {
-  padding: '15px 30px',
-  fontSize: '1.2rem',
-  background: '#8B4513',
-  border: '2px solid #CD853F',
-  borderRadius: 10,
-  color: '#F4E4C1',
-  cursor: 'pointer',
-  margin: 10,
-};
+    // Simulate scanning Tile-30
+    startBossPhase();
+}
 
-const textBoxStyle = {
-  minHeight: '100vh',
-  padding: 40,
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
-  color: '#F4E4C1',
-  textAlign: 'center',
-};
+function startBossPhase() {
+    document.getElementById("bossPhase").style.display = "block";
+    document.getElementById("controls").style.display = "flex";
+}
 
-const exitStyle = {
-  position: 'fixed',
-  top: 20,
-  left: 20,
-  width: 40,
-  height: 40,
-  borderRadius: '50%',
-  background: 'rgba(139,69,19,0.8)',
-  color: '#F4E4C1',
-  fontSize: 24,
-  cursor: 'pointer',
-};
+function damagePart(part) {
+    if (hp[part] <= 0) return;
 
-const layerStyle = {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  width: '100%',
-};
+    hp[part]--;
 
-const bossButtonBar = {
-  position: 'fixed',
-  bottom: 20,
-  left: 0,
-  right: 0,
-  display: 'flex',
-  justifyContent: 'center',
-  gap: 20,
-};
+    document.getElementById(part + "HP").textContent = hp[part];
+
+    // Flash damage overlay
+    const dmg = document.getElementById(part + "Damage");
+    dmg.classList.remove("flash");
+    void dmg.offsetWidth;
+    dmg.classList.add("flash");
+
+    // Screen shake
+    const game = document.getElementById("game");
+    game.classList.remove("shake");
+    void game.offsetWidth;
+    game.classList.add("shake");
+
+    // Remove part when dead
+    if (hp[part] === 0) {
+        document.getElementById(part).style.display = "none";
+    }
+}
+</script>
+
+</body>
+</html>
