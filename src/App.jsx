@@ -23,6 +23,8 @@ export default function App() {
   const [cameraStarted, setCameraStarted] = useState(false);
   const [qrData, setQrData] = useState('');
   const [cameraError, setCameraError] = useState('');
+  const [shardSchedule, setShardSchedule] = useState([]);
+  const [nextShardIndex, setNextShardIndex] = useState(0);
 
   const [boss, setBoss] = useState({ head: 5, body: 5, shield: 5 });
 
@@ -32,7 +34,41 @@ export default function App() {
   const streamRef = useRef(null);
 
   const availableCharacters = ['Goblin', 'Troll', 'Cyclops', 'Witch'];
+  const shardZones = [
+    'Village of Obryndel',
+    'Forest of Travesy',
+    'Mountain of Embers',
+    'Mudbrik Castle',
+  ];
+  const shardOrderNames = ['First', 'Second', 'Third', 'Fourth'];
   const maxTiles = 15;
+
+  const shuffleArray = (items) => {
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  };
+
+  const createShardSchedule = () => {
+    const rounds = shuffleArray([1, 2, 3, 4, 5]).slice(0, 4).sort((a, b) => a - b);
+    const zones = shuffleArray(shardZones);
+    return rounds.map((round, index) => ({
+      round,
+      zone: zones[index],
+      orderName: shardOrderNames[index],
+    }));
+  };
+
+  const maybeGetShardMessage = (currentRound) => {
+    if (nextShardIndex >= shardSchedule.length) return null;
+    const nextShard = shardSchedule[nextShardIndex];
+    if (!nextShard || nextShard.round !== currentRound) return null;
+    setNextShardIndex(prev => prev + 1);
+    return `${nextShard.orderName} shard appeared in ${nextShard.zone}.`;
+  };
 
   // ------------ CAMERA FUNCTIONS ----------------
   const startCamera = async () => {
@@ -97,11 +133,14 @@ export default function App() {
           if (num >= 1 && num <= 29) {
             const targetPlayer = pendingScanPlayer != null ? pendingScanPlayer : currentPlayer;
             const eventMsg = handleTileEvent(num, targetPlayer);
+            const currentRound = roundsCompleted + 1;
+            const shardMsg = maybeGetShardMessage(currentRound);
+            const combinedMsg = [eventMsg, shardMsg].filter(Boolean).join(' ');
             
             // Set message and speak immediately
-            if (eventMsg) {
-              setQrData(eventMsg);
-              speakText(eventMsg);
+            if (combinedMsg) {
+              setQrData(combinedMsg);
+              speakText(combinedMsg);
             }
 
             // advance currentPlayer after handling
@@ -170,6 +209,8 @@ export default function App() {
       setPendingScanPlayer(null);
       setRoundPhase('playerTurn');
       setCurrentPlayer(0);
+      setShardSchedule(createShardSchedule());
+      setNextShardIndex(0);
     }
   }, [screen]);
 
@@ -233,6 +274,8 @@ export default function App() {
     setRoundPhase('playerTurn');
     setQrData('');
     setBoss({ head: 5, body: 5, shield: 5 });
+    setShardSchedule([]);
+    setNextShardIndex(0);
   };
 
   // ------------ BOSS DAMAGE ----------------
