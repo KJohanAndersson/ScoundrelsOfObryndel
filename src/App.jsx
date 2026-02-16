@@ -233,9 +233,9 @@ export default function App() {
   // ------------ SPEECH (ElevenLabs fantasy AI voice) ----------------
   const speakText = (text) => {
     // Use ElevenLabs API for fantasy-like English voice
-    const apiKey = process.env.REACT_APP_ELEVENLABS_API_KEY;
+    const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
     if (!apiKey) {
-      console.warn('ElevenLabs API key not configured (REACT_APP_ELEVENLABS_API_KEY). Skipping TTS. Restart dev server after adding .env.local');
+      console.warn('ElevenLabs API key not configured (VITE_ELEVENLABS_API_KEY). Add to Vercel environment variables.');
       return;
     }
 
