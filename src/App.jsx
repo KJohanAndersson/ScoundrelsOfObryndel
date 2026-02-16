@@ -10,7 +10,7 @@ import bossBodyDamage from './assets/boss-body-damage.png';
 import bossShieldDamage from './assets/boss-shield-damage.png';
 
 export default function App() {
-  const [screen, setScreen] = useState('main'); // main | intro | instructions | game | boss
+  const [screen, setScreen] = useState('main'); // main | intro | instructions | characterSelect | game | boss
   const [playerCount, setPlayerCount] = useState(2);
   const [currentPlayer, setCurrentPlayer] = useState(0);
   const [characters, setCharacters] = useState([]);
@@ -117,18 +117,11 @@ export default function App() {
     if (currentPlayer < playerCount - 1) {
       setCurrentPlayer(currentPlayer + 1);
     } else {
+      // All players selected → start game
+      setScreen('game');
       setCurrentPlayer(0);
-      setRoundPhase('scanQR');
     }
   };
-
-  useEffect(() => {
-    if (screen === 'game') {
-      setCharacters(Array(playerCount).fill(null));
-      setCurrentPlayer(0);
-      setRoundPhase('selectCharacter');
-    }
-  }, [screen, playerCount]);
 
   const resetGame = () => {
     stopCamera();
@@ -181,22 +174,42 @@ export default function App() {
           />
         </div>
 
-        <button style={buttonStyle} onClick={() => setScreen('instructions')}>
+        <button style={buttonStyle} onClick={() => setScreen('characterSelect')}>
           Continue
         </button>
       </div>
     );
   }
 
-  // ------------ INSTRUCTIONS ----------------
-  if (screen === 'instructions') {
+  // ------------ CHARACTER SELECTION ----------------
+  if (screen === 'characterSelect') {
+    // Determine remaining characters
+    const pickedChars = characters.filter(c => c);
+    const remainingChars = availableCharacters.map(c => ({
+      name: c,
+      disabled: pickedChars.includes(c)
+    }));
+
     return (
       <div style={textBoxStyle}>
-        <ExitButton onClick={() => setScreen('main')} />
-        <p>Each player has two actions. Scan tiles to progress.</p>
-        <button style={buttonStyle} onClick={() => setScreen('game')}>
-          Begin Journey
-        </button>
+        <ExitButton onClick={resetGame} />
+        <h2 style={{ color: '#FFD700' }}>Player {currentPlayer + 1}: Choose Your Character</h2>
+        <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
+          {remainingChars.map(c => (
+            <button
+              key={c.name}
+              style={{
+                ...buttonStyle,
+                opacity: c.disabled ? 0.5 : 1,
+                cursor: c.disabled ? 'not-allowed' : 'pointer'
+              }}
+              disabled={c.disabled}
+              onClick={() => selectCharacter(c.name)}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
       </div>
     );
   }
@@ -229,33 +242,66 @@ export default function App() {
           </>
         ) : (
           <>
-            <div style={{ position: 'relative', width: 250, height: 250, marginTop: -30 }}>
+            {/* Boss Sprite Container */}
+            <div style={{ position: 'relative', width: 200, height: 200, marginBottom: 20 }}>
+              {/* Body */}
               {boss.body > 0 && (
                 <>
-                  <img src={bossBody} style={layerStyle} alt="body" />
-                  <img id="bodyDamage" src={bossBodyDamage} style={{ ...layerStyle, opacity: 0 }} alt="body damage" />
+                  <img
+                    src={bossBody}
+                    alt="body"
+                    style={{ position: 'absolute', top: 50, left: 0, width: '100%', zIndex: 1 }}
+                  />
+                  <img
+                    id="bodyDamage"
+                    src={bossBodyDamage}
+                    alt="body damage"
+                    style={{ position: 'absolute', top: 50, left: 0, width: '100%', zIndex: 2, opacity: 0 }}
+                  />
                 </>
               )}
+              {/* Shield */}
               {boss.shield > 0 && (
                 <>
-                  <img src={bossShield} style={layerStyle} alt="shield" />
-                  <img id="shieldDamage" src={bossShieldDamage} style={{ ...layerStyle, opacity: 0 }} alt="shield damage" />
+                  <img
+                    src={bossShield}
+                    alt="shield"
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 3 }}
+                  />
+                  <img
+                    id="shieldDamage"
+                    src={bossShieldDamage}
+                    alt="shield damage"
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 4, opacity: 0 }}
+                  />
                 </>
               )}
+              {/* Head */}
               {boss.head > 0 && (
                 <>
-                  <img src={bossHead} style={layerStyle} alt="head" />
-                  <img id="headDamage" src={bossHeadDamage} style={{ ...layerStyle, opacity: 0 }} alt="head damage" />
+                  <img
+                    src={bossHead}
+                    alt="head"
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 5 }}
+                  />
+                  <img
+                    id="headDamage"
+                    src={bossHeadDamage}
+                    alt="head damage"
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 6, opacity: 0 }}
+                  />
                 </>
               )}
             </div>
 
-            <div style={{ marginTop: 40 }}>
+            {/* HP Text */}
+            <div style={{ textAlign: 'center', marginBottom: 30 }}>
               <p>Head HP: {boss.head}</p>
               <p>Body HP: {boss.body}</p>
               <p>Shield HP: {boss.shield}</p>
             </div>
 
+            {/* Buttons */}
             <div style={bossButtonBar}>
               <button style={buttonStyle} onClick={() => handleDamage('head')}>Hit Head</button>
               <button style={buttonStyle} onClick={() => handleDamage('body')}>Hit Body</button>
@@ -276,40 +322,6 @@ export default function App() {
 
         <video ref={videoRef} style={{ display: 'none' }} />
         <canvas ref={canvasRef} style={{ display: 'none' }} />
-
-        {roundPhase === 'selectCharacter' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <p style={{ marginBottom: 10 }}>Choose a character for Player {currentPlayer + 1}:</p>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {availableCharacters.map((char) => {
-                const taken = characters.includes(char);
-                return (
-                  <button
-                    key={char}
-                    onClick={() => !taken && selectCharacter(char)}
-                    disabled={taken}
-                    style={{
-                      ...buttonStyle,
-                      opacity: taken ? 0.5 : 1,
-                      cursor: taken ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    {char}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div style={{ marginTop: 20 }}>
-              <p>Selected:</p>
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-                {characters.map((c, i) => (
-                  <div key={i} style={{ minWidth: 90 }}>{c || `Player ${i + 1}`}</div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
         {!cameraStarted && roundPhase === 'scanQR' && (
           <button style={buttonStyle} onClick={startCamera}>Scan QR</button>
@@ -360,7 +372,7 @@ const textBoxStyle = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: 'center',
+  justifyContent: 'flex-start',
   background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
   color: '#F4E4C1',
   textAlign: 'center',
@@ -377,13 +389,6 @@ const exitStyle = {
   color: '#F4E4C1',
   fontSize: 24,
   cursor: 'pointer',
-};
-
-const layerStyle = {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  width: '100%',
 };
 
 const bossButtonBar = {
