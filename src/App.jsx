@@ -365,30 +365,32 @@ const menuStyle = {
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'radial-gradient(1200px 600px at 10% 10%, rgba(80,40,20,0.06), transparent), linear-gradient(180deg, #060507 0%, #06111a 100%)',
+  background: 'radial-gradient(800px 400px at 15% 10%, rgba(120,40,20,0.06), transparent), linear-gradient(180deg, #020203 0%, #09070a 60%, #0b0508 100%)',
   fontFamily: "'Cinzel', 'Merriweather', Georgia, serif",
   padding: 28,
 };
 
 const titleStyle = {
-  fontSize: '3rem',
-  color: '#EFD88B',
-  marginBottom: 18,
-  letterSpacing: 3,
-  textShadow: '0 10px 30px rgba(0,0,0,0.7), 0 0 12px rgba(238,203,120,0.06) inset',
+  fontSize: '4rem',
+  color: '#F6E6A8',
+  marginBottom: 12,
+  letterSpacing: 6,
+  lineHeight: 1,
+  textTransform: 'uppercase',
+  textShadow: '0 12px 40px rgba(0,0,0,0.75), 0 0 18px rgba(220,180,70,0.08)',
 };
 
 const buttonStyle = {
-  padding: '12px 20px',
-  fontSize: '1rem',
-  background: 'linear-gradient(180deg,#3b1f12,#24100a)',
-  border: '1px solid rgba(213,169,62,0.12)',
-  borderRadius: 12,
-  color: '#F7EFD6',
+  padding: '14px 26px',
+  fontSize: '1.05rem',
+  background: 'linear-gradient(180deg,#5a3b1b,#2b1708)',
+  border: '1px solid rgba(230,185,70,0.18)',
+  borderRadius: 14,
+  color: '#FFF8E6',
   cursor: 'pointer',
-  margin: 8,
-  boxShadow: '0 8px 26px rgba(10,6,4,0.7)',
-  transition: 'transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease',
+  margin: 10,
+  boxShadow: '0 14px 40px rgba(5,3,2,0.75), inset 0 1px 0 rgba(255,255,255,0.02)',
+  transition: 'transform 140ms cubic-bezier(.2,.8,.2,1), box-shadow 140ms ease',
 };
 
 const textBoxStyle = {
@@ -400,12 +402,12 @@ const textBoxStyle = {
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'flex-start',
-  background: 'linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.003))',
-  color: '#E8E0C9',
+  background: 'linear-gradient(180deg, rgba(10,8,6,0.6), rgba(4,3,2,0.6))',
+  color: '#EDE6CF',
   textAlign: 'center',
-  borderRadius: 18,
+  borderRadius: 16,
   border: '1px solid rgba(255,255,255,0.02)',
-  backdropFilter: 'blur(4px)',
+  boxShadow: '0 24px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.02)',
 };
 
 const exitStyle = {
@@ -425,19 +427,32 @@ const exitStyle = {
 
 const bossButtonBar = {
   position: 'fixed',
-  bottom: 24,
+  // lift buttons above phone bottom bars; use env() when available with a fallback
+  bottom: 'calc(env(safe-area-inset-bottom, 0px) + 56px)',
   left: 0,
   right: 0,
   display: 'flex',
   justifyContent: 'center',
-  gap: 16,
+  gap: 18,
+  zIndex: 60,
 };
 
 // Small reusable card style used for grouped controls (parchment/altar feel)
 const cardStyle = {
-  background: 'linear-gradient(180deg, rgba(48,32,22,0.72), rgba(18,12,8,0.72))',
-  border: '1px solid rgba(213,169,62,0.08)',
-  padding: 18,
+  background: 'linear-gradient(180deg, rgba(36,24,18,0.9), rgba(6,4,3,0.9))',
+  border: '1px solid rgba(213,169,62,0.12)',
+  padding: 22,
   borderRadius: 14,
-  boxShadow: '0 14px 40px rgba(2,6,23,0.65), inset 0 1px 0 rgba(255,255,255,0.02)',
+  boxShadow: '0 28px 100px rgba(0,0,0,0.85), inset 0 2px 0 rgba(255,255,255,0.02)',
+};
+
+// Utility for HP boxes
+const hpBox = {
+  display: 'inline-block',
+  padding: '8px 14px',
+  borderRadius: 8,
+  background: 'linear-gradient(180deg,#2b1f18,#14100d)',
+  color: '#F4E6C2',
+  border: '1px solid rgba(213,169,62,0.12)',
+  boxShadow: '0 8px 26px rgba(0,0,0,0.7)'
 };
