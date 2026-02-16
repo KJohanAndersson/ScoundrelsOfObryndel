@@ -190,97 +190,77 @@ export default function App() {
     );
   }
 
-// ------------ BOSS PHASE ----------------
-if (screen === 'boss') {
-  const bossDead = boss.head === 0 && boss.body === 0 && boss.shield === 0;
+  // ------------ BOSS PHASE ----------------
+  if (screen === 'boss') {
+    const bossDead = boss.head === 0 && boss.body === 0 && boss.shield === 0;
 
-  const flashDamage = (part) => {
-    const el = document.getElementById(part + 'Damage');
-    if (!el) return;
-    el.style.opacity = 1;
-    setTimeout(() => { el.style.opacity = 0; }, 1000);
-  };
+    const flashDamage = (part) => {
+      const el = document.getElementById(part + 'Damage');
+      if (!el) return;
+      el.style.opacity = 1;
+      setTimeout(() => { el.style.opacity = 0; }, 1000);
+    };
 
-  const handleDamage = (part) => {
-    damageBoss(part);
-    flashDamage(part);
-  };
+    const handleDamage = (part) => {
+      damageBoss(part);
+      flashDamage(part);
+    };
 
-  return (
-    <div style={textBoxStyle}>
-      <ExitButton onClick={resetGame} />
-      <h2 style={{ color: '#FFD700', marginBottom: 10 }}>ACT 3: FINAL BOSS</h2>
+    return (
+      <div style={textBoxStyle}>
+        <ExitButton onClick={resetGame} />
+        <h2 style={{ color: '#FFD700', marginBottom: 10 }}>ACT 3: FINAL BOSS</h2>
 
-      {bossDead ? (
-        <>
-          <h2>Victory!</h2>
-          <button style={buttonStyle} onClick={resetGame}>Main Menu</button>
-        </>
-      ) : (
-        <>
-          {/* Boss Sprite Container */}
-          <div
-            style={{
-              position: 'relative',
-              width: 250,
-              height: 250,
-              marginBottom: 20, // push text below
-            }}
-          >
-            {boss.body > 0 && (
-              <>
-                <img src={bossBody} style={layerStyle} alt="body" />
-                <img
-                  id="bodyDamage"
-                  src={bossBodyDamage}
-                  style={{ ...layerStyle, opacity: 0 }}
-                  alt="body damage"
-                />
-              </>
-            )}
-            {boss.shield > 0 && (
-              <>
-                <img src={bossShield} style={layerStyle} alt="shield" />
-                <img
-                  id="shieldDamage"
-                  src={bossShieldDamage}
-                  style={{ ...layerStyle, opacity: 0 }}
-                  alt="shield damage"
-                />
-              </>
-            )}
-            {boss.head > 0 && (
-              <>
-                <img src={bossHead} style={layerStyle} alt="head" />
-                <img
-                  id="headDamage"
-                  src={bossHeadDamage}
-                  style={{ ...layerStyle, opacity: 0 }}
-                  alt="head damage"
-                />
-              </>
-            )}
-          </div>
+        {bossDead ? (
+          <>
+            <h2>Victory!</h2>
+            <button style={buttonStyle} onClick={resetGame}>Main Menu</button>
+          </>
+        ) : (
+          <>
+            {/* Boss Sprite Container */}
+            <div style={{ position: 'relative', width: 250, height: 250, marginBottom: 20 }}>
+              {/* Body */}
+              {boss.body > 0 && (
+                <>
+                  <img src={bossBody} style={{ width: '100%', zIndex: 1 }} alt="body" />
+                  <img id="bodyDamage" src={bossBodyDamage} style={{ width: '100%', zIndex: 2, position: 'absolute', top: 0, left: 0, opacity: 0 }} alt="body damage" />
+                </>
+              )}
+              {/* Shield */}
+              {boss.shield > 0 && (
+                <>
+                  <img src={bossShield} style={{ width: '100%', zIndex: 3 }} alt="shield" />
+                  <img id="shieldDamage" src={bossShieldDamage} style={{ width: '100%', zIndex: 4, position: 'absolute', top: 0, left: 0, opacity: 0 }} alt="shield damage" />
+                </>
+              )}
+              {/* Head */}
+              {boss.head > 0 && (
+                <>
+                  <img src={bossHead} style={{ width: '100%', zIndex: 5 }} alt="head" />
+                  <img id="headDamage" src={bossHeadDamage} style={{ width: '100%', zIndex: 6, position: 'absolute', top: 0, left: 0, opacity: 0 }} alt="head damage" />
+                </>
+              )}
+            </div>
 
-          {/* HP Text Below Sprite */}
-          <div style={{ marginBottom: 30 }}>
-            <p>Head HP: {boss.head}</p>
-            <p>Body HP: {boss.body}</p>
-            <p>Shield HP: {boss.shield}</p>
-          </div>
+            {/* HP Text */}
+            <div style={{ textAlign: 'center', marginBottom: 30 }}>
+              <p>Head HP: {boss.head}</p>
+              <p>Body HP: {boss.body}</p>
+              <p>Shield HP: {boss.shield}</p>
+            </div>
 
-          {/* Damage Buttons */}
-          <div style={bossButtonBar}>
-            <button style={buttonStyle} onClick={() => handleDamage('head')}>Hit Head</button>
-            <button style={buttonStyle} onClick={() => handleDamage('body')}>Hit Body</button>
-            <button style={buttonStyle} onClick={() => handleDamage('shield')}>Hit Shield</button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
+            {/* Buttons */}
+            <div style={bossButtonBar}>
+              <button style={buttonStyle} onClick={() => handleDamage('head')}>Hit Head</button>
+              <button style={buttonStyle} onClick={() => handleDamage('body')}>Hit Body</button>
+              <button style={buttonStyle} onClick={() => handleDamage('shield')}>Hit Shield</button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
 
   // ------------ GAME ----------------
   if (screen === 'game') {
@@ -341,7 +321,7 @@ const textBoxStyle = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: 'center',
+  justifyContent: 'flex-start',
   background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
   color: '#F4E4C1',
   textAlign: 'center',
