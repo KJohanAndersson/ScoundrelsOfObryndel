@@ -116,8 +116,19 @@ export default function App() {
     setCharacters(newChars);
     if (currentPlayer < playerCount - 1) {
       setCurrentPlayer(currentPlayer + 1);
+    } else {
+      setCurrentPlayer(0);
+      setRoundPhase('scanQR');
     }
   };
+
+  useEffect(() => {
+    if (screen === 'game') {
+      setCharacters(Array(playerCount).fill(null));
+      setCurrentPlayer(0);
+      setRoundPhase('selectCharacter');
+    }
+  }, [screen, playerCount]);
 
   const resetGame = () => {
     stopCamera();
@@ -265,6 +276,40 @@ export default function App() {
 
         <video ref={videoRef} style={{ display: 'none' }} />
         <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+        {roundPhase === 'selectCharacter' && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <p style={{ marginBottom: 10 }}>Choose a character for Player {currentPlayer + 1}:</p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {availableCharacters.map((char) => {
+                const taken = characters.includes(char);
+                return (
+                  <button
+                    key={char}
+                    onClick={() => !taken && selectCharacter(char)}
+                    disabled={taken}
+                    style={{
+                      ...buttonStyle,
+                      opacity: taken ? 0.5 : 1,
+                      cursor: taken ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {char}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ marginTop: 20 }}>
+              <p>Selected:</p>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                {characters.map((c, i) => (
+                  <div key={i} style={{ minWidth: 90 }}>{c || `Player ${i + 1}`}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {!cameraStarted && roundPhase === 'scanQR' && (
           <button style={buttonStyle} onClick={startCamera}>Scan QR</button>
