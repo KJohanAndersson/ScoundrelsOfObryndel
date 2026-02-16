@@ -365,61 +365,62 @@ const menuStyle = {
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'linear-gradient(180deg, #0f1724 0%, #071028 100%)',
-  fontFamily: "Inter, Roboto, -apple-system, 'Segoe UI', system-ui, 'Helvetica Neue', Arial",
-  padding: 20,
+  background: 'radial-gradient(1200px 600px at 10% 10%, rgba(80,40,20,0.06), transparent), linear-gradient(180deg, #060507 0%, #06111a 100%)',
+  fontFamily: "'Cinzel', 'Merriweather', Georgia, serif",
+  padding: 28,
 };
 
 const titleStyle = {
   fontSize: '3rem',
-  color: '#FFF',
-  marginBottom: 24,
-  letterSpacing: 2,
-  textShadow: '0 6px 18px rgba(0,0,0,0.6)',
+  color: '#EFD88B',
+  marginBottom: 18,
+  letterSpacing: 3,
+  textShadow: '0 10px 30px rgba(0,0,0,0.7), 0 0 12px rgba(238,203,120,0.06) inset',
 };
 
 const buttonStyle = {
   padding: '12px 20px',
   fontSize: '1rem',
-  background: 'linear-gradient(180deg, #44566e, #2c3e50)',
-  border: '1px solid rgba(255,255,255,0.06)',
+  background: 'linear-gradient(180deg,#3b1f12,#24100a)',
+  border: '1px solid rgba(213,169,62,0.12)',
   borderRadius: 12,
-  color: '#F4F7FA',
+  color: '#F7EFD6',
   cursor: 'pointer',
   margin: 8,
-  boxShadow: '0 6px 20px rgba(2,6,23,0.6)',
-  transition: 'transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease',
+  boxShadow: '0 8px 26px rgba(10,6,4,0.7)',
+  transition: 'transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease',
 };
 
 const textBoxStyle = {
   width: '100%',
-  maxWidth: 920,
+  maxWidth: 980,
   minHeight: '100vh',
-  padding: 32,
+  padding: 36,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'flex-start',
-  background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))',
-  color: '#E8EEF5',
+  background: 'linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.003))',
+  color: '#E8E0C9',
   textAlign: 'center',
-  borderRadius: 16,
-  boxShadow: '0 8px 40px rgba(2,6,23,0.6)',
+  borderRadius: 18,
+  border: '1px solid rgba(255,255,255,0.02)',
+  backdropFilter: 'blur(4px)',
 };
 
 const exitStyle = {
   position: 'fixed',
   top: 18,
   left: 18,
-  width: 40,
-  height: 40,
+  width: 44,
+  height: 44,
   borderRadius: 10,
-  background: 'rgba(255,255,255,0.06)',
-  color: '#FFF',
+  background: 'linear-gradient(180deg, rgba(255,235,180,0.04), rgba(0,0,0,0.2))',
+  color: '#EFD88B',
   fontSize: 20,
   cursor: 'pointer',
-  border: 'none',
-  boxShadow: '0 4px 12px rgba(2,6,23,0.5)',
+  border: '1px solid rgba(213,169,62,0.12)',
+  boxShadow: '0 6px 18px rgba(2,6,23,0.6)',
 };
 
 const bossButtonBar = {
@@ -432,10 +433,11 @@ const bossButtonBar = {
   gap: 16,
 };
 
-// Small reusable card style used for grouped controls
+// Small reusable card style used for grouped controls (parchment/altar feel)
 const cardStyle = {
-  background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))',
+  background: 'linear-gradient(180deg, rgba(48,32,22,0.72), rgba(18,12,8,0.72))',
+  border: '1px solid rgba(213,169,62,0.08)',
   padding: 18,
-  borderRadius: 12,
-  boxShadow: '0 8px 24px rgba(2,6,23,0.5)',
+  borderRadius: 14,
+  boxShadow: '0 14px 40px rgba(2,6,23,0.65), inset 0 1px 0 rgba(255,255,255,0.02)',
 };
