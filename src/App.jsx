@@ -96,9 +96,13 @@ export default function App() {
           // Handle event tiles 1..29
           if (num >= 1 && num <= 29) {
             const targetPlayer = pendingScanPlayer != null ? pendingScanPlayer : currentPlayer;
-            handleTileEvent(num, targetPlayer);
-            // speak the scan result after handleTileEvent sets `qrData`
-            setTimeout(() => { if (qrData) speakText(qrData); }, 120);
+            const eventMsg = handleTileEvent(num, targetPlayer);
+            
+            // Set message and speak immediately
+            if (eventMsg) {
+              setQrData(eventMsg);
+              speakText(eventMsg);
+            }
 
             // advance currentPlayer after handling
             if (targetPlayer < playerCount - 1) {
@@ -180,8 +184,8 @@ export default function App() {
   }, [roundsCompleted, screen]);
 
   const handleTileEvent = (tileNum, playerIndex) => {
-    // tiles 1..29 produce events
-    if (tileNum < 1 || tileNum > 29) return;
+    // tiles 1..29 produce events; returns the event message string
+    if (tileNum < 1 || tileNum > 29) return null;
 
     const zone = Math.min(2, act); // zone corresponds to act 1 or 2
     // danger chance: act1 = 25%, act2 = 50%
@@ -201,11 +205,11 @@ export default function App() {
       return copy;
     });
 
-    // set a message for the scan result
+    // return the message for the scan result (to be spoken immediately)
     if (isDanger) {
-      setQrData(`Player ${playerIndex + 1} triggered a trap and lost 1 HP.`);
+      return `Player ${playerIndex + 1} triggered a trap and lost 1 HP.`;
     } else {
-      setQrData(`Player ${playerIndex + 1} found a treasure from Zone ${zone} and takes it from the item bag.`);
+      return `Player ${playerIndex + 1} found a treasure from Zone ${zone} and takes it from the item bag.`;
     }
   };
 
@@ -231,12 +235,14 @@ export default function App() {
     // Use ElevenLabs API for fantasy-like English voice
     const apiKey = process.env.REACT_APP_ELEVENLABS_API_KEY;
     if (!apiKey) {
-      console.warn('ElevenLabs API key not configured. Skipping TTS.');
+      console.warn('ElevenLabs API key not configured (REACT_APP_ELEVENLABS_API_KEY). Skipping TTS. Restart dev server after adding .env.local');
       return;
     }
 
     const voiceId = 'nPczCjzI2devNBz1zQrH'; // Glados (fantasy-ish) voice ID
     const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+
+    console.log('TTS: Speaking:', text);
 
     fetch(url, {
       method: 'POST',
@@ -253,7 +259,12 @@ export default function App() {
         }
       })
     })
-      .then(res => res.arrayBuffer())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`ElevenLabs API error: ${res.status} ${res.statusText}`);
+        }
+        return res.arrayBuffer();
+      })
       .then(arrayBuffer => {
         const audio = new Audio();
         const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
