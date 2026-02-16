@@ -193,22 +193,39 @@ export default function App() {
     return (
       <div style={textBoxStyle}>
         <ExitButton onClick={resetGame} />
-        <h2 style={{ color: '#FFD700' }}>Player {currentPlayer + 1}: Choose Your Character</h2>
-        <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {remainingChars.map(c => (
-            <button
-              key={c.name}
-              style={{
-                ...buttonStyle,
-                opacity: c.disabled ? 0.5 : 1,
-                cursor: c.disabled ? 'not-allowed' : 'pointer'
-              }}
-              disabled={c.disabled}
-              onClick={() => selectCharacter(c.name)}
-            >
-              {c.name}
-            </button>
-          ))}
+        <div style={{ ...cardStyle, width: '100%', maxWidth: 720, padding: 28 }}>
+          <h2 style={{ color: '#D9B65A', marginTop: 0, fontFamily: "'Merriweather', Georgia, serif" }}>Player {currentPlayer + 1}: Choose Your Champion</h2>
+          <p style={{ color: '#cfc1a3', marginTop: 6 }}>Each class can only be chosen once.</p>
+
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginTop: 18 }}>
+            {remainingChars.map(c => (
+              <div key={c.name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <button
+                  style={{
+                    ...buttonStyle,
+                    minWidth: 140,
+                    opacity: c.disabled ? 0.45 : 1,
+                    cursor: c.disabled ? 'not-allowed' : 'pointer',
+                    background: c.disabled ? 'linear-gradient(180deg,#2a2a2a,#1b1714)' : 'linear-gradient(180deg,#3a1f1f,#2b1313)',
+                    border: c.disabled ? '1px solid rgba(255,255,255,0.03)' : '1px solid rgba(213,169,62,0.9)'
+                  }}
+                  disabled={c.disabled}
+                  onClick={() => selectCharacter(c.name)}
+                >
+                  {c.name}
+                </button>
+                <div style={{ marginTop: 8, color: '#cfc1a3', fontSize: 12 }}>{c.disabled ? 'Taken' : 'Available'}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 20, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {characters.map((c, i) => (
+              <div key={i} style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(0,0,0,0.35)', color: '#e6d8ad', minWidth: 120 }}>
+                {c ? `${c} — Player ${i + 1}` : `Player ${i + 1} — ?`}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -242,8 +259,9 @@ export default function App() {
           </>
         ) : (
           <>
-            {/* Boss Sprite Container: centered layers with fixed stacking */}
-            <div style={{ position: 'relative', width: 260, height: 300, marginBottom: 20 }}>
+            {/* Boss Sprite Container: centered layers with altar styling */}
+            <div style={{ ...cardStyle, width: 320, height: 340, margin: '0 auto 18px', padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ position: 'relative', width: '100%', height: '100%' }}>
               {/* Body */}
               {boss.body > 0 && (
                 <>
@@ -292,6 +310,7 @@ export default function App() {
                   />
                 </>
               )}
+              </div>
             </div>
 
             {/* HP Text */}
