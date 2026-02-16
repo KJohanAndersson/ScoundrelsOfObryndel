@@ -226,32 +226,41 @@ export default function App() {
     setBoss(prev => ({ ...prev, [part]: Math.max(prev[part] - 1, 0) }));
   };
 
-  // ------------ SPEECH (mystical AI-voice) ----------------
+  // ------------ SPEECH (ElevenLabs fantasy AI voice) ----------------
   const speakText = (text) => {
-    if (!window || !window.speechSynthesis) return;
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 0.95;
-    utter.pitch = 0.8;
-    utter.volume = 1;
+    // Use ElevenLabs API for fantasy-like English voice
+    const apiKey = process.env.REACT_APP_ELEVENLABS_API_KEY;
+    if (!apiKey) {
+      console.warn('ElevenLabs API key not configured. Skipping TTS.');
+      return;
+    }
 
-    const pickVoice = () => {
-      const voices = window.speechSynthesis.getVoices();
-      if (!voices || voices.length === 0) return null;
-      // prefer an English voice with a slightly androgynous/timbre — fallback gracefully
-      const preferred = voices.find(v => /en-?us|en-?gb|english/i.test(v.lang) && /Google|Microsoft|Azure|Samantha|Alloy/i.test(v.name));
-      if (preferred) return preferred;
-      const anyEn = voices.find(v => /en-?/.test(v.lang));
-      return anyEn || voices[0];
-    };
+    const voiceId = 'nPczCjzI2devNBz1zQrH'; // Glados (fantasy-ish) voice ID
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
 
-    const voice = pickVoice();
-    if (voice) utter.voice = voice;
-
-    // Add a small mystical prefix reverb by slightly delaying and using a low pitch
-    try {
-      window.speechSynthesis.cancel();
-    } catch (e) {}
-    window.speechSynthesis.speak(utter);
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'xi-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: 'eleven_monolingual_v1',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75
+        }
+      })
+    })
+      .then(res => res.arrayBuffer())
+      .then(arrayBuffer => {
+        const audio = new Audio();
+        const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+        audio.src = URL.createObjectURL(blob);
+        audio.play().catch(e => console.error('Audio play error:', e));
+      })
+      .catch(e => console.error('ElevenLabs TTS error:', e));
   };
 
   // ------------ EXIT BUTTON ----------------
@@ -458,7 +467,7 @@ export default function App() {
               <h3 style={{ marginTop: 0, color: '#EFD88B' }}>Event</h3>
               <p style={{ color: '#EDE6CF' }}>{qrData}</p>
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-                <button onClick={() => { setQrData(''); try { window.speechSynthesis.cancel(); } catch(e){} }} style={buttonStyle}>Continue</button>
+                <button onClick={() => { setQrData(''); }} style={buttonStyle}>Continue</button>
               </div>
             </div>
           </div>
