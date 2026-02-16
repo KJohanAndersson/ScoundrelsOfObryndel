@@ -2,56 +2,34 @@ import React, { useState, useEffect, useRef } from 'react';
 import jsQR from 'jsqr';
 
 export default function App() {
-  const [screen, setScreen] = useState('main'); // main | intro | instructions | game | gameover
+  const [screen, setScreen] = useState('main'); // main | intro | instructions | game | gameover | boss
   const [playerCount, setPlayerCount] = useState(2);
   const [currentPlayer, setCurrentPlayer] = useState(0);
   const [characters, setCharacters] = useState([]);
   const [scannedCards, setScannedCards] = useState([]);
-  const [roundPhase, setRoundPhase] = useState('playerTurn'); // playerTurn | scanQR
+  const [roundPhase, setRoundPhase] = useState('playerTurn');
   const [cameraStarted, setCameraStarted] = useState(false);
   const [qrData, setQrData] = useState('');
   const [cameraError, setCameraError] = useState('');
 
+  const [boss, setBoss] = useState({
+    head: 5,
+    body: 5,
+    shield: 5,
+  });
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
+  const streamRef = useRef(null);
 
   const availableCharacters = ['Goblin', 'Troll', 'Cyclops', 'Witch'];
 
   const tileEvents = {
-    'Tile-001': 'The world shifts beneath your feet. All players must move one tile in a random direction.',
-    'Tile-002': 'You feel a strange pull from the earth. All players are teleported to the nearest water tile.',
-    'Tile-003': 'A mystical barrier blocks your path. Find a key or spend 2 action points to break through.',
-    'Tile-004': 'Ancient runes glow with power. One player of your choice gains +1 action point this turn.',
-    'Tile-005': 'The ground trembles violently. All players lose 1 action point this turn.',
-    'Tile-006': 'A healing spring appears. All players restore 2 vitality.',
-    'Tile-007': 'Shadow creatures emerge from the darkness. All players must spend 1 action point to escape or lose 1 vitality.',
-    'Tile-008': 'A merchant appears offering mysterious items. Each player may spend 1 action point to draw a treasure.',
-    'Tile-009': 'The path splits and reforms. Each player must choose a new direction and move one tile.',
-    'Tile-010': 'Thunder crashes across the land. Remove one nearby barrier tile.',
-    'Tile-011': 'A friendly spirit offers guidance. One player may move to any adjacent tile for free.',
-    'Tile-012': 'Poisonous gas fills the air. All players must move two tiles away or lose 2 vitality.',
-    'Tile-013': 'You discover an ancient artifact half-buried in the soil. The current player gains one treasure.',
-    'Tile-014': 'The temperature drops suddenly. All players lose 1 action point unless they spend 1 vitality.',
-    'Tile-015': 'A puzzle door blocks the way forward. Solve it by spending 2 action points or remain in place.',
-    'Tile-016': 'Wild magic surges through the area. All players are teleported to random adjacent tiles.',
-    'Tile-017': 'You find a hidden cache of supplies. Each player gains 1 vitality.',
-    'Tile-018': 'The spirits of Obryndel cry out in anguish. All players must move one tile toward the nearest spirit marker.',
-    'Tile-019': 'A powerful guardian stands in your way. The current player must spend 2 action points or retreat one tile.',
-    'Tile-020': 'The barrier fragment pulses with energy. The current player gains a barrier shard treasure.',
-    'Tile-021': 'Illusions cloud your vision. All players swap positions with the nearest player.',
-    'Tile-022': 'A safe haven appears among the ruins. All players may choose to stay and restore 2 vitality.',
-    'Tile-023': 'The path behind you crumbles away. Remove the tile you just left from the board.',
-    'Tile-024': "You hear Baron Thobrick's laughter echoing. All players lose 1 vitality.",
-    'Tile-025': 'Time fractures around you. All players swap one treasure with the player to their left.',
-    'Tile-026': 'The ground cracks open, revealing hidden riches. The current player gains one treasure, then the tile collapses and is removed.',
-    'Tile-027': 'Reality twists for a moment. All players must move one tile toward the nearest unexplored tile.',
-    'Tile-028': 'A rift in time opens before you. A gateway to the vulcano has appeared before you',
-    'Tile-029': 'A rift in time opens before you. A gateway to the castle has appeared before you',
-    'Tile-030': 'A rift in time opens before you. A gateway to the forest has appeared before you',
+    'Tile-030': 'A rift opens. The final guardian emerges!',
   };
 
-  const maxTiles = 15; // Game over efter 15 QR-koder
+  const maxTiles = 15;
 
   // ------------ CAMERA FUNCTIONS ----------------
   const startCamera = async () => {
@@ -60,14 +38,22 @@ export default function App() {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' },
       });
+      streamRef.current = stream;
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
       setCameraStarted(true);
       setRoundPhase('scanQR');
     } catch (err) {
-      console.error('Camera error:', err);
       setCameraError('Camera error: ' + err.message);
     }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCameraStarted(false);
   };
 
   const scanQRCodeLoop = () => {
@@ -90,7 +76,14 @@ export default function App() {
         if (!scannedCards.includes(code.data)) {
           setQrData(code.data);
           setScannedCards((prev) => [...prev, code.data]);
-          setRoundPhase('playerTurn'); // tillbaka till nästa spelare
+
+          stopCamera();
+
+          if (code.data === 'Tile-030') {
+            setScreen('boss');
+          } else {
+            setRoundPhase('playerTurn');
+          }
         }
       }
     }
@@ -100,7 +93,7 @@ export default function App() {
 
   useEffect(() => {
     if (roundPhase === 'scanQR' && cameraStarted) {
-      scanQRCodeLoop();
+      animationRef.current = requestAnimationFrame(scanQRCodeLoop);
     }
 
     return () => {
@@ -113,7 +106,6 @@ export default function App() {
     if (currentPlayer < playerCount - 1) {
       setCurrentPlayer(currentPlayer + 1);
     } else {
-      // Alla spelare har spelat → QR-fas
       setCurrentPlayer(0);
       setRoundPhase('scanQR');
       setQrData('');
@@ -130,6 +122,7 @@ export default function App() {
   };
 
   const resetGame = () => {
+    stopCamera();
     setScreen('main');
     setPlayerCount(2);
     setCurrentPlayer(0);
@@ -137,7 +130,15 @@ export default function App() {
     setScannedCards([]);
     setRoundPhase('playerTurn');
     setQrData('');
-    setCameraStarted(false);
+    setBoss({ head: 5, body: 5, shield: 5 });
+  };
+
+  // ------------ BOSS DAMAGE ----------------
+  const damageBoss = (part) => {
+    setBoss((prev) => ({
+      ...prev,
+      [part]: Math.max(prev[part] - 1, 0),
+    }));
   };
 
   // ------------ EXIT BUTTON ----------------
@@ -179,32 +180,7 @@ export default function App() {
   if (screen === 'intro') {
     return (
       <div style={textBoxStyle}>
-        <h2 style={{ color: '#FFD700' }}>Welcome to Obryndel!</h2>
-        <p>
-          Baron Thobrick shattered the magical barrier. Gather the fragments at the Ogre Shrine.
-        </p>
-
-        <div style={{ marginTop: 30, marginBottom: 30 }}>
-          <label style={{ color: '#F4E4C1', fontSize: '1.2rem', marginBottom: 10, display: 'block' }}>
-            Number of Players: {playerCount}
-          </label>
-          <input
-            type="range"
-            min="1"
-            max="4"
-            value={playerCount}
-            onChange={(e) => setPlayerCount(parseInt(e.target.value))}
-            style={{
-              width: '80%',
-              maxWidth: 400,
-              height: 10,
-              borderRadius: 5,
-              background: '#8B4513',
-              accentColor: '#FFD700',
-            }}
-          />
-        </div>
-
+        <h2>Welcome to Obryndel!</h2>
         <button style={buttonStyle} onClick={() => setScreen('instructions')}>
           Continue
         </button>
@@ -217,9 +193,7 @@ export default function App() {
     return (
       <div style={textBoxStyle}>
         <ExitButton onClick={() => setScreen('main')} />
-        <p>
-          Shuffle the QR-cards and place them in the holder. Each player has two action points per turn.
-        </p>
+        <p>Each player has two actions. Scan tiles to progress.</p>
         <button style={buttonStyle} onClick={() => setScreen('game')}>
           Begin Journey
         </button>
@@ -227,79 +201,93 @@ export default function App() {
     );
   }
 
-  // ------------ GAME OVER ----------------
-  if (scannedCards.length >= maxTiles) {
+  // ------------ BOSS PHASE ----------------
+  if (screen === 'boss') {
+    const bossDead =
+      boss.head === 0 && boss.body === 0 && boss.shield === 0;
+
     return (
       <div style={textBoxStyle}>
-        <h2 style={{ color: '#FFD700' }}>GAME OVER!</h2>
-        <p>You have collected all fragments!</p>
-        <button style={buttonStyle} onClick={resetGame}>Main Menu</button>
+        <ExitButton onClick={resetGame} />
+
+        <h2 style={{ color: '#FFD700' }}>ACT 3: FINAL BOSS</h2>
+
+        {bossDead ? (
+          <>
+            <h2>Victory!</h2>
+            <button style={buttonStyle} onClick={resetGame}>
+              Main Menu
+            </button>
+          </>
+        ) : (
+          <>
+            {/* Boss sprite */}
+            <div style={{ position: 'relative', width: 250, height: 250 }}>
+              {boss.body > 0 && (
+                <img src="/assets/boss-body.png" style={layerStyle} alt="body" />
+              )}
+              {boss.shield > 0 && (
+                <img src="/assets/boss-shield.png" style={layerStyle} alt="shield" />
+              )}
+              {boss.head > 0 && (
+                <img src="/assets/boss-head.png" style={layerStyle} alt="head" />
+              )}
+            </div>
+
+            {/* HP display */}
+            <div style={{ marginTop: 20 }}>
+              <p>Head HP: {boss.head}</p>
+              <p>Body HP: {boss.body}</p>
+              <p>Shield HP: {boss.shield}</p>
+            </div>
+
+            {/* Bottom buttons */}
+            <div style={bossButtonBar}>
+              <button style={buttonStyle} onClick={() => damageBoss('head')}>
+                Hit Head
+              </button>
+              <button style={buttonStyle} onClick={() => damageBoss('body')}>
+                Hit Body
+              </button>
+              <button style={buttonStyle} onClick={() => damageBoss('shield')}>
+                Hit Shield
+              </button>
+            </div>
+          </>
+        )}
       </div>
     );
   }
 
   // ------------ GAME ----------------
   if (screen === 'game') {
-    // Character selection
-    if (characters.length < playerCount) {
-      const availableChars = availableCharacters.filter(c => !characters.includes(c));
-      return (
-        <div style={textBoxStyle}>
-          <ExitButton onClick={resetGame} />
-          <h2>Player {currentPlayer + 1}: Choose Character</h2>
-          <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
-            {availableChars.map((char) => (
-              <button key={char} style={buttonStyle} onClick={() => selectCharacter(char)}>
-                {char}
-              </button>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    // Main game loop
     return (
       <div style={textBoxStyle}>
         <ExitButton onClick={resetGame} />
-        <h2 style={{ color: '#FFD700' }}>Player {currentPlayer + 1}: {characters[currentPlayer]}</h2>
-        <p>Scanned Cards: {scannedCards.length}/{maxTiles}</p>
+        <h2>Player {currentPlayer + 1}</h2>
 
-        {/* Camera + canvas */}
         <video ref={videoRef} style={{ display: 'none' }} />
         <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-        {/* Camera start button */}
         {!cameraStarted && roundPhase === 'scanQR' && (
           <button style={buttonStyle} onClick={startCamera}>
-            Start Camera & Scan QR
+            Scan QR
           </button>
         )}
 
-        {/* QR result */}
-        {qrData && (
-          <div style={{ marginTop: 20, padding: 20, border: '2px solid #CD853F', borderRadius: 10, background: '#8B4513' }}>
-            <h3 style={{ color: '#FFD700' }}>{qrData}</h3>
-            <p style={{ color: '#F4E4C1' }}>{tileEvents[qrData]}</p>
-          </div>
-        )}
-
-        {/* Next player button */}
         {roundPhase === 'playerTurn' && (
           <button style={buttonStyle} onClick={nextPlayer}>
             End Turn
           </button>
         )}
-
-        {cameraError && <p style={{ color: 'red' }}>{cameraError}</p>}
       </div>
     );
   }
 
-  return null; // fallback
+  return null;
 }
 
-// ------------- STYLES ----------------
+// ------------ STYLES ----------------
 const menuStyle = {
   minHeight: '100vh',
   display: 'flex',
@@ -311,27 +299,20 @@ const menuStyle = {
 };
 
 const titleStyle = {
-  fontSize: 'clamp(2rem, 8vw, 4rem)',
+  fontSize: '3rem',
   color: '#F4E4C1',
-  textAlign: 'center',
-  marginBottom: 60,
-  textShadow: '3px 3px 6px rgba(0,0,0,0.7)',
-  letterSpacing: 3,
+  marginBottom: 40,
 };
 
 const buttonStyle = {
-  padding: '20px 60px',
-  fontSize: '1.5rem',
-  background: 'linear-gradient(135deg, #8B4513, #A0522D)',
-  border: '3px solid #CD853F',
+  padding: '15px 30px',
+  fontSize: '1.2rem',
+  background: '#8B4513',
+  border: '2px solid #CD853F',
   borderRadius: 10,
   color: '#F4E4C1',
   cursor: 'pointer',
-  fontFamily: "'Cinzel', serif",
-  fontWeight: 'bold',
-  textTransform: 'uppercase',
-  letterSpacing: 2,
-  marginTop: 20,
+  margin: 10,
 };
 
 const textBoxStyle = {
@@ -342,7 +323,23 @@ const textBoxStyle = {
   alignItems: 'center',
   justifyContent: 'center',
   background: 'linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)',
-  fontFamily: "'Cinzel', serif",
-  textAlign: 'center',
   color: '#F4E4C1',
+  textAlign: 'center',
+};
+
+const layerStyle = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+};
+
+const bossButtonBar = {
+  position: 'fixed',
+  bottom: 20,
+  left: 0,
+  right: 0,
+  display: 'flex',
+  justifyContent: 'center',
+  gap: 20,
 };
