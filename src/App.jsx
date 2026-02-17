@@ -37,7 +37,7 @@ export default function App() {
   const shardZones = [
     'Village of Obryndel',
     'Forest of Travesy',
-    'Mountain of Embers',
+    'Charstone Alpines',
     'Mudbrik Castle',
   ];
   const shardOrderNames = ['First', 'Second', 'Third', 'Fourth'];
