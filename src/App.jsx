@@ -499,7 +499,7 @@ export default function App() {
             </div>
 
             {/* HP Text */}
-            <div style={{ textAlign: 'center', marginBottom: 30 }}>
+            <div style={{ textAlign: 'center', marginBottom: 10 }}>
               <p>Head HP: {boss.head}</p>
               <p>Body HP: {boss.body}</p>
               <p>Shield HP: {boss.shield}</p>
