@@ -1,69 +1,45 @@
 export default async function handler(req, res) {
-  if (req.method === 'GET') {
-    const hasKey = Boolean(process.env.ELEVENLABS_API_KEY);
-    const voiceId = process.env.ELEVENLABS_VOICE_ID || 'zYcjlYFOd3taleS0gkk3';
-    return res.status(200).json({
-      ok: true,
-      service: 'tts',
-      elevenlabs_configured: hasKey,
-      voice_id: voiceId,
-    });
-  }
-
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'GET, POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.ELEVENLABS_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Server is missing ELEVENLABS_API_KEY' });
-  }
-
-  const text = req.body?.text;
-  if (!text || typeof text !== 'string') {
-    return res.status(400).json({ error: 'Missing or invalid "text"' });
-  }
-
-  // Prefer env-configured voice, otherwise use your current library voice.
-  const voiceId = process.env.ELEVENLABS_VOICE_ID || 'zYcjlYFOd3taleS0gkk3';
-  const elevenUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
-
   try {
-    const elevenRes = await fetch(elevenUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'xi-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        text,
-        model_id: 'eleven_monolingual_v1',
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75
-        }
-      }),
-    });
+    const { text } = req.body;
 
-    if (!elevenRes.ok) {
-      const errorText = await elevenRes.text();
-      return res.status(elevenRes.status).json({
-        error: 'ElevenLabs request failed',
-        details: errorText,
-      });
+    const voiceId = process.env.VOICE_ID;
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+
+    if (!voiceId || !apiKey) {
+      return res.status(500).json({ error: 'Missing environment variables' });
     }
 
-    const arrayBuffer = await elevenRes.arrayBuffer();
-    const audioBuffer = Buffer.from(arrayBuffer);
+    const elevenRes = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+      {
+        method: 'POST',
+        headers: {
+          'xi-api-key': apiKey,
+          'Content-Type': 'application/json',
+          Accept: 'audio/mpeg',
+        },
+        body: JSON.stringify({
+          text,
+          model_id: 'eleven_multilingual_v2',
+        }),
+      }
+    );
+
+    if (!elevenRes.ok) {
+      const errText = await elevenRes.text();
+      return res.status(elevenRes.status).send(errText);
+    }
+
+    const audioBuffer = await elevenRes.arrayBuffer();
 
     res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).send(audioBuffer);
-  } catch (error) {
-    return res.status(500).json({
-      error: 'Unexpected server error',
-      details: error instanceof Error ? error.message : 'Unknown error',
-    });
+    res.send(Buffer.from(audioBuffer));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'TTS failed' });
   }
 }
