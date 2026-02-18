@@ -9,12 +9,93 @@ import bossHeadDamage from './assets/boss-head-damage.png';
 import bossBodyDamage from './assets/boss-body-damage.png';
 import bossShieldDamage from './assets/boss-shield-damage.png';
 
+// ─── Narration lines ───────────────────────────────────────────────────────────
+const NARRATION = {
+  intro:
+    "Baron Thobrick's quest to shatter the Mythical Crystal of the Ogre has been successful. " +
+    "Now that the Crystal has been shattered the magical barrier shielding the foul creatures of Obryndel is crumbling. " +
+    "Humankind may now live long in a world of peace, devoid of horrible creatures… " +
+    "Unless… " +
+    "You, Scoundrels of Obryndel! " +
+    "It's up to you to gather the four shards, forge them together once more and slay Thobrick! " +
+    "Choose the amount of scoundrels to proceed.",
+
+  charSelectOpen:
+    "Ah… I see… You dare challenge me? Scoundrels! One by one, show yourself to me!",
+
+  charSelectNudge1:
+    "Sigh… Are you daft? Pick a character card and present it to me.",
+
+  charSelectNudge2:
+    "Do I really have to spell it out for you? Pick a character and scan the QR-code…",
+
+  afterChar: [
+    null,
+    "Scoundrel number 2, present thy self before me!",
+    "Go on… scoundrel number 3.",
+    "Ah…. Finally… What might this last scoundrel be?",
+  ],
+
+  charScanned: {
+    'Character-001': "BAH! A Goblin?! I shall flatten ye with my boot.",
+    'Character-002': "Eugh…. A troll… So that's where that wretched stench was coming from…",
+    'Character-003': "Hah! A cyclops?! You look like a one eyed thumb…",
+    'Character-004': "Witch! I shall wack ye with your own broom!",
+  },
+
+  allCharsSelected:
+    "You really think you can stop me? Well then… Have at it!",
+
+  firstRound:
+    "Gah… Do I really have to explain everything for thee? " +
+    "You certainly are a sad excuse of a creature… " +
+    "Very well then… " +
+    "You! Scoundrel number one, this is your turn to take action. " +
+    "You may choose to move or use an item, of which you have none right at this very moment. " +
+    "You must take two actions during your round. " +
+    "After these are made you shall discard the frontmost card in the deck, which will determine what event will take place. " +
+    "After this, Scoundrel number two will go through the same procedure and so on… " +
+    "Good luck finding those wicked crystal shards, they appear at random throughout the realm! HA HA HA. " +
+    "Your silly little quest is most certainly going to fail. " +
+    "There is simply no chance for you mouth breathing rotten creatures to gather the four shards and forge them together at your cursed altar in your cursed village before the magic barrier is broken… " +
+    "Ta ta!",
+
+  itemFound:
+    "Oh? So you found yourself an item? Surely you will need all the help you can possibly find to even last a second against me! " +
+    "You may take an item from the bag.",
+
+  trapTriggered:
+    "You absolute fool! You have truly done it now! " +
+    "You have stepped right into my trap, draining one health point from you!",
+
+  bossEntrance:
+    "Scoundrels! You dimwitted sods! Foiling my work are we? " +
+    "Very well… I shall take care of you on a whim… " +
+    "I present to you… Me! Lord Baron Thobrick the first! Huzza! " +
+    "And now… You die.",
+
+  bossHeadZero:
+    "My head! My glorious head! …. Who needs a head anyways?",
+
+  bossBodyZero:
+    "What!? You've destroyed my body? My entire body? Shame on you…",
+
+  bossShieldZero:
+    "My shield! That was expensive! You shall pay for this!",
+
+  bossDefeated:
+    "Curse you, foul beasts! You've won this time… " +
+    "But know this, for every drop of blood spilled here, a thousand more will rise! " +
+    "With all my might I shall find a way to raise from my grave and vanquish your kind! " +
+    "Ugh… …I am dead now.",
+};
+
 export default function App() {
-  const [screen, setScreen] = useState('main'); // main | intro | characterSelect | game | boss
+  const [screen, setScreen] = useState('main');
   const [playerCount, setPlayerCount] = useState(2);
   const [currentPlayer, setCurrentPlayer] = useState(0);
   const [characters, setCharacters] = useState([]);
-  const [players, setPlayers] = useState([]); // { char, hp, items }
+  const [players, setPlayers] = useState([]);
   const [roundsCompleted, setRoundsCompleted] = useState(0);
   const [pendingScanPlayer, setPendingScanPlayer] = useState(null);
   const [act, setAct] = useState(1);
@@ -26,6 +107,7 @@ export default function App() {
   const [shardSchedule, setShardSchedule] = useState([]);
   const [nextShardIndex, setNextShardIndex] = useState(0);
   const [boss, setBoss] = useState({ head: 5, body: 5, shield: 5 });
+  const [bossDefeated, setBossDefeated] = useState(false);
 
   // Character selection camera state
   const [charCameraStarted, setCharCameraStarted] = useState(false);
@@ -44,6 +126,10 @@ export default function App() {
   const charAnimRef = useRef(null);
   const charStreamRef = useRef(null);
 
+  // Nudge timers
+  const nudge1Ref = useRef(null);
+  const nudge2Ref = useRef(null);
+
   const availableCharacters = ['Goblin', 'Troll', 'Cyclops', 'Witch'];
 
   const characterQRMap = {
@@ -60,8 +146,50 @@ export default function App() {
     'Mudbrik Castle',
   ];
   const shardOrderNames = ['First', 'Second', 'Third', 'Fourth'];
-  const maxTiles = 15;
 
+  // ─── Speech ────────────────────────────────────────────────────────────────
+  const speakWithBrowser = (text) => {
+    if (!('speechSynthesis' in window)) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const speakText = (text) => {
+    fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    })
+      .then(async res => {
+        if (!res.ok) throw new Error(`TTS error: ${res.status}`);
+        return res.arrayBuffer();
+      })
+      .then(buf => {
+        const blob = new Blob([buf], { type: 'audio/mpeg' });
+        const audio = new Audio(URL.createObjectURL(blob));
+        audio.play().catch(() => speakWithBrowser(text));
+      })
+      .catch(() => speakWithBrowser(text));
+  };
+
+  // ─── Nudge timers ──────────────────────────────────────────────────────────
+  const clearNudgeTimers = () => {
+    if (nudge1Ref.current) { clearTimeout(nudge1Ref.current); nudge1Ref.current = null; }
+    if (nudge2Ref.current) { clearTimeout(nudge2Ref.current); nudge2Ref.current = null; }
+  };
+
+  const startNudgeTimers = () => {
+    clearNudgeTimers();
+    nudge1Ref.current = setTimeout(() => {
+      speakText(NARRATION.charSelectNudge1);
+      nudge2Ref.current = setTimeout(() => {
+        speakText(NARRATION.charSelectNudge2);
+      }, 5000);
+    }, 5000);
+  };
+
+  // ─── Shard schedule ────────────────────────────────────────────────────────
   const shuffleArray = (items) => {
     const copy = [...items];
     for (let i = copy.length - 1; i > 0; i -= 1) {
@@ -89,7 +217,7 @@ export default function App() {
     return `${nextShard.orderName} shard appeared in ${nextShard.zone}.`;
   };
 
-  // ------------ GAME CAMERA ---------------- 
+  // ─── Game camera ───────────────────────────────────────────────────────────
   const startCamera = async () => {
     if (!videoRef.current) return;
     try {
@@ -108,7 +236,7 @@ export default function App() {
 
   const stopCamera = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     }
     setCameraStarted(false);
@@ -132,14 +260,16 @@ export default function App() {
           stopCamera();
           const parts = code.data.split('-');
           const num = parseInt(parts[1], 10);
+
           if (num === 30) {
-            const msg = 'Scoundrels! Forging that cursed artifact have you? I shall smite ye, for I am Thobrick the Glorious knight of the realm and this is my domain! Face me in combat if ye dare!';
+            const msg = NARRATION.bossEntrance;
             setQrData(msg);
-            try { speakText(msg); } catch (e) {}
+            speakText(msg);
             setScreen('boss');
             setAct(3);
             return;
           }
+
           if (num >= 1 && num <= 29) {
             const targetPlayer = pendingScanPlayer != null ? pendingScanPlayer : currentPlayer;
             const eventMsg = handleTileEvent(num, targetPlayer);
@@ -175,14 +305,14 @@ export default function App() {
     return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
   }, [roundPhase, cameraStarted]);
 
-  // ------------ CHARACTER CAMERA ---------------- 
+  // ─── Character camera ──────────────────────────────────────────────────────
   const startCharacterCamera = async () => {
     if (!charVideoRef.current) return;
     setCharCameraError('');
     setCharScanFeedback('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' }, // front-facing camera
+        video: { facingMode: 'user' },
       });
       charStreamRef.current = stream;
       charVideoRef.current.srcObject = stream;
@@ -219,9 +349,12 @@ export default function App() {
         if (alreadyPicked) {
           setCharScanFeedback(`${charName} is already taken! Try a different card.`);
         } else {
+          clearNudgeTimers();
+          // Speak character taunt, then after a pause speak the next player prompt
+          speakText(NARRATION.charScanned[code.data]);
           stopCharacterCamera();
           setCharScanFeedback('');
-          selectCharacter(charName);
+          selectCharacter(charName, code.data);
           return;
         }
       }
@@ -236,14 +369,23 @@ export default function App() {
     return () => { if (charAnimRef.current) cancelAnimationFrame(charAnimRef.current); };
   }, [charCameraStarted, characters]);
 
-  // Stop character camera when leaving that screen
+  // Stop char camera when leaving that screen
   useEffect(() => {
     if (screen !== 'characterSelect') {
       stopCharacterCamera();
+      clearNudgeTimers();
     }
   }, [screen]);
 
-  // ------------ PLAYER FUNCTIONS ---------------- 
+  // Speak opening narration when character select screen mounts for the first time
+  useEffect(() => {
+    if (screen === 'characterSelect') {
+      speakText(NARRATION.charSelectOpen);
+      startNudgeTimers();
+    }
+  }, [screen]);
+
+  // ─── Player / character functions ──────────────────────────────────────────
   const nextPlayer = () => {
     setPendingScanPlayer(currentPlayer);
     setRoundPhase('scanQR');
@@ -254,15 +396,29 @@ export default function App() {
     const newChars = [...characters];
     newChars[currentPlayer] = char;
     setCharacters(newChars);
-    if (currentPlayer < playerCount - 1) {
-      setCurrentPlayer(currentPlayer + 1);
+
+    const nextPlayerIndex = currentPlayer + 1;
+
+    if (nextPlayerIndex < playerCount) {
+      const promptLine = NARRATION.afterChar[nextPlayerIndex];
+      if (promptLine) {
+        setTimeout(() => {
+          speakText(promptLine);
+          startNudgeTimers();
+        }, 2800);
+      }
+      setCurrentPlayer(nextPlayerIndex);
     } else {
-      setScreen('game');
-      setCurrentPlayer(0);
+      // All players chosen
+      setTimeout(() => speakText(NARRATION.allCharsSelected), 2800);
+      setTimeout(() => {
+        setScreen('game');
+        setCurrentPlayer(0);
+      }, 5500);
     }
   };
 
-  // Initialize players when entering the game screen
+  // ─── Init game ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (screen === 'game') {
       const init = Array.from({ length: playerCount }).map((_, i) => ({
@@ -276,18 +432,23 @@ export default function App() {
       setPendingScanPlayer(null);
       setRoundPhase('playerTurn');
       setCurrentPlayer(0);
+      setBossDefeated(false);
       setShardSchedule(createShardSchedule());
       setNextShardIndex(0);
+
+      // First round narration fires once on game start
+      setTimeout(() => speakText(NARRATION.firstRound), 800);
     }
   }, [screen]);
 
-  // Update act when roundsCompleted changes or boss screen
+  // ─── Act update ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (screen === 'boss') { setAct(3); return; }
     if (roundsCompleted >= 7) setAct(2);
     else setAct(1);
   }, [roundsCompleted, screen]);
 
+  // ─── Tile events ───────────────────────────────────────────────────────────
   const handleTileEvent = (tileNum, playerIndex) => {
     if (tileNum < 1 || tileNum > 29) return null;
     const zone = Math.min(2, act);
@@ -298,6 +459,7 @@ export default function App() {
     const outcome = roll < weights.item ? 'item'
       : roll < weights.item + weights.trap ? 'trap'
       : 'neutral';
+
     setPlayers(prev => {
       const copy = [...prev];
       if (!copy[playerIndex]) return prev;
@@ -309,14 +471,17 @@ export default function App() {
       }
       return copy;
     });
-    if (outcome === 'trap') return `Player ${playerIndex + 1} triggered a trap and lost 1 HP.`;
-    if (outcome === 'item') return `Player ${playerIndex + 1} found a treasure! Take an item from the loot table for Zone you are in.`;
+
+    if (outcome === 'trap') return NARRATION.trapTriggered;
+    if (outcome === 'item') return NARRATION.itemFound;
     return `Player ${playerIndex + 1} scouts ahead, but the room is eerily calm. Nothing happens.`;
   };
 
+  // ─── Reset ─────────────────────────────────────────────────────────────────
   const resetGame = () => {
     stopCamera();
     stopCharacterCamera();
+    clearNudgeTimers();
     setScreen('main');
     setPlayerCount(2);
     setCurrentPlayer(0);
@@ -325,59 +490,61 @@ export default function App() {
     setRoundPhase('playerTurn');
     setQrData('');
     setBoss({ head: 5, body: 5, shield: 5 });
+    setBossDefeated(false);
     setShardSchedule([]);
     setNextShardIndex(0);
     setCharScanFeedback('');
     setCharCameraError('');
   };
 
-  // ------------ BOSS DAMAGE ---------------- 
+  // ─── Boss damage ───────────────────────────────────────────────────────────
   const damageBoss = (part) => {
-    setBoss(prev => ({ ...prev, [part]: Math.max(prev[part] - 1, 0) }));
+    setBoss(prev => {
+      const newVal = Math.max(prev[part] - 1, 0);
+      const updated = { ...prev, [part]: newVal };
+
+      if (newVal === 0) {
+        const allDead = Object.keys(updated).every(k => updated[k] === 0);
+        if (allDead) {
+          setBossDefeated(true);
+          speakText(NARRATION.bossDefeated);
+        } else {
+          if (part === 'head') speakText(NARRATION.bossHeadZero);
+          if (part === 'body') speakText(NARRATION.bossBodyZero);
+          if (part === 'shield') speakText(NARRATION.bossShieldZero);
+        }
+      }
+
+      return updated;
+    });
   };
 
-  // ------------ SPEECH ---------------- 
-  const speakWithBrowser = (text) => {
-    if (!('speechSynthesis' in window)) return;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const speakText = (text) => {
-    fetch('/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    })
-      .then(async res => {
-        if (!res.ok) throw new Error(`TTS API error: ${res.status}`);
-        return res.arrayBuffer();
-      })
-      .then(arrayBuffer => {
-        const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
-        const audio = new Audio(URL.createObjectURL(blob));
-        audio.play().catch(() => speakWithBrowser(text));
-      })
-      .catch(() => speakWithBrowser(text));
-  };
-
-  // ------------ EXIT BUTTON ---------------- 
+  // ─── Exit button ───────────────────────────────────────────────────────────
   const ExitButton = ({ onClick }) => (
     <button onClick={onClick} style={exitStyle}>×</button>
   );
 
-  // ------------ MAIN MENU ---------------- 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SCREENS
+  // ═══════════════════════════════════════════════════════════════════════════
+
   if (screen === 'main') {
     return (
       <div style={menuStyle}>
         <h1 style={titleStyle}>OBRYNDEL</h1>
-        <button style={buttonStyle} onClick={() => setScreen('intro')}>Start Game</button>
+        <button
+          style={buttonStyle}
+          onClick={() => {
+            speakText(NARRATION.intro);
+            setScreen('intro');
+          }}
+        >
+          Start Game
+        </button>
       </div>
     );
   }
 
-  // ------------ INTRO ---------------- 
   if (screen === 'intro') {
     return (
       <div style={textBoxStyle}>
@@ -391,14 +558,20 @@ export default function App() {
             style={{ width: 250, display: 'block', margin: '12px auto 0' }}
           />
         </div>
-        <button style={buttonStyle} onClick={() => { setCurrentPlayer(0); setCharacters([]); setScreen('characterSelect'); }}>
+        <button
+          style={buttonStyle}
+          onClick={() => {
+            setCurrentPlayer(0);
+            setCharacters([]);
+            setScreen('characterSelect');
+          }}
+        >
           Continue
         </button>
       </div>
     );
   }
 
-  // ------------ CHARACTER SELECTION ---------------- 
   if (screen === 'characterSelect') {
     const pickedChars = characters.filter(c => c);
     const remaining = availableCharacters.filter(c => !pickedChars.includes(c));
@@ -412,7 +585,8 @@ export default function App() {
             Player {currentPlayer + 1}: Scan Your Character Card
           </h2>
           <p style={{ color: '#cfc1a3', marginTop: 6, marginBottom: 18 }}>
-            Hold your character QR card up to the <strong style={{ color: '#EFD88B' }}>front camera</strong>.
+            Hold your character QR card up to the{' '}
+            <strong style={{ color: '#EFD88B' }}>front camera</strong>.
           </p>
 
           {/* Camera viewfinder */}
@@ -427,7 +601,6 @@ export default function App() {
               muted
               playsInline
             />
-            {/* Scan reticle */}
             {charCameraStarted && (
               <div style={{
                 position: 'absolute', inset: 0,
@@ -449,7 +622,6 @@ export default function App() {
           </div>
           <canvas ref={charCanvasRef} style={{ display: 'none' }} />
 
-          {/* Camera button */}
           <div style={{ marginBottom: 18 }}>
             {!charCameraStarted ? (
               <button style={buttonStyle} onClick={startCharacterCamera}>Start Scanning</button>
@@ -458,7 +630,6 @@ export default function App() {
             )}
           </div>
 
-          {/* Feedback messages */}
           {charScanFeedback && (
             <p style={{ color: '#ff9a60', marginBottom: 12, fontSize: 14 }}>{charScanFeedback}</p>
           )}
@@ -466,7 +637,6 @@ export default function App() {
             <p style={{ color: '#ff7070', marginBottom: 12, fontSize: 14 }}>{charCameraError}</p>
           )}
 
-          {/* QR reference */}
           <div style={{ marginBottom: 18, color: '#9a8a6a', fontSize: 12, lineHeight: 1.7 }}>
             <strong style={{ color: '#b09a6a' }}>Card codes:</strong><br />
             Character-001 → Goblin &nbsp;|&nbsp;
@@ -475,14 +645,15 @@ export default function App() {
             Character-004 → Witch
           </div>
 
-          {/* Players chosen so far */}
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
             {Array.from({ length: playerCount }).map((_, i) => (
               <div key={i} style={{
                 padding: '8px 14px', borderRadius: 8,
                 background: characters[i] ? 'rgba(60,40,10,0.7)' : 'rgba(0,0,0,0.3)',
                 color: characters[i] ? '#e6d8ad' : '#6a5a3a',
-                border: characters[i] ? '1px solid rgba(213,169,62,0.2)' : '1px solid rgba(255,255,255,0.04)',
+                border: characters[i]
+                  ? '1px solid rgba(213,169,62,0.2)'
+                  : '1px solid rgba(255,255,255,0.04)',
                 minWidth: 120, fontSize: 13,
               }}>
                 {characters[i] ? `✓ ${characters[i]}` : `Player ${i + 1} — ?`}
@@ -500,9 +671,7 @@ export default function App() {
     );
   }
 
-  // ------------ BOSS PHASE ---------------- 
   if (screen === 'boss') {
-    const bossDead = boss.head === 0 && boss.body === 0 && boss.shield === 0;
     const flashDamage = (part) => {
       const el = document.getElementById(part + 'Damage');
       if (!el) return;
@@ -515,14 +684,25 @@ export default function App() {
       <div style={textBoxStyle}>
         <ExitButton onClick={resetGame} />
         <h2 style={{ color: '#FFD700', marginBottom: 10 }}>ACT 3: FINAL BOSS</h2>
-        {bossDead ? (
+
+        {bossDefeated ? (
           <>
-            <h2>Victory!</h2>
+            <p style={{
+              color: '#EDE6CF', maxWidth: 560, lineHeight: 1.8,
+              fontStyle: 'italic', marginBottom: 24,
+            }}>
+              {NARRATION.bossDefeated}
+            </p>
+            <h2 style={{ color: '#FFD700' }}>Victory!</h2>
             <button style={buttonStyle} onClick={resetGame}>Main Menu</button>
           </>
         ) : (
           <>
-            <div style={{ ...cardStyle, width: 320, height: 340, margin: '0 auto 18px', padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{
+              ...cardStyle, width: 320, height: 340,
+              margin: '0 auto 18px', padding: 18,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
               <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                 {boss.body > 0 && (
                   <>
@@ -544,11 +724,13 @@ export default function App() {
                 )}
               </div>
             </div>
+
             <div style={{ textAlign: 'center', marginTop: 30, marginBottom: 10 }}>
               <p>Head HP: {boss.head}</p>
               <p>Body HP: {boss.body}</p>
               <p>Shield HP: {boss.shield}</p>
             </div>
+
             <div style={bossButtonBar}>
               <button style={buttonStyle} onClick={() => handleDamage('head')}>Hit Head</button>
               <button style={buttonStyle} onClick={() => handleDamage('body')}>Hit Body</button>
@@ -560,15 +742,18 @@ export default function App() {
     );
   }
 
-  // ------------ GAME ---------------- 
   if (screen === 'game') {
     return (
       <div style={textBoxStyle}>
-        <div style={{ position: 'absolute', top: 24, right: 28, color: '#D9B65A', fontWeight: 700 }}>ACT {act}</div>
+        <div style={{ position: 'absolute', top: 24, right: 28, color: '#D9B65A', fontWeight: 700 }}>
+          ACT {act}
+        </div>
 
-        {/* Event/scan result card */}
         {qrData && (
-          <div style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 80 }}>
+          <div style={{
+            position: 'fixed', left: 0, top: 0, right: 0, bottom: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 80,
+          }}>
             <div style={{ ...cardStyle, maxWidth: 720, padding: 24 }}>
               <h3 style={{ marginTop: 0, color: '#EFD88B' }}>Event</h3>
               <p style={{ color: '#EDE6CF' }}>{qrData}</p>
@@ -581,8 +766,10 @@ export default function App() {
 
         <ExitButton onClick={resetGame} />
         <h2>Player {currentPlayer + 1}</h2>
+
         <video ref={videoRef} style={{ display: 'none' }} />
         <canvas ref={canvasRef} style={{ display: 'none' }} />
+
         {!cameraStarted && roundPhase === 'scanQR' && (
           <button style={buttonStyle} onClick={startCamera}>Scan QR</button>
         )}
@@ -597,7 +784,7 @@ export default function App() {
   return null;
 }
 
-// ------------ STYLES ---------------- 
+// ─── Styles ────────────────────────────────────────────────────────────────────
 const menuStyle = {
   minHeight: '100vh', display: 'flex', flexDirection: 'column',
   alignItems: 'center', justifyContent: 'center',
@@ -646,10 +833,4 @@ const cardStyle = {
   background: 'linear-gradient(180deg, rgba(36,24,18,0.9), rgba(6,4,3,0.9))',
   border: '1px solid rgba(213,169,62,0.12)', padding: 22, borderRadius: 14,
   boxShadow: '0 28px 100px rgba(0,0,0,0.85), inset 0 2px 0 rgba(255,255,255,0.02)',
-};
-
-const hpBox = {
-  display: 'inline-block', padding: '8px 14px', borderRadius: 8,
-  background: 'linear-gradient(180deg,#2b1f18,#14100d)', color: '#F4E6C2',
-  border: '1px solid rgba(213,169,62,0.12)', boxShadow: '0 8px 26px rgba(0,0,0,0.7)',
 };
