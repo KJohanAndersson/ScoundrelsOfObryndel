@@ -73,7 +73,7 @@ const NARRATION = {
     "I present to you… Me! Lord Baron Thobrick the first! Huzza! " +
     "And now… You die.",
 
-  bossHeadZero:   "My head! My glorious head! …. Who needs a head anyways?",
+  bossHeadZero:   "My head! My glorious head! Who needs a head anyways?",
   bossBodyZero:   "What!? You've destroyed my body? My entire body? Shame on you…",
   bossShieldZero: "My shield! That was expensive! You shall pay for this!",
 
