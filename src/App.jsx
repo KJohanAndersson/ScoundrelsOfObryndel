@@ -17,8 +17,7 @@ const NARRATION = {
     "Humankind may now live long in a world of peace, devoid of horrible creatures… " +
     "Unless… " +
     "You, Scoundrels of Obryndel! " +
-    "It's up to you to gather the four shards, forge them together once more and slay Thobrick! " +
-    "Choose the amount of scoundrels to proceed.",
+    "It's up to you to gather the four shards, forge them together once more and slay Thobrick!",
 
   charSelectOpen:
     "Ah… I see… You dare challenge me? Scoundrels! One by one, show yourself to me!",
@@ -74,14 +73,9 @@ const NARRATION = {
     "I present to you… Me! Lord Baron Thobrick the first! Huzza! " +
     "And now… You die.",
 
-  bossHeadZero:
-    "My head! My glorious head! …. Who needs a head anyways?",
-
-  bossBodyZero:
-    "What!? You've destroyed my body? My entire body? Shame on you…",
-
-  bossShieldZero:
-    "My shield! That was expensive! You shall pay for this!",
+  bossHeadZero:   "My head! My glorious head! …. Who needs a head anyways?",
+  bossBodyZero:   "What!? You've destroyed my body? My entire body? Shame on you…",
+  bossShieldZero: "My shield! That was expensive! You shall pay for this!",
 
   bossDefeated:
     "Curse you, foul beasts! You've won this time… " +
@@ -90,6 +84,77 @@ const NARRATION = {
     "Ugh… …I am dead now.",
 };
 
+// ─── TTS controller (singleton audio so we can stop/fade it) ─────────────────
+let _currentAudio = null;
+
+const stopCurrentAudio = (fadeDuration = 400) => {
+  if (!_currentAudio) return;
+  const audio = _currentAudio;
+  _currentAudio = null;
+  // stop browser speech synthesis too
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+
+  if (fadeDuration <= 0) {
+    audio.pause();
+    return;
+  }
+  const startVol = audio.volume;
+  const steps = 20;
+  const stepTime = fadeDuration / steps;
+  let step = 0;
+  const fade = setInterval(() => {
+    step++;
+    audio.volume = Math.max(0, startVol * (1 - step / steps));
+    if (step >= steps) {
+      clearInterval(fade);
+      audio.pause();
+    }
+  }, stepTime);
+};
+
+// Returns a promise that resolves when the audio finishes (or rejects on error)
+const speakText = (text) => {
+  stopCurrentAudio(0); // stop any previous immediately when a new line starts
+  return new Promise((resolve) => {
+    const speakBrowser = () => {
+      if (!('speechSynthesis' in window)) { resolve(); return; }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      // prefer a male voice
+      const voices = window.speechSynthesis.getVoices();
+      const male = voices.find(v =>
+        /male/i.test(v.name) ||
+        /david|mark|daniel|alex|fred|ralph|junior|albert/i.test(v.name)
+      );
+      if (male) utterance.voice = male;
+      utterance.onend = resolve;
+      utterance.onerror = resolve;
+      window.speechSynthesis.speak(utterance);
+    };
+
+    fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    })
+      .then(async res => {
+        if (!res.ok) throw new Error(`TTS error: ${res.status}`);
+        return res.arrayBuffer();
+      })
+      .then(buf => {
+        const blob = new Blob([buf], { type: 'audio/mpeg' });
+        const audio = new Audio(URL.createObjectURL(blob));
+        _currentAudio = audio;
+        audio.onended = () => { if (_currentAudio === audio) _currentAudio = null; resolve(); };
+        audio.onerror = () => { if (_currentAudio === audio) _currentAudio = null; resolve(); };
+        audio.play().catch(() => { speakBrowser(); });
+      })
+      .catch(() => speakBrowser());
+  });
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 export default function App() {
   const [screen, setScreen] = useState('main');
   const [playerCount, setPlayerCount] = useState(2);
@@ -97,22 +162,21 @@ export default function App() {
   const [characters, setCharacters] = useState([]);
   const [players, setPlayers] = useState([]);
   const [roundsCompleted, setRoundsCompleted] = useState(0);
-  const [pendingScanPlayer, setPendingScanPlayer] = useState(null);
   const [act, setAct] = useState(1);
+  const [actAnimating, setActAnimating] = useState(false);
   const [scannedCards, setScannedCards] = useState([]);
   const [roundPhase, setRoundPhase] = useState('playerTurn');
-  const [cameraStarted, setCameraStarted] = useState(false);
   const [qrData, setQrData] = useState('');
   const [cameraError, setCameraError] = useState('');
   const [shardSchedule, setShardSchedule] = useState([]);
   const [nextShardIndex, setNextShardIndex] = useState(0);
   const [boss, setBoss] = useState({ head: 5, body: 5, shield: 5 });
   const [bossDefeated, setBossDefeated] = useState(false);
-
-  // Character selection camera state
-  const [charCameraStarted, setCharCameraStarted] = useState(false);
-  const [charCameraError, setCharCameraError] = useState('');
   const [charScanFeedback, setCharScanFeedback] = useState('');
+  const [charCameraError, setCharCameraError] = useState('');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  // intro display text phase
+  const [introText, setIntroText] = useState('');
 
   // Game camera refs
   const videoRef = useRef(null);
@@ -130,6 +194,22 @@ export default function App() {
   const nudge1Ref = useRef(null);
   const nudge2Ref = useRef(null);
 
+  // track whether narration sequence is "live" (so we can abort it)
+  const narrationAbortRef = useRef(false);
+  // track if char camera is active
+  const charCameraActive = useRef(false);
+
+  const pendingScanPlayerRef = useRef(null);
+  const currentPlayerRef = useRef(0);
+  const roundPhaseRef = useRef('playerTurn');
+  const scannedCardsRef = useRef([]);
+  const roundsCompletedRef = useRef(0);
+  const shardScheduleRef = useRef([]);
+  const nextShardIndexRef = useRef(0);
+  const actRef = useRef(1);
+  const playerCountRef = useRef(2);
+  const playersRef = useRef([]);
+
   const availableCharacters = ['Goblin', 'Troll', 'Cyclops', 'Witch'];
 
   const characterQRMap = {
@@ -139,41 +219,35 @@ export default function App() {
     'Character-004': 'Witch',
   };
 
-  const shardZones = [
-    'Village of Obryndel',
-    'Forest of Travesy',
-    'Charstone Alpines',
-    'Mudbrik Castle',
-  ];
+  const shardZones = ['Village of Obryndel', 'Forest of Travesy', 'Charstone Alpines', 'Mudbrik Castle'];
   const shardOrderNames = ['First', 'Second', 'Third', 'Fourth'];
 
-  // ─── Speech ────────────────────────────────────────────────────────────────
-  const speakWithBrowser = (text) => {
-    if (!('speechSynthesis' in window)) return;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    window.speechSynthesis.speak(utterance);
+  // keep refs in sync
+  useEffect(() => { currentPlayerRef.current = currentPlayer; }, [currentPlayer]);
+  useEffect(() => { roundPhaseRef.current = roundPhase; }, [roundPhase]);
+  useEffect(() => { scannedCardsRef.current = scannedCards; }, [scannedCards]);
+  useEffect(() => { roundsCompletedRef.current = roundsCompleted; }, [roundsCompleted]);
+  useEffect(() => { shardScheduleRef.current = shardSchedule; }, [shardSchedule]);
+  useEffect(() => { nextShardIndexRef.current = nextShardIndex; }, [nextShardIndex]);
+  useEffect(() => { actRef.current = act; }, [act]);
+  useEffect(() => { playerCountRef.current = playerCount; }, [playerCount]);
+  useEffect(() => { playersRef.current = players; }, [players]);
+
+  // ─── Narration helpers ─────────────────────────────────────────────────────
+  const speak = async (text) => {
+    setIsSpeaking(true);
+    await speakText(text);
+    setIsSpeaking(false);
   };
 
-  const speakText = (text) => {
-    fetch('/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    })
-      .then(async res => {
-        if (!res.ok) throw new Error(`TTS error: ${res.status}`);
-        return res.arrayBuffer();
-      })
-      .then(buf => {
-        const blob = new Blob([buf], { type: 'audio/mpeg' });
-        const audio = new Audio(URL.createObjectURL(blob));
-        audio.play().catch(() => speakWithBrowser(text));
-      })
-      .catch(() => speakWithBrowser(text));
+  const abortNarration = () => {
+    narrationAbortRef.current = true;
+    stopCurrentAudio(300);
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    setIsSpeaking(false);
   };
 
-  // ─── Nudge timers ──────────────────────────────────────────────────────────
+  // ─── Nudge timers (only used for player 1) ────────────────────────────────
   const clearNudgeTimers = () => {
     if (nudge1Ref.current) { clearTimeout(nudge1Ref.current); nudge1Ref.current = null; }
     if (nudge2Ref.current) { clearTimeout(nudge2Ref.current); nudge2Ref.current = null; }
@@ -181,12 +255,12 @@ export default function App() {
 
   const startNudgeTimers = () => {
     clearNudgeTimers();
-    nudge1Ref.current = setTimeout(() => {
-      speakText(NARRATION.charSelectNudge1);
+    nudge1Ref.current = setTimeout(async () => {
+      await speak(NARRATION.charSelectNudge1);
       nudge2Ref.current = setTimeout(() => {
-        speakText(NARRATION.charSelectNudge2);
-      }, 5000);
-    }, 5000);
+        speak(NARRATION.charSelectNudge2);
+      }, 10000);
+    }, 10000);
   };
 
   // ─── Shard schedule ────────────────────────────────────────────────────────
@@ -202,33 +276,35 @@ export default function App() {
   const createShardSchedule = () => {
     const rounds = shuffleArray([1, 2, 3, 4, 5]).slice(0, 4).sort((a, b) => a - b);
     const zones = shuffleArray(shardZones);
-    return rounds.map((round, index) => ({
-      round,
-      zone: zones[index],
-      orderName: shardOrderNames[index],
-    }));
+    return rounds.map((round, index) => ({ round, zone: zones[index], orderName: shardOrderNames[index] }));
   };
 
   const maybeGetShardMessage = (currentRound) => {
-    if (nextShardIndex >= shardSchedule.length) return null;
-    const nextShard = shardSchedule[nextShardIndex];
+    const schedule = shardScheduleRef.current;
+    const idx = nextShardIndexRef.current;
+    if (idx >= schedule.length) return null;
+    const nextShard = schedule[idx];
     if (!nextShard || nextShard.round !== currentRound) return null;
-    setNextShardIndex(prev => prev + 1);
+    setNextShardIndex(idx + 1);
+    nextShardIndexRef.current = idx + 1;
     return `${nextShard.orderName} shard appeared in ${nextShard.zone}.`;
   };
 
-  // ─── Game camera ───────────────────────────────────────────────────────────
+  // ─── Act animation ─────────────────────────────────────────────────────────
+  const triggerActAnimation = () => {
+    setActAnimating(true);
+    setTimeout(() => setActAnimating(false), 1200);
+  };
+
+  // ─── Game camera (auto-start) ──────────────────────────────────────────────
   const startCamera = async () => {
     if (!videoRef.current) return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       streamRef.current = stream;
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
-      setCameraStarted(true);
-      setRoundPhase('scanQR');
+      animationRef.current = requestAnimationFrame(scanQRCodeLoop);
     } catch (err) {
       setCameraError('Camera error: ' + err.message);
     }
@@ -239,12 +315,12 @@ export default function App() {
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     }
-    setCameraStarted(false);
+    if (animationRef.current) { cancelAnimationFrame(animationRef.current); animationRef.current = null; }
   };
 
   const scanQRCodeLoop = () => {
     if (!videoRef.current || !canvasRef.current) return;
-    if (roundPhase !== 'scanQR') return;
+    if (roundPhaseRef.current !== 'scanQR') return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -254,85 +330,93 @@ export default function App() {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const code = jsQR(imageData.data, imageData.width, imageData.height);
-      if (code && code.data.startsWith('Tile-')) {
-        if (!scannedCards.includes(code.data)) {
-          setScannedCards(prev => [...prev, code.data]);
-          stopCamera();
-          const parts = code.data.split('-');
-          const num = parseInt(parts[1], 10);
-
-          if (num === 30) {
-            const msg = NARRATION.bossEntrance;
-            setQrData(msg);
-            speakText(msg);
-            setScreen('boss');
-            setAct(3);
-            return;
-          }
-
-          if (num >= 1 && num <= 29) {
-            const targetPlayer = pendingScanPlayer != null ? pendingScanPlayer : currentPlayer;
-            const eventMsg = handleTileEvent(num, targetPlayer);
-            const currentRound = roundsCompleted + 1;
-            const shardMsg = maybeGetShardMessage(currentRound);
-            const combinedMsg = [eventMsg, shardMsg].filter(Boolean).join(' ');
-            if (combinedMsg) {
-              setQrData(combinedMsg);
-              speakText(combinedMsg);
-            }
-            if (targetPlayer < playerCount - 1) {
-              setCurrentPlayer(targetPlayer + 1);
-            } else {
-              setCurrentPlayer(0);
-              setRoundsCompleted(prev => prev + 1);
-            }
-            setPendingScanPlayer(null);
-            setRoundPhase('playerTurn');
-          } else {
-            setQrData(code.data);
-            setRoundPhase('playerTurn');
-          }
-        }
+      if (code && code.data.startsWith('Tile-') && !scannedCardsRef.current.includes(code.data)) {
+        setScannedCards(prev => { const n = [...prev, code.data]; scannedCardsRef.current = n; return n; });
+        stopCamera();
+        const num = parseInt(code.data.split('-')[1], 10);
+        handleTileScan(num);
+        return;
       }
     }
     animationRef.current = requestAnimationFrame(scanQRCodeLoop);
   };
 
-  useEffect(() => {
-    if (roundPhase === 'scanQR' && cameraStarted) {
-      animationRef.current = requestAnimationFrame(scanQRCodeLoop);
+  const handleTileScan = (num) => {
+    if (num === 30) {
+      speak(NARRATION.bossEntrance);
+      setQrData(NARRATION.bossEntrance);
+      setScreen('boss');
+      setAct(3);
+      return;
     }
-    return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-  }, [roundPhase, cameraStarted]);
+    if (num >= 1 && num <= 29) {
+      const targetPlayer = pendingScanPlayerRef.current != null ? pendingScanPlayerRef.current : currentPlayerRef.current;
+      const eventMsg = handleTileEvent(num, targetPlayer);
+      const currentRound = roundsCompletedRef.current + 1;
+      const shardMsg = maybeGetShardMessage(currentRound);
+      const combinedMsg = [eventMsg, shardMsg].filter(Boolean).join(' ');
+      if (combinedMsg) { setQrData(combinedMsg); speak(combinedMsg); }
 
-  // ─── Character camera ──────────────────────────────────────────────────────
+      const pc = playerCountRef.current;
+      if (targetPlayer < pc - 1) {
+        setCurrentPlayer(targetPlayer + 1);
+        currentPlayerRef.current = targetPlayer + 1;
+      } else {
+        setCurrentPlayer(0);
+        currentPlayerRef.current = 0;
+        setRoundsCompleted(prev => {
+          const next = prev + 1;
+          roundsCompletedRef.current = next;
+          return next;
+        });
+      }
+      pendingScanPlayerRef.current = null;
+      setRoundPhase('playerTurn');
+      roundPhaseRef.current = 'playerTurn';
+    }
+  };
+
+  // auto-restart camera when phase changes to scanQR
+  useEffect(() => {
+    if (roundPhase === 'scanQR' && screen === 'game') {
+      startCamera();
+    }
+  }, [roundPhase, screen]);
+
+  // ─── Character camera (auto-start) ────────────────────────────────────────
   const startCharacterCamera = async () => {
     if (!charVideoRef.current) return;
     setCharCameraError('');
     setCharScanFeedback('');
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
       charStreamRef.current = stream;
       charVideoRef.current.srcObject = stream;
       await charVideoRef.current.play();
-      setCharCameraStarted(true);
+      charCameraActive.current = true;
+      charAnimRef.current = requestAnimationFrame(scanCharacterQRLoop);
     } catch (err) {
       setCharCameraError('Camera error: ' + err.message);
     }
   };
 
   const stopCharacterCamera = () => {
+    charCameraActive.current = false;
     if (charStreamRef.current) {
       charStreamRef.current.getTracks().forEach(t => t.stop());
       charStreamRef.current = null;
     }
-    setCharCameraStarted(false);
-    if (charAnimRef.current) cancelAnimationFrame(charAnimRef.current);
+    if (charAnimRef.current) { cancelAnimationFrame(charAnimRef.current); charAnimRef.current = null; }
   };
 
+  // ref to track characters picked (so scan loop can see latest)
+  const charactersRef = useRef([]);
+  useEffect(() => { charactersRef.current = characters; }, [characters]);
+  const currentPlayerForScan = useRef(0);
+  useEffect(() => { currentPlayerForScan.current = currentPlayer; }, [currentPlayer]);
+
   const scanCharacterQRLoop = () => {
+    if (!charCameraActive.current) return;
     if (!charVideoRef.current || !charCanvasRef.current) return;
     const video = charVideoRef.current;
     const canvas = charCanvasRef.current;
@@ -345,16 +429,14 @@ export default function App() {
       const code = jsQR(imageData.data, imageData.width, imageData.height);
       if (code && characterQRMap[code.data]) {
         const charName = characterQRMap[code.data];
-        const alreadyPicked = characters.filter(c => c).includes(charName);
+        const alreadyPicked = charactersRef.current.filter(c => c).includes(charName);
         if (alreadyPicked) {
           setCharScanFeedback(`${charName} is already taken! Try a different card.`);
         } else {
           clearNudgeTimers();
-          // Speak character taunt, then after a pause speak the next player prompt
-          speakText(NARRATION.charScanned[code.data]);
           stopCharacterCamera();
           setCharScanFeedback('');
-          selectCharacter(charName, code.data);
+          handleCharacterScanned(code.data, charName);
           return;
         }
       }
@@ -362,103 +444,133 @@ export default function App() {
     charAnimRef.current = requestAnimationFrame(scanCharacterQRLoop);
   };
 
-  useEffect(() => {
-    if (charCameraStarted) {
-      charAnimRef.current = requestAnimationFrame(scanCharacterQRLoop);
-    }
-    return () => { if (charAnimRef.current) cancelAnimationFrame(charAnimRef.current); };
-  }, [charCameraStarted, characters]);
+  // Sequence: speak taunt → speak next player prompt → start cam for next player
+  const handleCharacterScanned = async (qrCode, charName) => {
+    const playerIdx = currentPlayerForScan.current;
+    const newChars = [...charactersRef.current];
+    newChars[playerIdx] = charName;
+    setCharacters(newChars);
+    charactersRef.current = newChars;
 
-  // Stop char camera when leaving that screen
-  useEffect(() => {
-    if (screen !== 'characterSelect') {
-      stopCharacterCamera();
-      clearNudgeTimers();
-    }
-  }, [screen]);
+    // speak the character taunt
+    await speak(NARRATION.charScanned[qrCode]);
 
-  // Speak opening narration when character select screen mounts for the first time
+    const nextIdx = playerIdx + 1;
+    const pc = playerCountRef.current;
+
+    if (nextIdx < pc) {
+      setCurrentPlayer(nextIdx);
+      currentPlayerForScan.current = nextIdx;
+      const promptLine = NARRATION.afterChar[nextIdx];
+      if (promptLine) await speak(promptLine);
+      // only arm nudge timers for player 1 (index 0), after that players know what to do
+      // (we already handled player 0 on mount; no nudges for subsequent players)
+      startCharacterCamera();
+    } else {
+      // all players done
+      await speak(NARRATION.allCharsSelected);
+      // transition to game
+      setScreen('game');
+      setCurrentPlayer(0);
+      currentPlayerForScan.current = 0;
+    }
+  };
+
+  // auto-start character camera when charSelect screen mounts
   useEffect(() => {
     if (screen === 'characterSelect') {
-      speakText(NARRATION.charSelectOpen);
-      startNudgeTimers();
+      const run = async () => {
+        narrationAbortRef.current = false;
+        await speak(NARRATION.charSelectOpen);
+        if (narrationAbortRef.current) return;
+        startNudgeTimers(); // only for player 1
+        startCharacterCamera();
+      };
+      run();
     }
-  }, [screen]);
-
-  // ─── Player / character functions ──────────────────────────────────────────
-  const nextPlayer = () => {
-    setPendingScanPlayer(currentPlayer);
-    setRoundPhase('scanQR');
-    setQrData('');
-  };
-
-  const selectCharacter = (char) => {
-    const newChars = [...characters];
-    newChars[currentPlayer] = char;
-    setCharacters(newChars);
-
-    const nextPlayerIndex = currentPlayer + 1;
-
-    if (nextPlayerIndex < playerCount) {
-      const promptLine = NARRATION.afterChar[nextPlayerIndex];
-      if (promptLine) {
-        setTimeout(() => {
-          speakText(promptLine);
-          startNudgeTimers();
-        }, 2800);
+    return () => {
+      if (screen === 'characterSelect') {
+        stopCharacterCamera();
+        clearNudgeTimers();
       }
-      setCurrentPlayer(nextPlayerIndex);
-    } else {
-      // All players chosen
-      setTimeout(() => speakText(NARRATION.allCharsSelected), 2800);
-      setTimeout(() => {
-        setScreen('game');
-        setCurrentPlayer(0);
-      }, 5500);
-    }
-  };
+    };
+  }, [screen]);
 
   // ─── Init game ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (screen === 'game') {
       const init = Array.from({ length: playerCount }).map((_, i) => ({
-        char: characters[i] || null,
-        hp: 5,
-        items: [],
+        char: characters[i] || null, hp: 5, items: [],
       }));
       setPlayers(init);
+      playersRef.current = init;
       setRoundsCompleted(0);
+      roundsCompletedRef.current = 0;
       setAct(1);
-      setPendingScanPlayer(null);
+      actRef.current = 1;
+      pendingScanPlayerRef.current = null;
       setRoundPhase('playerTurn');
+      roundPhaseRef.current = 'playerTurn';
       setCurrentPlayer(0);
+      currentPlayerRef.current = 0;
       setBossDefeated(false);
-      setShardSchedule(createShardSchedule());
+      const sched = createShardSchedule();
+      setShardSchedule(sched);
+      shardScheduleRef.current = sched;
       setNextShardIndex(0);
+      nextShardIndexRef.current = 0;
+      triggerActAnimation();
 
-      // First round narration fires once on game start
-      setTimeout(() => speakText(NARRATION.firstRound), 800);
+      speak(NARRATION.firstRound);
     }
+    return () => {
+      if (screen === 'game') stopCamera();
+    };
   }, [screen]);
 
-  // ─── Act update ────────────────────────────────────────────────────────────
+  // ─── Act changes ───────────────────────────────────────────────────────────
   useEffect(() => {
-    if (screen === 'boss') { setAct(3); return; }
-    if (roundsCompleted >= 7) setAct(2);
-    else setAct(1);
+    if (screen === 'boss') { setAct(3); actRef.current = 3; return; }
+    const newAct = roundsCompleted >= 7 ? 2 : 1;
+    if (newAct !== actRef.current) {
+      setAct(newAct);
+      actRef.current = newAct;
+      triggerActAnimation();
+    }
   }, [roundsCompleted, screen]);
+
+  // ─── Player turn → auto-start scan ────────────────────────────────────────
+  useEffect(() => {
+    if (roundPhase === 'playerTurn' && screen === 'game') {
+      // After the event card is dismissed we auto-start next scan
+      // We wait briefly so the event modal can be shown first
+      if (!qrData) {
+        const t = setTimeout(() => {
+          pendingScanPlayerRef.current = currentPlayer;
+          setRoundPhase('scanQR');
+          roundPhaseRef.current = 'scanQR';
+        }, 1500);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [roundPhase, screen, qrData]);
+
+  // When event modal is dismissed, trigger next player scan
+  const handleEventDismiss = () => {
+    setQrData('');
+    // auto-advance: start scan for next player
+    pendingScanPlayerRef.current = currentPlayerRef.current;
+    setRoundPhase('scanQR');
+    roundPhaseRef.current = 'scanQR';
+  };
 
   // ─── Tile events ───────────────────────────────────────────────────────────
   const handleTileEvent = (tileNum, playerIndex) => {
     if (tileNum < 1 || tileNum > 29) return null;
-    const zone = Math.min(2, act);
-    const weights = act === 1
-      ? { item: 0.22, trap: 0.18 }
-      : { item: 0.18, trap: 0.22 };
+    const zone = Math.min(2, actRef.current);
+    const weights = actRef.current === 1 ? { item: 0.22, trap: 0.18 } : { item: 0.18, trap: 0.22 };
     const roll = Math.random();
-    const outcome = roll < weights.item ? 'item'
-      : roll < weights.item + weights.trap ? 'trap'
-      : 'neutral';
+    const outcome = roll < weights.item ? 'item' : roll < weights.item + weights.trap ? 'trap' : 'neutral';
 
     setPlayers(prev => {
       const copy = [...prev];
@@ -466,9 +578,9 @@ export default function App() {
       if (outcome === 'trap') {
         copy[playerIndex] = { ...copy[playerIndex], hp: Math.max(copy[playerIndex].hp - 1, 0) };
       } else if (outcome === 'item') {
-        const newItem = `Treasure (Zone ${zone})`;
-        copy[playerIndex] = { ...copy[playerIndex], items: [...copy[playerIndex].items, newItem] };
+        copy[playerIndex] = { ...copy[playerIndex], items: [...copy[playerIndex].items, `Treasure (Zone ${zone})`] };
       }
+      playersRef.current = copy;
       return copy;
     });
 
@@ -479,22 +591,32 @@ export default function App() {
 
   // ─── Reset ─────────────────────────────────────────────────────────────────
   const resetGame = () => {
+    abortNarration();
     stopCamera();
     stopCharacterCamera();
     clearNudgeTimers();
+    narrationAbortRef.current = true;
     setScreen('main');
     setPlayerCount(2);
+    playerCountRef.current = 2;
     setCurrentPlayer(0);
+    currentPlayerRef.current = 0;
     setCharacters([]);
+    charactersRef.current = [];
     setScannedCards([]);
+    scannedCardsRef.current = [];
     setRoundPhase('playerTurn');
+    roundPhaseRef.current = 'playerTurn';
     setQrData('');
     setBoss({ head: 5, body: 5, shield: 5 });
     setBossDefeated(false);
     setShardSchedule([]);
+    shardScheduleRef.current = [];
     setNextShardIndex(0);
+    nextShardIndexRef.current = 0;
     setCharScanFeedback('');
     setCharCameraError('');
+    setActAnimating(false);
   };
 
   // ─── Boss damage ───────────────────────────────────────────────────────────
@@ -502,24 +624,21 @@ export default function App() {
     setBoss(prev => {
       const newVal = Math.max(prev[part] - 1, 0);
       const updated = { ...prev, [part]: newVal };
-
       if (newVal === 0) {
         const allDead = Object.keys(updated).every(k => updated[k] === 0);
         if (allDead) {
           setBossDefeated(true);
-          speakText(NARRATION.bossDefeated);
+          speak(NARRATION.bossDefeated);
         } else {
-          if (part === 'head') speakText(NARRATION.bossHeadZero);
-          if (part === 'body') speakText(NARRATION.bossBodyZero);
-          if (part === 'shield') speakText(NARRATION.bossShieldZero);
+          if (part === 'head') speak(NARRATION.bossHeadZero);
+          if (part === 'body') speak(NARRATION.bossBodyZero);
+          if (part === 'shield') speak(NARRATION.bossShieldZero);
         }
       }
-
       return updated;
     });
   };
 
-  // ─── Exit button ───────────────────────────────────────────────────────────
   const ExitButton = ({ onClick }) => (
     <button onClick={onClick} style={exitStyle}>×</button>
   );
@@ -528,6 +647,7 @@ export default function App() {
   // SCREENS
   // ═══════════════════════════════════════════════════════════════════════════
 
+  // ─── Main menu ─────────────────────────────────────────────────────────────
   if (screen === 'main') {
     return (
       <div style={menuStyle}>
@@ -535,7 +655,7 @@ export default function App() {
         <button
           style={buttonStyle}
           onClick={() => {
-            speakText(NARRATION.intro);
+            narrationAbortRef.current = false;
             setScreen('intro');
           }}
         >
@@ -545,24 +665,36 @@ export default function App() {
     );
   }
 
+  // ─── Intro (narration plays, then auto-advances to player count) ───────────
   if (screen === 'intro') {
+    return <IntroScreen
+      onDone={() => setScreen('playerCount')}
+      onAbort={abortNarration}
+    />;
+  }
+
+  // ─── Player count ──────────────────────────────────────────────────────────
+  if (screen === 'playerCount') {
     return (
       <div style={textBoxStyle}>
         <h2 style={{ color: '#FFD700' }}>Welcome to Obryndel!</h2>
-        <p>Choose number of players:</p>
+        <p>Choose number of scoundrels:</p>
         <div style={{ marginTop: 20, marginBottom: 30 }}>
-          <label style={{ fontSize: '1.2rem' }}>Players: {playerCount}</label>
+          <label style={{ fontSize: '1.4rem', color: '#EFD88B' }}>Players: {playerCount}</label>
           <input
             type="range" min="1" max="4" value={playerCount}
-            onChange={e => setPlayerCount(parseInt(e.target.value))}
+            onChange={e => { setPlayerCount(parseInt(e.target.value)); playerCountRef.current = parseInt(e.target.value); }}
             style={{ width: 250, display: 'block', margin: '12px auto 0' }}
           />
         </div>
         <button
           style={buttonStyle}
           onClick={() => {
+            abortNarration();
             setCurrentPlayer(0);
+            currentPlayerForScan.current = 0;
             setCharacters([]);
+            charactersRef.current = [];
             setScreen('characterSelect');
           }}
         >
@@ -572,24 +704,22 @@ export default function App() {
     );
   }
 
+  // ─── Character selection ───────────────────────────────────────────────────
   if (screen === 'characterSelect') {
     const pickedChars = characters.filter(c => c);
     const remaining = availableCharacters.filter(c => !pickedChars.includes(c));
 
     return (
       <div style={textBoxStyle}>
-        <ExitButton onClick={() => { stopCharacterCamera(); resetGame(); }} />
-
+        <ExitButton onClick={() => { abortNarration(); stopCharacterCamera(); clearNudgeTimers(); resetGame(); }} />
         <div style={{ ...cardStyle, width: '100%', maxWidth: 720, padding: 28 }}>
           <h2 style={{ color: '#D9B65A', marginTop: 0, fontFamily: "'Merriweather', Georgia, serif" }}>
             Player {currentPlayer + 1}: Scan Your Character Card
           </h2>
           <p style={{ color: '#cfc1a3', marginTop: 6, marginBottom: 18 }}>
-            Hold your character QR card up to the{' '}
-            <strong style={{ color: '#EFD88B' }}>front camera</strong>.
+            Hold your character QR card up to the <strong style={{ color: '#EFD88B' }}>front camera</strong>.
           </p>
 
-          {/* Camera viewfinder */}
           <div style={{
             position: 'relative', width: 280, height: 280,
             margin: '0 auto 18px', borderRadius: 14, overflow: 'hidden',
@@ -598,51 +728,28 @@ export default function App() {
             <video
               ref={charVideoRef}
               style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
-              muted
-              playsInline
+              muted playsInline
             />
-            {charCameraStarted && (
-              <div style={{
-                position: 'absolute', inset: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                pointerEvents: 'none',
-              }}>
+            {charCameraActive.current && (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
                 <div style={{ width: 160, height: 160, border: '2px solid rgba(213,169,62,0.75)', borderRadius: 10 }} />
               </div>
             )}
-            {!charCameraStarted && (
-              <div style={{
-                position: 'absolute', inset: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#6a5a3a', fontSize: 14,
-              }}>
-                Camera off
+            {!charCameraActive.current && (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6a5a3a', fontSize: 14 }}>
+                Waiting…
               </div>
             )}
           </div>
           <canvas ref={charCanvasRef} style={{ display: 'none' }} />
 
-          <div style={{ marginBottom: 18 }}>
-            {!charCameraStarted ? (
-              <button style={buttonStyle} onClick={startCharacterCamera}>Start Scanning</button>
-            ) : (
-              <button style={{ ...buttonStyle, opacity: 0.65 }} onClick={stopCharacterCamera}>Stop Camera</button>
-            )}
-          </div>
-
-          {charScanFeedback && (
-            <p style={{ color: '#ff9a60', marginBottom: 12, fontSize: 14 }}>{charScanFeedback}</p>
-          )}
-          {charCameraError && (
-            <p style={{ color: '#ff7070', marginBottom: 12, fontSize: 14 }}>{charCameraError}</p>
-          )}
+          {charScanFeedback && <p style={{ color: '#ff9a60', marginBottom: 12, fontSize: 14 }}>{charScanFeedback}</p>}
+          {charCameraError && <p style={{ color: '#ff7070', marginBottom: 12, fontSize: 14 }}>{charCameraError}</p>}
 
           <div style={{ marginBottom: 18, color: '#9a8a6a', fontSize: 12, lineHeight: 1.7 }}>
             <strong style={{ color: '#b09a6a' }}>Card codes:</strong><br />
-            Character-001 → Goblin &nbsp;|&nbsp;
-            Character-002 → Troll &nbsp;|&nbsp;
-            Character-003 → Cyclops &nbsp;|&nbsp;
-            Character-004 → Witch
+            Character-001 → Goblin &nbsp;|&nbsp; Character-002 → Troll &nbsp;|&nbsp;
+            Character-003 → Cyclops &nbsp;|&nbsp; Character-004 → Witch
           </div>
 
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -651,26 +758,22 @@ export default function App() {
                 padding: '8px 14px', borderRadius: 8,
                 background: characters[i] ? 'rgba(60,40,10,0.7)' : 'rgba(0,0,0,0.3)',
                 color: characters[i] ? '#e6d8ad' : '#6a5a3a',
-                border: characters[i]
-                  ? '1px solid rgba(213,169,62,0.2)'
-                  : '1px solid rgba(255,255,255,0.04)',
+                border: characters[i] ? '1px solid rgba(213,169,62,0.2)' : '1px solid rgba(255,255,255,0.04)',
                 minWidth: 120, fontSize: 13,
               }}>
                 {characters[i] ? `✓ ${characters[i]}` : `Player ${i + 1} — ?`}
               </div>
             ))}
           </div>
-
           {remaining.length > 0 && (
-            <p style={{ color: '#7a6a4a', fontSize: 12, marginTop: 14 }}>
-              Still available: {remaining.join(', ')}
-            </p>
+            <p style={{ color: '#7a6a4a', fontSize: 12, marginTop: 14 }}>Still available: {remaining.join(', ')}</p>
           )}
         </div>
       </div>
     );
   }
 
+  // ─── Boss phase ────────────────────────────────────────────────────────────
   if (screen === 'boss') {
     const flashDamage = (part) => {
       const el = document.getElementById(part + 'Damage');
@@ -684,13 +787,9 @@ export default function App() {
       <div style={textBoxStyle}>
         <ExitButton onClick={resetGame} />
         <h2 style={{ color: '#FFD700', marginBottom: 10 }}>ACT 3: FINAL BOSS</h2>
-
         {bossDefeated ? (
           <>
-            <p style={{
-              color: '#EDE6CF', maxWidth: 560, lineHeight: 1.8,
-              fontStyle: 'italic', marginBottom: 24,
-            }}>
+            <p style={{ color: '#EDE6CF', maxWidth: 560, lineHeight: 1.8, fontStyle: 'italic', marginBottom: 24 }}>
               {NARRATION.bossDefeated}
             </p>
             <h2 style={{ color: '#FFD700' }}>Victory!</h2>
@@ -698,39 +797,27 @@ export default function App() {
           </>
         ) : (
           <>
-            <div style={{
-              ...cardStyle, width: 320, height: 340,
-              margin: '0 auto 18px', padding: 18,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
+            <div style={{ ...cardStyle, width: 320, height: 340, margin: '0 auto 18px', padding: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                {boss.body > 0 && (
-                  <>
-                    <img src={bossBody} alt="body" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '100%', zIndex: 1 }} />
-                    <img id="bodyDamage" src={bossBodyDamage} alt="body damage" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '100%', zIndex: 2, opacity: 0 }} />
-                  </>
-                )}
-                {boss.shield > 0 && (
-                  <>
-                    <img src={bossShield} alt="shield" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '100%', zIndex: 3 }} />
-                    <img id="shieldDamage" src={bossShieldDamage} alt="shield damage" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '100%', zIndex: 4, opacity: 0 }} />
-                  </>
-                )}
-                {boss.head > 0 && (
-                  <>
-                    <img src={bossHead} alt="head" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '100%', zIndex: 5 }} />
-                    <img id="headDamage" src={bossHeadDamage} alt="head damage" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '100%', zIndex: 6, opacity: 0 }} />
-                  </>
-                )}
+                {boss.body > 0 && (<>
+                  <img src={bossBody} alt="body" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '100%', zIndex: 1 }} />
+                  <img id="bodyDamage" src={bossBodyDamage} alt="body damage" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '100%', zIndex: 2, opacity: 0 }} />
+                </>)}
+                {boss.shield > 0 && (<>
+                  <img src={bossShield} alt="shield" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '100%', zIndex: 3 }} />
+                  <img id="shieldDamage" src={bossShieldDamage} alt="shield damage" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '100%', zIndex: 4, opacity: 0 }} />
+                </>)}
+                {boss.head > 0 && (<>
+                  <img src={bossHead} alt="head" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '100%', zIndex: 5 }} />
+                  <img id="headDamage" src={bossHeadDamage} alt="head damage" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '100%', zIndex: 6, opacity: 0 }} />
+                </>)}
               </div>
             </div>
-
             <div style={{ textAlign: 'center', marginTop: 30, marginBottom: 10 }}>
               <p>Head HP: {boss.head}</p>
               <p>Body HP: {boss.body}</p>
               <p>Shield HP: {boss.shield}</p>
             </div>
-
             <div style={bossButtonBar}>
               <button style={buttonStyle} onClick={() => handleDamage('head')}>Hit Head</button>
               <button style={buttonStyle} onClick={() => handleDamage('body')}>Hit Body</button>
@@ -742,39 +829,46 @@ export default function App() {
     );
   }
 
+  // ─── Game ──────────────────────────────────────────────────────────────────
   if (screen === 'game') {
     return (
       <div style={textBoxStyle}>
-        <div style={{ position: 'absolute', top: 24, right: 28, color: '#D9B65A', fontWeight: 700 }}>
-          ACT {act}
+        {/* Act badge */}
+        <div style={{
+          position: 'fixed', top: 24, left: 0, right: 0,
+          display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 50,
+        }}>
+          <div style={{
+            color: '#D9B65A', fontWeight: 700, fontSize: actAnimating ? '3.5rem' : '1.4rem',
+            transition: 'font-size 0.6s cubic-bezier(0.22,1,0.36,1)',
+            textShadow: actAnimating ? '0 0 40px rgba(213,169,62,0.6)' : 'none',
+            letterSpacing: 4,
+          }}>
+            ACT {act}
+          </div>
         </div>
 
+        {/* Event modal */}
         {qrData && (
-          <div style={{
-            position: 'fixed', left: 0, top: 0, right: 0, bottom: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 80,
-          }}>
+          <div style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 80 }}>
             <div style={{ ...cardStyle, maxWidth: 720, padding: 24 }}>
               <h3 style={{ marginTop: 0, color: '#EFD88B' }}>Event</h3>
               <p style={{ color: '#EDE6CF' }}>{qrData}</p>
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-                <button onClick={() => setQrData('')} style={buttonStyle}>Continue</button>
+                <button onClick={handleEventDismiss} style={buttonStyle}>Continue</button>
               </div>
             </div>
           </div>
         )}
 
         <ExitButton onClick={resetGame} />
-        <h2>Player {currentPlayer + 1}</h2>
+        <h2 style={{ marginTop: 80 }}>Player {currentPlayer + 1}</h2>
 
         <video ref={videoRef} style={{ display: 'none' }} />
         <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-        {!cameraStarted && roundPhase === 'scanQR' && (
-          <button style={buttonStyle} onClick={startCamera}>Scan QR</button>
-        )}
-        {roundPhase === 'playerTurn' && (
-          <button style={buttonStyle} onClick={nextPlayer}>End Turn</button>
+        {roundPhase === 'scanQR' && (
+          <p style={{ color: '#9a8a6a', fontSize: 14, marginTop: 12 }}>Scanning tile card…</p>
         )}
         {cameraError && <p style={{ color: 'red' }}>{cameraError}</p>}
       </div>
@@ -782,6 +876,83 @@ export default function App() {
   }
 
   return null;
+}
+
+// ─── Intro screen component ────────────────────────────────────────────────────
+// Plays the narration, shows the text, then auto-advances
+function IntroScreen({ onDone, onAbort }) {
+  const lines = [
+    "Baron Thobrick's quest to shatter the Mythical Crystal of the Ogre has been successful.",
+    "Now that the Crystal has been shattered the magical barrier shielding the foul creatures of Obryndel is crumbling.",
+    "Humankind may now live long in a world of peace, devoid of horrible creatures…",
+    "Unless…",
+    "You, Scoundrels of Obryndel!",
+    "It's up to you to gather the four shards, forge them together once more and slay Thobrick!",
+  ];
+  const [visibleLines, setVisibleLines] = useState([]);
+  const abortedRef = useRef(false);
+
+  useEffect(() => {
+    const run = async () => {
+      // speak full narration
+      stopCurrentAudio(0);
+      const p = speakText(NARRATION.intro);
+
+      // Show lines one by one with rough timing
+      const delays = [0, 2200, 4800, 7400, 8200, 9000];
+      delays.forEach((d, i) => {
+        setTimeout(() => {
+          if (!abortedRef.current) setVisibleLines(prev => [...prev, i]);
+        }, d);
+      });
+
+      await p;
+      if (!abortedRef.current) {
+        // small pause before auto-advancing
+        setTimeout(() => { if (!abortedRef.current) onDone(); }, 1200);
+      }
+    };
+    run();
+    return () => {
+      abortedRef.current = true;
+      stopCurrentAudio(300);
+    };
+  }, []);
+
+  const handleSkip = () => {
+    abortedRef.current = true;
+    stopCurrentAudio(300);
+    onAbort();
+    onDone();
+  };
+
+  return (
+    <div style={{ ...menuStyle, justifyContent: 'center', gap: 0 }}>
+      <div style={{ maxWidth: 680, textAlign: 'center' }}>
+        {lines.map((line, i) => (
+          <p key={i} style={{
+            color: i === 4 ? '#FF9A60' : '#EDE6CF',
+            fontSize: i === 4 ? '1.3rem' : '1.05rem',
+            fontStyle: i < 3 ? 'italic' : 'normal',
+            fontWeight: i >= 4 ? 700 : 400,
+            margin: '10px 0',
+            opacity: visibleLines.includes(i) ? 1 : 0,
+            transform: visibleLines.includes(i) ? 'translateY(0)' : 'translateY(10px)',
+            transition: 'opacity 0.7s ease, transform 0.7s ease',
+            lineHeight: 1.6,
+          }}>
+            {line}
+          </p>
+        ))}
+      </div>
+      <button
+        style={{ ...buttonStyle, marginTop: 40, opacity: 0.6, fontSize: '0.85rem', padding: '10px 20px' }}
+        onClick={handleSkip}
+      >
+        Skip
+      </button>
+    </div>
+  );
 }
 
 // ─── Styles ────────────────────────────────────────────────────────────────────
