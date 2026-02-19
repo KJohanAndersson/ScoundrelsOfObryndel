@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import jsQR from 'jsqr';
+import PatternTest from './PatternTest';
 
 // Boss sprites
 import bossHead from './assets/boss-head.png';
@@ -699,6 +700,9 @@ export default function App() {
             <button style={testButtonStyle} onClick={launchTestBoss}>
               💀 Boss Fight
             </button>
+            <button style={testButtonStyle} onClick={() => { abortNarration(); setScreen('patternTest'); }}>
+              🔷 Pattern Test
+            </button>
           </div>
         </div>
       </div>
@@ -911,6 +915,11 @@ export default function App() {
         {cameraError && <p style={{ color: 'red' }}>{cameraError}</p>}
       </div>
     );
+  }
+
+  // ─── Pattern Test ──────────────────────────────────────────────────────────
+  if (screen === 'patternTest') {
+    return <PatternTest onExit={resetGame} />;
   }
 
   return null;
