@@ -91,7 +91,6 @@ const stopCurrentAudio = (fadeDuration = 400) => {
   if (!_currentAudio) return;
   const audio = _currentAudio;
   _currentAudio = null;
-  // stop browser speech synthesis too
   if (window.speechSynthesis) window.speechSynthesis.cancel();
 
   if (fadeDuration <= 0) {
@@ -112,16 +111,14 @@ const stopCurrentAudio = (fadeDuration = 400) => {
   }, stepTime);
 };
 
-// Returns a promise that resolves when the audio finishes (or rejects on error)
 const speakText = (text) => {
-  stopCurrentAudio(0); // stop any previous immediately when a new line starts
+  stopCurrentAudio(0);
   return new Promise((resolve) => {
     const speakBrowser = () => {
       if (!('speechSynthesis' in window)) { resolve(); return; }
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
-      // prefer a male voice
       const voices = window.speechSynthesis.getVoices();
       const male = voices.find(v =>
         /male/i.test(v.name) ||
@@ -175,28 +172,22 @@ export default function App() {
   const [charScanFeedback, setCharScanFeedback] = useState('');
   const [charCameraError, setCharCameraError] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
-  // intro display text phase
   const [introText, setIntroText] = useState('');
 
-  // Game camera refs
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
   const streamRef = useRef(null);
 
-  // Character camera refs
   const charVideoRef = useRef(null);
   const charCanvasRef = useRef(null);
   const charAnimRef = useRef(null);
   const charStreamRef = useRef(null);
 
-  // Nudge timers
   const nudge1Ref = useRef(null);
   const nudge2Ref = useRef(null);
 
-  // track whether narration sequence is "live" (so we can abort it)
   const narrationAbortRef = useRef(false);
-  // track if char camera is active
   const charCameraActive = useRef(false);
 
   const pendingScanPlayerRef = useRef(null);
@@ -222,7 +213,6 @@ export default function App() {
   const shardZones = ['Village of Obryndel', 'Forest of Travesy', 'Charstone Alpines', 'Mudbrik Castle'];
   const shardOrderNames = ['First', 'Second', 'Third', 'Fourth'];
 
-  // keep refs in sync
   useEffect(() => { currentPlayerRef.current = currentPlayer; }, [currentPlayer]);
   useEffect(() => { roundPhaseRef.current = roundPhase; }, [roundPhase]);
   useEffect(() => { scannedCardsRef.current = scannedCards; }, [scannedCards]);
@@ -233,7 +223,6 @@ export default function App() {
   useEffect(() => { playerCountRef.current = playerCount; }, [playerCount]);
   useEffect(() => { playersRef.current = players; }, [players]);
 
-  // ─── Narration helpers ─────────────────────────────────────────────────────
   const speak = async (text) => {
     setIsSpeaking(true);
     await speakText(text);
@@ -247,7 +236,6 @@ export default function App() {
     setIsSpeaking(false);
   };
 
-  // ─── Nudge timers (only used for player 1) ────────────────────────────────
   const clearNudgeTimers = () => {
     if (nudge1Ref.current) { clearTimeout(nudge1Ref.current); nudge1Ref.current = null; }
     if (nudge2Ref.current) { clearTimeout(nudge2Ref.current); nudge2Ref.current = null; }
@@ -263,7 +251,6 @@ export default function App() {
     }, 10000);
   };
 
-  // ─── Shard schedule ────────────────────────────────────────────────────────
   const shuffleArray = (items) => {
     const copy = [...items];
     for (let i = copy.length - 1; i > 0; i -= 1) {
@@ -290,13 +277,11 @@ export default function App() {
     return `${nextShard.orderName} shard appeared in ${nextShard.zone}.`;
   };
 
-  // ─── Act animation ─────────────────────────────────────────────────────────
   const triggerActAnimation = () => {
     setActAnimating(true);
     setTimeout(() => setActAnimating(false), 1200);
   };
 
-  // ─── Game camera (auto-start) ──────────────────────────────────────────────
   const startCamera = async () => {
     if (!videoRef.current) return;
     try {
@@ -376,14 +361,12 @@ export default function App() {
     }
   };
 
-  // auto-restart camera when phase changes to scanQR
   useEffect(() => {
     if (roundPhase === 'scanQR' && screen === 'game') {
       startCamera();
     }
   }, [roundPhase, screen]);
 
-  // ─── Character camera (auto-start) ────────────────────────────────────────
   const startCharacterCamera = async () => {
     if (!charVideoRef.current) return;
     setCharCameraError('');
@@ -409,7 +392,6 @@ export default function App() {
     if (charAnimRef.current) { cancelAnimationFrame(charAnimRef.current); charAnimRef.current = null; }
   };
 
-  // ref to track characters picked (so scan loop can see latest)
   const charactersRef = useRef([]);
   useEffect(() => { charactersRef.current = characters; }, [characters]);
   const currentPlayerForScan = useRef(0);
@@ -444,7 +426,6 @@ export default function App() {
     charAnimRef.current = requestAnimationFrame(scanCharacterQRLoop);
   };
 
-  // Sequence: speak taunt → speak next player prompt → start cam for next player
   const handleCharacterScanned = async (qrCode, charName) => {
     const playerIdx = currentPlayerForScan.current;
     const newChars = [...charactersRef.current];
@@ -452,7 +433,6 @@ export default function App() {
     setCharacters(newChars);
     charactersRef.current = newChars;
 
-    // speak the character taunt
     await speak(NARRATION.charScanned[qrCode]);
 
     const nextIdx = playerIdx + 1;
@@ -463,27 +443,22 @@ export default function App() {
       currentPlayerForScan.current = nextIdx;
       const promptLine = NARRATION.afterChar[nextIdx];
       if (promptLine) await speak(promptLine);
-      // only arm nudge timers for player 1 (index 0), after that players know what to do
-      // (we already handled player 0 on mount; no nudges for subsequent players)
       startCharacterCamera();
     } else {
-      // all players done
       await speak(NARRATION.allCharsSelected);
-      // transition to game
       setScreen('game');
       setCurrentPlayer(0);
       currentPlayerForScan.current = 0;
     }
   };
 
-  // auto-start character camera when charSelect screen mounts
   useEffect(() => {
     if (screen === 'characterSelect') {
       const run = async () => {
         narrationAbortRef.current = false;
         await speak(NARRATION.charSelectOpen);
         if (narrationAbortRef.current) return;
-        startNudgeTimers(); // only for player 1
+        startNudgeTimers();
         startCharacterCamera();
       };
       run();
@@ -528,7 +503,6 @@ export default function App() {
     };
   }, [screen]);
 
-  // ─── Act changes ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (screen === 'boss') { setAct(3); actRef.current = 3; return; }
     const newAct = roundsCompleted >= 7 ? 2 : 1;
@@ -539,11 +513,8 @@ export default function App() {
     }
   }, [roundsCompleted, screen]);
 
-  // ─── Player turn → auto-start scan ────────────────────────────────────────
   useEffect(() => {
     if (roundPhase === 'playerTurn' && screen === 'game') {
-      // After the event card is dismissed we auto-start next scan
-      // We wait briefly so the event modal can be shown first
       if (!qrData) {
         const t = setTimeout(() => {
           pendingScanPlayerRef.current = currentPlayer;
@@ -555,16 +526,13 @@ export default function App() {
     }
   }, [roundPhase, screen, qrData]);
 
-  // When event modal is dismissed, trigger next player scan
   const handleEventDismiss = () => {
     setQrData('');
-    // auto-advance: start scan for next player
     pendingScanPlayerRef.current = currentPlayerRef.current;
     setRoundPhase('scanQR');
     roundPhaseRef.current = 'scanQR';
   };
 
-  // ─── Tile events ───────────────────────────────────────────────────────────
   const handleTileEvent = (tileNum, playerIndex) => {
     if (tileNum < 1 || tileNum > 29) return null;
     const zone = Math.min(2, actRef.current);
@@ -589,7 +557,6 @@ export default function App() {
     return `Player ${playerIndex + 1} scouts ahead, but the room is eerily calm. Nothing happens.`;
   };
 
-  // ─── Reset ─────────────────────────────────────────────────────────────────
   const resetGame = () => {
     abortNarration();
     stopCamera();
@@ -617,6 +584,62 @@ export default function App() {
     setCharScanFeedback('');
     setCharCameraError('');
     setActAnimating(false);
+  };
+
+  // ─── Quick-launch helpers for test buttons ─────────────────────────────────
+  const launchTestCharacterScan = () => {
+    abortNarration();
+    narrationAbortRef.current = false;
+    setPlayerCount(2);
+    playerCountRef.current = 2;
+    setCurrentPlayer(0);
+    currentPlayerForScan.current = 0;
+    setCharacters([]);
+    charactersRef.current = [];
+    setScreen('characterSelect');
+  };
+
+  const launchTestEventScan = () => {
+    abortNarration();
+    narrationAbortRef.current = false;
+    // Seed dummy players so game logic has something to work with
+    const dummyPlayers = [{ char: 'Goblin', hp: 5, items: [] }, { char: 'Troll', hp: 5, items: [] }];
+    setPlayers(dummyPlayers);
+    playersRef.current = dummyPlayers;
+    setPlayerCount(2);
+    playerCountRef.current = 2;
+    setCharacters(['Goblin', 'Troll']);
+    charactersRef.current = ['Goblin', 'Troll'];
+    setCurrentPlayer(0);
+    currentPlayerRef.current = 0;
+    setRoundsCompleted(0);
+    roundsCompletedRef.current = 0;
+    setAct(1);
+    actRef.current = 1;
+    setBossDefeated(false);
+    setQrData('');
+    setScannedCards([]);
+    scannedCardsRef.current = [];
+    const sched = createShardSchedule();
+    setShardSchedule(sched);
+    shardScheduleRef.current = sched;
+    setNextShardIndex(0);
+    nextShardIndexRef.current = 0;
+    pendingScanPlayerRef.current = 0;
+    setRoundPhase('scanQR');
+    roundPhaseRef.current = 'scanQR';
+    setScreen('game');
+  };
+
+  const launchTestBoss = () => {
+    abortNarration();
+    narrationAbortRef.current = false;
+    setBoss({ head: 5, body: 5, shield: 5 });
+    setBossDefeated(false);
+    setAct(3);
+    actRef.current = 3;
+    speak(NARRATION.bossEntrance);
+    setScreen('boss');
   };
 
   // ─── Boss damage ───────────────────────────────────────────────────────────
@@ -652,6 +675,7 @@ export default function App() {
     return (
       <div style={menuStyle}>
         <h1 style={titleStyle}>OBRYNDEL</h1>
+
         <button
           style={buttonStyle}
           onClick={() => {
@@ -661,11 +685,27 @@ export default function App() {
         >
           Start Game
         </button>
+
+        {/* ── Test / Debug section ── */}
+        <div style={testSectionStyle}>
+          <p style={testLabelStyle}>— test shortcuts —</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+            <button style={testButtonStyle} onClick={launchTestCharacterScan}>
+              🎴 Scan Characters
+            </button>
+            <button style={testButtonStyle} onClick={launchTestEventScan}>
+              🗺️ Scan Event Cards
+            </button>
+            <button style={testButtonStyle} onClick={launchTestBoss}>
+              💀 Boss Fight
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // ─── Intro (narration plays, then auto-advances to player count) ───────────
+  // ─── Intro ─────────────────────────────────────────────────────────────────
   if (screen === 'intro') {
     return <IntroScreen
       onDone={() => setScreen('playerCount')}
@@ -833,7 +873,6 @@ export default function App() {
   if (screen === 'game') {
     return (
       <div style={textBoxStyle}>
-        {/* Act badge */}
         <div style={{
           position: 'fixed', top: 24, left: 0, right: 0,
           display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 50,
@@ -848,7 +887,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Event modal */}
         {qrData && (
           <div style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 80 }}>
             <div style={{ ...cardStyle, maxWidth: 720, padding: 24 }}>
@@ -879,7 +917,6 @@ export default function App() {
 }
 
 // ─── Intro screen component ────────────────────────────────────────────────────
-// Plays the narration, shows the text, then auto-advances
 function IntroScreen({ onDone, onAbort }) {
   const lines = [
     "Baron Thobrick's quest to shatter the Mythical Crystal of the Ogre has been successful.",
@@ -894,11 +931,9 @@ function IntroScreen({ onDone, onAbort }) {
 
   useEffect(() => {
     const run = async () => {
-      // speak full narration
       stopCurrentAudio(0);
       const p = speakText(NARRATION.intro);
 
-      // Show lines one by one with rough timing
       const delays = [0, 2200, 4800, 7400, 8200, 9000];
       delays.forEach((d, i) => {
         setTimeout(() => {
@@ -908,7 +943,6 @@ function IntroScreen({ onDone, onAbort }) {
 
       await p;
       if (!abortedRef.current) {
-        // small pause before auto-advancing
         setTimeout(() => { if (!abortedRef.current) onDone(); }, 1200);
       }
     };
@@ -976,6 +1010,30 @@ const buttonStyle = {
   color: '#FFF8E6', cursor: 'pointer', margin: 10,
   boxShadow: '0 14px 40px rgba(5,3,2,0.75), inset 0 1px 0 rgba(255,255,255,0.02)',
   transition: 'transform 140ms cubic-bezier(.2,.8,.2,1), box-shadow 140ms ease',
+};
+
+// Subtler style for test buttons so they read as secondary / dev-facing
+const testSectionStyle = {
+  marginTop: 48,
+  padding: '20px 28px',
+  borderTop: '1px solid rgba(255,255,255,0.05)',
+  textAlign: 'center',
+};
+
+const testLabelStyle = {
+  color: 'rgba(180,160,100,0.35)',
+  fontSize: '0.7rem',
+  letterSpacing: 3,
+  textTransform: 'uppercase',
+  margin: '0 0 14px',
+};
+
+const testButtonStyle = {
+  padding: '10px 18px', fontSize: '0.88rem',
+  background: 'rgba(255,255,255,0.03)',
+  border: '1px solid rgba(213,169,62,0.12)', borderRadius: 10,
+  color: 'rgba(239,216,139,0.6)', cursor: 'pointer',
+  transition: 'background 140ms ease, color 140ms ease',
 };
 
 const textBoxStyle = {
