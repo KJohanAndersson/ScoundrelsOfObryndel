@@ -201,63 +201,71 @@ export default function PatternTest({ onExit }) {
   const analyzeFrame = () => {
     const video  = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) { setResult("Boss -1 HP"); setPhase("result"); return; }
+    if (!video || !canvas) { setResult("Boss -1 HP! 💥"); setPhase("result"); return; }
 
     const ctx = canvas.getContext("2d");
     canvas.width  = video.videoWidth;
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0);
 
-    const data   = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    const vw     = canvas.width;
-    const vh     = canvas.height;
-
-    // Map the virtual pattern bounding box to the video frame coordinate space
+    const data     = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    const vw       = canvas.width;
+    const vh       = canvas.height;
     const vidScale = Math.min(vw, vh) / VIRTUAL;
 
-    // Count colored pixels inside vs. total colored pixels
-    let insideColored = 0;
-    let totalColored  = 0;
+    // Helper: is this pixel inside any of the safe (cutout) zones?
+    const isInSafeZone = (px, py) => resolvedSlots.some(({ slot, shape }) => {
+      const sx = slot.x * vidScale;
+      const sy = slot.y * vidScale;
+      if (shape.type === "rect") {
+        return px >= sx && px <= sx + shape.w * vidScale &&
+               py >= sy && py <= sy + shape.h * vidScale;
+      }
+      if (shape.type === "triangle") {
+        const s = shape.s * vidScale;
+        const h = (Math.sqrt(3) / 2) * s;
+        const relX = px - sx;
+        const relY = py - sy;
+        if (relY < 0 || relY > h) return false;
+        const halfBase = (relY / h) * (s / 2);
+        const mid = s / 2;
+        return relX >= mid - halfBase && relX <= mid + halfBase;
+      }
+      return false;
+    });
 
-    for (let i = 0; i < data.length; i += 16) {
-      const r = data[i], g = data[i + 1], b = data[i + 2];
-      // "colored" = not near-white (background) and not near-black (shadow)
-      const isColored = !(r > 200 && g > 200 && b > 200) && (r + g + b > 60);
-      if (!isColored) continue;
+    // Helper: is this pixel a "game piece color"?
+    // Checks for strong red, green, blue, or purple — i.e. the shape colors.
+    // Ignores near-white, near-black, and mid-grey (table/floor/hands).
+    const isGameColor = (r, g, b) => {
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const saturation = max === 0 ? 0 : (max - min) / max;
+      // Must be reasonably saturated and bright enough to be a game piece
+      if (saturation < 0.35 || max < 60) return false;
+      return true;
+    };
 
-      totalColored++;
+    let dangerColored = 0; // colored pixels found in the danger zone
+    let dangerTotal   = 0; // total pixels sampled in the danger zone
 
+    // Sample every 8th pixel (step of 32 bytes) for performance
+    for (let i = 0; i < data.length; i += 32) {
       const px = (i / 4) % vw;
       const py = Math.floor((i / 4) / vw);
 
-      // Check if this pixel falls inside any of the pattern shape zones
-      const inside = resolvedSlots.some(({ slot, shape }) => {
-        const sx = slot.x * vidScale;
-        const sy = slot.y * vidScale;
-        if (shape.type === "rect") {
-          return px >= sx && px <= sx + shape.w * vidScale &&
-                 py >= sy && py <= sy + shape.h * vidScale;
-        }
-        if (shape.type === "triangle") {
-          const s = shape.s * vidScale;
-          const h = (Math.sqrt(3) / 2) * s;
-          // point-in-triangle test (upward equilateral)
-          const relX = px - sx;
-          const relY = py - sy;
-          if (relY < 0 || relY > h) return false;
-          const halfBase = (relY / h) * (s / 2);
-          const mid = s / 2;
-          return relX >= mid - halfBase && relX <= mid + halfBase;
-        }
-        return false;
-      });
+      // Only care about pixels in the DANGER zone (outside safe zones)
+      if (isInSafeZone(px, py)) continue;
 
-      if (inside) insideColored++;
+      dangerTotal++;
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      if (isGameColor(r, g, b)) dangerColored++;
     }
 
-    const ratio = totalColored > 0 ? insideColored / totalColored : 0;
-    // If more than 55% of colored pixels are inside the zones → success
-    setResult(ratio > 0.55 ? "Boss -1 HP! 💥" : "Players -1 HP 💀");
+    // If more than 8% of the danger zone has game-piece colors → shapes are bleeding out → fail
+    const ratio = dangerTotal > 0 ? dangerColored / dangerTotal : 0;
+    const SUCCESS_THRESHOLD = 0.08;
+    setResult(ratio < SUCCESS_THRESHOLD ? "Boss -1 HP! 💥" : "Players -1 HP 💀");
     setPhase("result");
   };
 
