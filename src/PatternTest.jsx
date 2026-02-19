@@ -2,10 +2,10 @@ import React, { useEffect, useRef, useState, useMemo } from "react";
 
 // ─── Shape definitions (all sizes in px, will be scaled to screen) ───────────
 const SHAPES = [
-  { id: "purple-square",  label: "Purple square",    color: "#a855f7", type: "rect",     w: 800, h: 800  },
-  { id: "blue-rect",      label: "Blue rectangle",   color: "#3b82f6", type: "rect",     w: 600, h: 1000 },
-  { id: "green-triangle", label: "Green triangle",   color: "#22c55e", type: "triangle", s: 800          },
-  { id: "red-rect",       label: "Red rectangle",    color: "#ef4444", type: "rect",     w: 200, h: 1200 },
+  { id: "red-square",    label: "Red square",    color: "#ef4444", type: "rect", w: 400, h: 400 },
+  { id: "green-square",  label: "Green square",  color: "#22c55e", type: "rect", w: 400, h: 400 },
+  { id: "yellow-square", label: "Yellow square", color: "#eab308", type: "rect", w: 400, h: 400 },
+  { id: "blue-square",   label: "Blue square",   color: "#3b82f6", type: "rect", w: 400, h: 400 },
 ];
 
 // ─── Pattern recipes ──────────────────────────────────────────────────────────
@@ -14,47 +14,57 @@ const SHAPES = [
 // `x` and `y` are the top-left corner of the bounding box of each shape.
 const PATTERNS = [
   {
-    name: "The Fortress",
+    name: "The Grid",
     shapes: [
-      { id: "blue-rect",      x: 200, y: 0,   rot: 0   },
-      { id: "red-rect",       x: 0,   y: 100, rot: 90  },
+      { id: "red-square",    x: 0,   y: 0,   rot: 0 },
+      { id: "green-square",  x: 450, y: 0,   rot: 0 },
+      { id: "yellow-square", x: 0,   y: 450, rot: 0 },
+      { id: "blue-square",   x: 450, y: 450, rot: 0 },
     ],
   },
   {
-    name: "The Peak",
+    name: "The Column",
     shapes: [
-      { id: "green-triangle", x: 100, y: 0,   rot: 0   },
-      { id: "red-rect",       x: 380, y: 400, rot: 0   },
+      { id: "red-square",    x: 300, y: 0,   rot: 0 },
+      { id: "green-square",  x: 300, y: 200, rot: 0 },
+      { id: "yellow-square", x: 300, y: 400, rot: 0 },
+      { id: "blue-square",   x: 300, y: 600, rot: 0 },
     ],
   },
   {
-    name: "The Cross",
+    name: "The Row",
     shapes: [
-      { id: "blue-rect",      x: 200, y: 0,   rot: 0   },
-      { id: "red-rect",       x: 0,   y: 300, rot: 90  },
+      { id: "red-square",    x: 0,   y: 300, rot: 0 },
+      { id: "green-square",  x: 200, y: 300, rot: 0 },
+      { id: "yellow-square", x: 400, y: 300, rot: 0 },
+      { id: "blue-square",   x: 600, y: 300, rot: 0 },
     ],
   },
   {
-    name: "The Pyramid",
+    name: "The Diamond",
     shapes: [
-      { id: "green-triangle", x: 100, y: 0,   rot: 0   },
-      { id: "purple-square",  x: 50,  y: 500, rot: 0   },
+      { id: "red-square",    x: 300, y: 0,   rot: 0 },
+      { id: "green-square",  x: 0,   y: 300, rot: 0 },
+      { id: "yellow-square", x: 600, y: 300, rot: 0 },
+      { id: "blue-square",   x: 300, y: 600, rot: 0 },
     ],
   },
   {
-    name: "The Tower",
+    name: "The Corners",
     shapes: [
-      { id: "red-rect",       x: 400, y: 0,   rot: 0   },
-      { id: "purple-square",  x: 200, y: 600, rot: 0   },
+      { id: "red-square",    x: 0,   y: 0,   rot: 0 },
+      { id: "green-square",  x: 600, y: 0,   rot: 0 },
+      { id: "yellow-square", x: 0,   y: 600, rot: 0 },
+      { id: "blue-square",   x: 600, y: 600, rot: 0 },
     ],
   },
   {
-    name: "All Together",
+    name: "The Staircase",
     shapes: [
-      { id: "purple-square",  x: 0,   y: 0,   rot: 0   },
-      { id: "blue-rect",      x: 400, y: 0,   rot: 0   },
-      { id: "green-triangle", x: 0,   y: 600, rot: 0   },
-      { id: "red-rect",       x: 700, y: 200, rot: 0   },
+      { id: "red-square",    x: 0,   y: 0,   rot: 0 },
+      { id: "green-square",  x: 200, y: 200, rot: 0 },
+      { id: "yellow-square", x: 400, y: 400, rot: 0 },
+      { id: "blue-square",   x: 600, y: 600, rot: 0 },
     ],
   },
 ];
