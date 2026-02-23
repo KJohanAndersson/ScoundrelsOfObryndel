@@ -159,10 +159,8 @@ const SHARD_ORDER_NAMES = ['First', 'Second', 'Third', 'Fourth'];
 
 // ─── Event outcomes for no-QR mode ────────────────────────────────────────────
 const MANUAL_EVENTS = [
-  { id: 'item',    label: '🎒 Found Item',  desc: 'Player discovers a useful item.' },
-  { id: 'trap',    label: '🪤 Trap!',        desc: 'Player springs a trap. −1 HP.' },
-  { id: 'neutral', label: '🌫️ Nothing',      desc: 'The room is eerily calm.' },
-  { id: 'boss',    label: '💀 Boss Appears', desc: 'Thobrick emerges from the shadows!' },
+  { id: 'scan',    label: '🃏 Scan Event',           desc: 'Draw and resolve the top event card.' },
+  { id: 'boss',    label: '💀 Forge All Shards (Boss Phase)', desc: 'All shards forged — Thobrick awakens!' },
 ];
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -462,18 +460,20 @@ export default function App() {
       setAct(3);
       return;
     }
+    // 'scan' — resolve a random event just like scanning a tile would
     const targetPlayer = pendingScanPlayerRef.current != null ? pendingScanPlayerRef.current : currentPlayerRef.current;
-    const tileNum = Math.floor(Math.random() * 29) + 1;
-    // Override random outcome with chosen event
     let eventMsg = '';
     setPlayers(prev => {
       const copy = [...prev];
       if (!copy[targetPlayer]) return prev;
-      if (eventId === 'trap') {
+      const zone = Math.min(2, actRef.current);
+      const weights = actRef.current === 1 ? { item: 0.22, trap: 0.18 } : { item: 0.18, trap: 0.22 };
+      const roll = Math.random();
+      const outcome = roll < weights.item ? 'item' : roll < weights.item + weights.trap ? 'trap' : 'neutral';
+      if (outcome === 'trap') {
         copy[targetPlayer] = { ...copy[targetPlayer], hp: Math.max(copy[targetPlayer].hp - 1, 0) };
         eventMsg = NARRATION.trapTriggered;
-      } else if (eventId === 'item') {
-        const zone = Math.min(2, actRef.current);
+      } else if (outcome === 'item') {
         copy[targetPlayer] = { ...copy[targetPlayer], items: [...copy[targetPlayer].items, `Treasure (Zone ${zone})`] };
         eventMsg = NARRATION.itemFound;
       } else {
@@ -674,7 +674,7 @@ export default function App() {
             }}
             onClick={() => launchGame(false)}
           >
-            No QR and TTS Mode
+            🎲 Play Without QR Scanner
           </button>
           <p style={{ color: 'rgba(200,180,130,0.35)', fontSize: '0.72rem', margin: '2px 0 0', letterSpacing: 1 }}>
             Use buttons instead of card scanning
@@ -969,30 +969,32 @@ export default function App() {
             <p style={{ color: '#9a8a6a', fontSize: 13, marginBottom: 20 }}>
               Discard the top card from the deck, then tap the matching outcome below.
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
               {MANUAL_EVENTS.map(evt => (
                 <button
                   key={evt.id}
                   onClick={() => handleNoQrEvent(evt.id)}
                   style={{
-                    padding: '16px 10px', borderRadius: 12, cursor: 'pointer',
+                    padding: '18px 20px', borderRadius: 12, cursor: 'pointer',
                     border: '1px solid rgba(213,169,62,0.22)',
                     background: evt.id === 'boss'
                       ? 'linear-gradient(180deg,rgba(80,20,20,0.9),rgba(30,5,5,0.9))'
                       : 'linear-gradient(180deg,rgba(50,35,15,0.8),rgba(15,10,5,0.8))',
                     color: evt.id === 'boss' ? '#ffaaaa' : '#EFD88B',
-                    fontSize: '0.9rem', textAlign: 'center',
-                    display: 'flex', flexDirection: 'column', gap: 4,
+                    fontSize: '1rem', textAlign: 'center',
+                    display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 14,
                     transition: 'transform 120ms ease',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
                 >
-                  <span style={{ fontSize: '1.4rem' }}>{evt.label.split(' ')[0]}</span>
-                  <span style={{ fontFamily: "'Cinzel', Georgia, serif", letterSpacing: 0.5 }}>
-                    {evt.label.split(' ').slice(1).join(' ')}
+                  <span style={{ fontSize: '1.8rem', flexShrink: 0 }}>{evt.label.split(' ')[0]}</span>
+                  <span style={{ textAlign: 'left' }}>
+                    <span style={{ fontFamily: "'Cinzel', Georgia, serif", letterSpacing: 0.5, display: 'block' }}>
+                      {evt.label.split(' ').slice(1).join(' ')}
+                    </span>
+                    <span style={{ color: 'rgba(200,180,130,0.45)', fontSize: '0.72rem', marginTop: 3, display: 'block' }}>{evt.desc}</span>
                   </span>
-                  <span style={{ color: 'rgba(200,180,130,0.45)', fontSize: '0.72rem', marginTop: 2 }}>{evt.desc}</span>
                 </button>
               ))}
             </div>
