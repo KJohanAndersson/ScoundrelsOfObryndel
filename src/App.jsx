@@ -189,6 +189,7 @@ export default function App() {
   const [charScanFeedback, setCharScanFeedback] = useState('');
   const [charCameraError, setCharCameraError] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [narrationText, setNarrationText] = useState('');
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -230,7 +231,18 @@ export default function App() {
   useEffect(() => { charactersRef.current = characters; }, [characters]);
   useEffect(() => { currentPlayerForScan.current = currentPlayer; }, [currentPlayer]);
 
-  const speak = async (text) => { setIsSpeaking(true); await speakText(text); setIsSpeaking(false); };
+  const noQrModeRef = useRef(false);
+  useEffect(() => { noQrModeRef.current = noQrMode; }, [noQrMode]);
+
+  const speak = async (text) => {
+    if (noQrModeRef.current) {
+      setNarrationText(text);
+      return;
+    }
+    setIsSpeaking(true);
+    await speakText(text);
+    setIsSpeaking(false);
+  };
   const abortNarration = () => {
     narrationAbortRef.current = true;
     stopCurrentAudio(300);
@@ -525,6 +537,7 @@ export default function App() {
     if (roundPhase === 'playerTurn' && screen === 'game') {
       if (!qrData) {
         const t = setTimeout(() => {
+          if (noQrModeRef.current) setNarrationText('');
           pendingScanPlayerRef.current = currentPlayer;
           setRoundPhase('scanQR');
           roundPhaseRef.current = 'scanQR';
@@ -573,6 +586,7 @@ export default function App() {
     setShardSchedule([]); shardScheduleRef.current = [];
     setNextShardIndex(0); nextShardIndexRef.current = 0;
     setCharScanFeedback(''); setCharCameraError(''); setActAnimating(false);
+    setNarrationText('');
   };
 
   const launchGame = (useQr) => {
@@ -660,7 +674,7 @@ export default function App() {
             }}
             onClick={() => launchGame(false)}
           >
-            No QR Mode
+            🎲 Play Without QR Scanner
           </button>
           <p style={{ color: 'rgba(200,180,130,0.35)', fontSize: '0.72rem', margin: '2px 0 0', letterSpacing: 1 }}>
             Use buttons instead of card scanning
@@ -729,6 +743,14 @@ export default function App() {
             <p style={{ color: '#cfc1a3', marginBottom: 24 }}>
               Pick a character from the cards below.
             </p>
+
+            {/* Narration text */}
+            {narrationText && (
+              <div style={narrationBoxStyle}>
+                <span style={{ opacity: 0.45, fontSize: '0.7rem', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Thobrick speaks…</span>
+                {narrationText}
+              </div>
+            )}
 
             {/* Character pick buttons */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginBottom: 24 }}>
@@ -931,6 +953,14 @@ export default function App() {
             </p>
           )}
         </div>
+
+        {/* Narration text (no-QR mode) */}
+        {noQrMode && narrationText && roundPhase !== 'scanQR' && !qrData && (
+          <div style={{ ...narrationBoxStyle, maxWidth: 500, marginBottom: 16 }}>
+            <span style={{ opacity: 0.45, fontSize: '0.7rem', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Thobrick speaks…</span>
+            {narrationText}
+          </div>
+        )}
 
         {/* ── NO-QR event picker ── */}
         {noQrMode && roundPhase === 'scanQR' && !qrData && (
@@ -1139,4 +1169,19 @@ const cardStyle = {
   background: 'linear-gradient(180deg, rgba(36,24,18,0.9), rgba(6,4,3,0.9))',
   border: '1px solid rgba(213,169,62,0.12)', padding: 22, borderRadius: 14,
   boxShadow: '0 28px 100px rgba(0,0,0,0.85), inset 0 2px 0 rgba(255,255,255,0.02)',
+};
+
+const narrationBoxStyle = {
+  background: 'rgba(20,12,5,0.75)',
+  border: '1px solid rgba(213,169,62,0.15)',
+  borderLeft: '3px solid rgba(213,169,62,0.5)',
+  borderRadius: 10,
+  padding: '14px 18px',
+  color: '#D4C49A',
+  fontStyle: 'italic',
+  fontSize: '0.95rem',
+  lineHeight: 1.7,
+  textAlign: 'left',
+  marginTop: 8,
+  width: '100%',
 };
