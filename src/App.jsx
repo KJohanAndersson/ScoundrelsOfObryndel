@@ -660,7 +660,7 @@ export default function App() {
             }}
             onClick={() => launchGame(false)}
           >
-            🎲 Play Without QR Scanner
+            No QR Mode
           </button>
           <p style={{ color: 'rgba(200,180,130,0.35)', fontSize: '0.72rem', margin: '2px 0 0', letterSpacing: 1 }}>
             Use buttons instead of card scanning
