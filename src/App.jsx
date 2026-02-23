@@ -85,7 +85,7 @@ const NARRATION = {
     "Ugh… …I am dead now.",
 };
 
-// ─── TTS controller (singleton audio so we can stop/fade it) ─────────────────
+// ─── TTS controller ────────────────────────────────────────────────────────────
 let _currentAudio = null;
 
 const stopCurrentAudio = (fadeDuration = 400) => {
@@ -93,11 +93,7 @@ const stopCurrentAudio = (fadeDuration = 400) => {
   const audio = _currentAudio;
   _currentAudio = null;
   if (window.speechSynthesis) window.speechSynthesis.cancel();
-
-  if (fadeDuration <= 0) {
-    audio.pause();
-    return;
-  }
+  if (fadeDuration <= 0) { audio.pause(); return; }
   const startVol = audio.volume;
   const steps = 20;
   const stepTime = fadeDuration / steps;
@@ -105,10 +101,7 @@ const stopCurrentAudio = (fadeDuration = 400) => {
   const fade = setInterval(() => {
     step++;
     audio.volume = Math.max(0, startVol * (1 - step / steps));
-    if (step >= steps) {
-      clearInterval(fade);
-      audio.pause();
-    }
+    if (step >= steps) { clearInterval(fade); audio.pause(); }
   }, stepTime);
 };
 
@@ -122,38 +115,61 @@ const speakText = (text) => {
       utterance.lang = 'en-US';
       const voices = window.speechSynthesis.getVoices();
       const male = voices.find(v =>
-        /male/i.test(v.name) ||
-        /david|mark|daniel|alex|fred|ralph|junior|albert/i.test(v.name)
+        /male/i.test(v.name) || /david|mark|daniel|alex|fred|ralph|junior|albert/i.test(v.name)
       );
       if (male) utterance.voice = male;
       utterance.onend = resolve;
       utterance.onerror = resolve;
       window.speechSynthesis.speak(utterance);
     };
-
     fetch('/api/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
     })
-      .then(async res => {
-        if (!res.ok) throw new Error(`TTS error: ${res.status}`);
-        return res.arrayBuffer();
-      })
+      .then(async res => { if (!res.ok) throw new Error(); return res.arrayBuffer(); })
       .then(buf => {
         const blob = new Blob([buf], { type: 'audio/mpeg' });
         const audio = new Audio(URL.createObjectURL(blob));
         _currentAudio = audio;
         audio.onended = () => { if (_currentAudio === audio) _currentAudio = null; resolve(); };
         audio.onerror = () => { if (_currentAudio === audio) _currentAudio = null; resolve(); };
-        audio.play().catch(() => { speakBrowser(); });
+        audio.play().catch(() => speakBrowser());
       })
       .catch(() => speakBrowser());
   });
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Character metadata ────────────────────────────────────────────────────────
+const CHARACTER_QR_MAP = {
+  'Character-001': 'Goblin',
+  'Character-002': 'Troll',
+  'Character-003': 'Cyclops',
+  'Character-004': 'Witch',
+};
+
+const CHARACTER_EMOJIS = { Goblin: '👺', Troll: '🧌', Cyclops: '👁️', Witch: '🧙‍♀️' };
+const AVAILABLE_CHARACTERS = ['Goblin', 'Troll', 'Cyclops', 'Witch'];
+const CHARACTER_TO_QR = Object.fromEntries(
+  Object.entries(CHARACTER_QR_MAP).map(([k, v]) => [v, k])
+);
+
+const SHARD_ZONES = ['Village of Obryndel', 'Forest of Travesy', 'Charstone Alpines', 'Mudbrik Castle'];
+const SHARD_ORDER_NAMES = ['First', 'Second', 'Third', 'Fourth'];
+
+// ─── Event outcomes for no-QR mode ────────────────────────────────────────────
+const MANUAL_EVENTS = [
+  { id: 'item',    label: '🎒 Found Item',  desc: 'Player discovers a useful item.' },
+  { id: 'trap',    label: '🪤 Trap!',        desc: 'Player springs a trap. −1 HP.' },
+  { id: 'neutral', label: '🌫️ Nothing',      desc: 'The room is eerily calm.' },
+  { id: 'boss',    label: '💀 Boss Appears', desc: 'Thobrick emerges from the shadows!' },
+];
+
+// ═════════════════════════════════════════════════════════════════════════════
 export default function App() {
+  // ── Mode flag: true = no QR scanning, use buttons instead ──────────────────
+  const [noQrMode, setNoQrMode] = useState(false);
+
   const [screen, setScreen] = useState('main');
   const [playerCount, setPlayerCount] = useState(2);
   const [currentPlayer, setCurrentPlayer] = useState(0);
@@ -173,7 +189,6 @@ export default function App() {
   const [charScanFeedback, setCharScanFeedback] = useState('');
   const [charCameraError, setCharCameraError] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [introText, setIntroText] = useState('');
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -187,7 +202,6 @@ export default function App() {
 
   const nudge1Ref = useRef(null);
   const nudge2Ref = useRef(null);
-
   const narrationAbortRef = useRef(false);
   const charCameraActive = useRef(false);
 
@@ -201,18 +215,8 @@ export default function App() {
   const actRef = useRef(1);
   const playerCountRef = useRef(2);
   const playersRef = useRef([]);
-
-  const availableCharacters = ['Goblin', 'Troll', 'Cyclops', 'Witch'];
-
-  const characterQRMap = {
-    'Character-001': 'Goblin',
-    'Character-002': 'Troll',
-    'Character-003': 'Cyclops',
-    'Character-004': 'Witch',
-  };
-
-  const shardZones = ['Village of Obryndel', 'Forest of Travesy', 'Charstone Alpines', 'Mudbrik Castle'];
-  const shardOrderNames = ['First', 'Second', 'Third', 'Fourth'];
+  const charactersRef = useRef([]);
+  const currentPlayerForScan = useRef(0);
 
   useEffect(() => { currentPlayerRef.current = currentPlayer; }, [currentPlayer]);
   useEffect(() => { roundPhaseRef.current = roundPhase; }, [roundPhase]);
@@ -223,13 +227,10 @@ export default function App() {
   useEffect(() => { actRef.current = act; }, [act]);
   useEffect(() => { playerCountRef.current = playerCount; }, [playerCount]);
   useEffect(() => { playersRef.current = players; }, [players]);
+  useEffect(() => { charactersRef.current = characters; }, [characters]);
+  useEffect(() => { currentPlayerForScan.current = currentPlayer; }, [currentPlayer]);
 
-  const speak = async (text) => {
-    setIsSpeaking(true);
-    await speakText(text);
-    setIsSpeaking(false);
-  };
-
+  const speak = async (text) => { setIsSpeaking(true); await speakText(text); setIsSpeaking(false); };
   const abortNarration = () => {
     narrationAbortRef.current = true;
     stopCurrentAudio(300);
@@ -246,15 +247,13 @@ export default function App() {
     clearNudgeTimers();
     nudge1Ref.current = setTimeout(async () => {
       await speak(NARRATION.charSelectNudge1);
-      nudge2Ref.current = setTimeout(() => {
-        speak(NARRATION.charSelectNudge2);
-      }, 10000);
+      nudge2Ref.current = setTimeout(() => speak(NARRATION.charSelectNudge2), 10000);
     }, 10000);
   };
 
   const shuffleArray = (items) => {
     const copy = [...items];
-    for (let i = copy.length - 1; i > 0; i -= 1) {
+    for (let i = copy.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [copy[i], copy[j]] = [copy[j], copy[i]];
     }
@@ -263,8 +262,8 @@ export default function App() {
 
   const createShardSchedule = () => {
     const rounds = shuffleArray([1, 2, 3, 4, 5]).slice(0, 4).sort((a, b) => a - b);
-    const zones = shuffleArray(shardZones);
-    return rounds.map((round, index) => ({ round, zone: zones[index], orderName: shardOrderNames[index] }));
+    const zones = shuffleArray(SHARD_ZONES);
+    return rounds.map((round, index) => ({ round, zone: zones[index], orderName: SHARD_ORDER_NAMES[index] }));
   };
 
   const maybeGetShardMessage = (currentRound) => {
@@ -283,6 +282,7 @@ export default function App() {
     setTimeout(() => setActAnimating(false), 1200);
   };
 
+  // ─── QR Camera ─────────────────────────────────────────────────────────────
   const startCamera = async () => {
     if (!videoRef.current) return;
     try {
@@ -291,16 +291,11 @@ export default function App() {
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
       animationRef.current = requestAnimationFrame(scanQRCodeLoop);
-    } catch (err) {
-      setCameraError('Camera error: ' + err.message);
-    }
+    } catch (err) { setCameraError('Camera error: ' + err.message); }
   };
 
   const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-    }
+    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
     if (animationRef.current) { cancelAnimationFrame(animationRef.current); animationRef.current = null; }
   };
 
@@ -311,16 +306,14 @@ export default function App() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const code = jsQR(imageData.data, imageData.width, imageData.height);
       if (code && code.data.startsWith('Tile-') && !scannedCardsRef.current.includes(code.data)) {
         setScannedCards(prev => { const n = [...prev, code.data]; scannedCardsRef.current = n; return n; });
         stopCamera();
-        const num = parseInt(code.data.split('-')[1], 10);
-        handleTileScan(num);
+        handleTileScan(parseInt(code.data.split('-')[1], 10));
         return;
       }
     }
@@ -342,36 +335,33 @@ export default function App() {
       const shardMsg = maybeGetShardMessage(currentRound);
       const combinedMsg = [eventMsg, shardMsg].filter(Boolean).join(' ');
       if (combinedMsg) { setQrData(combinedMsg); speak(combinedMsg); }
-
-      const pc = playerCountRef.current;
-      if (targetPlayer < pc - 1) {
-        setCurrentPlayer(targetPlayer + 1);
-        currentPlayerRef.current = targetPlayer + 1;
-      } else {
-        setCurrentPlayer(0);
-        currentPlayerRef.current = 0;
-        setRoundsCompleted(prev => {
-          const next = prev + 1;
-          roundsCompletedRef.current = next;
-          return next;
-        });
-      }
-      pendingScanPlayerRef.current = null;
-      setRoundPhase('playerTurn');
-      roundPhaseRef.current = 'playerTurn';
+      advanceTurn(targetPlayer);
     }
   };
 
-  useEffect(() => {
-    if (roundPhase === 'scanQR' && screen === 'game') {
-      startCamera();
+  const advanceTurn = (targetPlayer) => {
+    const pc = playerCountRef.current;
+    if (targetPlayer < pc - 1) {
+      setCurrentPlayer(targetPlayer + 1);
+      currentPlayerRef.current = targetPlayer + 1;
+    } else {
+      setCurrentPlayer(0);
+      currentPlayerRef.current = 0;
+      setRoundsCompleted(prev => { const next = prev + 1; roundsCompletedRef.current = next; return next; });
     }
+    pendingScanPlayerRef.current = null;
+    setRoundPhase('playerTurn');
+    roundPhaseRef.current = 'playerTurn';
+  };
+
+  useEffect(() => {
+    if (roundPhase === 'scanQR' && screen === 'game' && !noQrMode) startCamera();
   }, [roundPhase, screen]);
 
+  // ─── Character camera (QR mode only) ──────────────────────────────────────
   const startCharacterCamera = async () => {
     if (!charVideoRef.current) return;
-    setCharCameraError('');
-    setCharScanFeedback('');
+    setCharCameraError(''); setCharScanFeedback('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
       charStreamRef.current = stream;
@@ -379,46 +369,31 @@ export default function App() {
       await charVideoRef.current.play();
       charCameraActive.current = true;
       charAnimRef.current = requestAnimationFrame(scanCharacterQRLoop);
-    } catch (err) {
-      setCharCameraError('Camera error: ' + err.message);
-    }
+    } catch (err) { setCharCameraError('Camera error: ' + err.message); }
   };
 
   const stopCharacterCamera = () => {
     charCameraActive.current = false;
-    if (charStreamRef.current) {
-      charStreamRef.current.getTracks().forEach(t => t.stop());
-      charStreamRef.current = null;
-    }
+    if (charStreamRef.current) { charStreamRef.current.getTracks().forEach(t => t.stop()); charStreamRef.current = null; }
     if (charAnimRef.current) { cancelAnimationFrame(charAnimRef.current); charAnimRef.current = null; }
   };
 
-  const charactersRef = useRef([]);
-  useEffect(() => { charactersRef.current = characters; }, [characters]);
-  const currentPlayerForScan = useRef(0);
-  useEffect(() => { currentPlayerForScan.current = currentPlayer; }, [currentPlayer]);
-
   const scanCharacterQRLoop = () => {
-    if (!charCameraActive.current) return;
-    if (!charVideoRef.current || !charCanvasRef.current) return;
+    if (!charCameraActive.current || !charVideoRef.current || !charCanvasRef.current) return;
     const video = charVideoRef.current;
     const canvas = charCanvasRef.current;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const code = jsQR(imageData.data, imageData.width, imageData.height);
-      if (code && characterQRMap[code.data]) {
-        const charName = characterQRMap[code.data];
-        const alreadyPicked = charactersRef.current.filter(c => c).includes(charName);
-        if (alreadyPicked) {
+      if (code && CHARACTER_QR_MAP[code.data]) {
+        const charName = CHARACTER_QR_MAP[code.data];
+        if (charactersRef.current.filter(c => c).includes(charName)) {
           setCharScanFeedback(`${charName} is already taken! Try a different card.`);
         } else {
-          clearNudgeTimers();
-          stopCharacterCamera();
-          setCharScanFeedback('');
+          clearNudgeTimers(); stopCharacterCamera(); setCharScanFeedback('');
           handleCharacterScanned(code.data, charName);
           return;
         }
@@ -431,26 +406,76 @@ export default function App() {
     const playerIdx = currentPlayerForScan.current;
     const newChars = [...charactersRef.current];
     newChars[playerIdx] = charName;
-    setCharacters(newChars);
-    charactersRef.current = newChars;
-
+    setCharacters(newChars); charactersRef.current = newChars;
     await speak(NARRATION.charScanned[qrCode]);
-
     const nextIdx = playerIdx + 1;
     const pc = playerCountRef.current;
-
     if (nextIdx < pc) {
-      setCurrentPlayer(nextIdx);
-      currentPlayerForScan.current = nextIdx;
+      setCurrentPlayer(nextIdx); currentPlayerForScan.current = nextIdx;
       const promptLine = NARRATION.afterChar[nextIdx];
       if (promptLine) await speak(promptLine);
       startCharacterCamera();
     } else {
       await speak(NARRATION.allCharsSelected);
-      setScreen('game');
-      setCurrentPlayer(0);
-      currentPlayerForScan.current = 0;
+      setScreen('game'); setCurrentPlayer(0); currentPlayerForScan.current = 0;
     }
+  };
+
+  // ─── No-QR character pick ──────────────────────────────────────────────────
+  const handleNoQrCharacterPick = async (charName) => {
+    const playerIdx = currentPlayerForScan.current;
+    const newChars = [...charactersRef.current];
+    newChars[playerIdx] = charName;
+    setCharacters(newChars); charactersRef.current = newChars;
+    const qrCode = CHARACTER_TO_QR[charName];
+    await speak(NARRATION.charScanned[qrCode]);
+    const nextIdx = playerIdx + 1;
+    const pc = playerCountRef.current;
+    if (nextIdx < pc) {
+      setCurrentPlayer(nextIdx); currentPlayerForScan.current = nextIdx;
+      const promptLine = NARRATION.afterChar[nextIdx];
+      if (promptLine) await speak(promptLine);
+    } else {
+      await speak(NARRATION.allCharsSelected);
+      setScreen('game'); setCurrentPlayer(0); currentPlayerForScan.current = 0;
+    }
+  };
+
+  // ─── No-QR event resolution ────────────────────────────────────────────────
+  const handleNoQrEvent = (eventId) => {
+    if (eventId === 'boss') {
+      speak(NARRATION.bossEntrance);
+      setQrData(NARRATION.bossEntrance);
+      setScreen('boss');
+      setAct(3);
+      return;
+    }
+    const targetPlayer = pendingScanPlayerRef.current != null ? pendingScanPlayerRef.current : currentPlayerRef.current;
+    const tileNum = Math.floor(Math.random() * 29) + 1;
+    // Override random outcome with chosen event
+    let eventMsg = '';
+    setPlayers(prev => {
+      const copy = [...prev];
+      if (!copy[targetPlayer]) return prev;
+      if (eventId === 'trap') {
+        copy[targetPlayer] = { ...copy[targetPlayer], hp: Math.max(copy[targetPlayer].hp - 1, 0) };
+        eventMsg = NARRATION.trapTriggered;
+      } else if (eventId === 'item') {
+        const zone = Math.min(2, actRef.current);
+        copy[targetPlayer] = { ...copy[targetPlayer], items: [...copy[targetPlayer].items, `Treasure (Zone ${zone})`] };
+        eventMsg = NARRATION.itemFound;
+      } else {
+        eventMsg = `Player ${targetPlayer + 1} scouts ahead, but the room is eerily calm. Nothing happens.`;
+      }
+      playersRef.current = copy;
+      return copy;
+    });
+    const currentRound = roundsCompletedRef.current + 1;
+    const shardMsg = maybeGetShardMessage(currentRound);
+    const combinedMsg = [eventMsg || `Player ${targetPlayer + 1} scouts ahead. Nothing happens.`, shardMsg].filter(Boolean).join(' ');
+    setQrData(combinedMsg);
+    speak(combinedMsg);
+    advanceTurn(targetPlayer);
   };
 
   useEffect(() => {
@@ -459,61 +484,43 @@ export default function App() {
         narrationAbortRef.current = false;
         await speak(NARRATION.charSelectOpen);
         if (narrationAbortRef.current) return;
-        startNudgeTimers();
-        startCharacterCamera();
+        if (!noQrMode) { startNudgeTimers(); startCharacterCamera(); }
       };
       run();
     }
     return () => {
-      if (screen === 'characterSelect') {
-        stopCharacterCamera();
-        clearNudgeTimers();
-      }
+      if (screen === 'characterSelect') { stopCharacterCamera(); clearNudgeTimers(); }
     };
   }, [screen]);
 
-  // ─── Init game ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (screen === 'game') {
       const init = Array.from({ length: playerCount }).map((_, i) => ({
         char: characters[i] || null, hp: 5, items: [],
       }));
-      setPlayers(init);
-      playersRef.current = init;
-      setRoundsCompleted(0);
-      roundsCompletedRef.current = 0;
-      setAct(1);
-      actRef.current = 1;
+      setPlayers(init); playersRef.current = init;
+      setRoundsCompleted(0); roundsCompletedRef.current = 0;
+      setAct(1); actRef.current = 1;
       pendingScanPlayerRef.current = null;
-      setRoundPhase('playerTurn');
-      roundPhaseRef.current = 'playerTurn';
-      setCurrentPlayer(0);
-      currentPlayerRef.current = 0;
+      setRoundPhase('playerTurn'); roundPhaseRef.current = 'playerTurn';
+      setCurrentPlayer(0); currentPlayerRef.current = 0;
       setBossDefeated(false);
       const sched = createShardSchedule();
-      setShardSchedule(sched);
-      shardScheduleRef.current = sched;
-      setNextShardIndex(0);
-      nextShardIndexRef.current = 0;
+      setShardSchedule(sched); shardScheduleRef.current = sched;
+      setNextShardIndex(0); nextShardIndexRef.current = 0;
       triggerActAnimation();
-
       speak(NARRATION.firstRound);
     }
-    return () => {
-      if (screen === 'game') stopCamera();
-    };
+    return () => { if (screen === 'game') stopCamera(); };
   }, [screen]);
 
   useEffect(() => {
     if (screen === 'boss') { setAct(3); actRef.current = 3; return; }
     const newAct = roundsCompleted >= 7 ? 2 : 1;
-    if (newAct !== actRef.current) {
-      setAct(newAct);
-      actRef.current = newAct;
-      triggerActAnimation();
-    }
+    if (newAct !== actRef.current) { setAct(newAct); actRef.current = newAct; triggerActAnimation(); }
   }, [roundsCompleted, screen]);
 
+  // In no-QR mode, when it's time to "scan", show the event picker instead
   useEffect(() => {
     if (roundPhase === 'playerTurn' && screen === 'game') {
       if (!qrData) {
@@ -540,107 +547,73 @@ export default function App() {
     const weights = actRef.current === 1 ? { item: 0.22, trap: 0.18 } : { item: 0.18, trap: 0.22 };
     const roll = Math.random();
     const outcome = roll < weights.item ? 'item' : roll < weights.item + weights.trap ? 'trap' : 'neutral';
-
     setPlayers(prev => {
       const copy = [...prev];
       if (!copy[playerIndex]) return prev;
-      if (outcome === 'trap') {
-        copy[playerIndex] = { ...copy[playerIndex], hp: Math.max(copy[playerIndex].hp - 1, 0) };
-      } else if (outcome === 'item') {
-        copy[playerIndex] = { ...copy[playerIndex], items: [...copy[playerIndex].items, `Treasure (Zone ${zone})`] };
-      }
+      if (outcome === 'trap') copy[playerIndex] = { ...copy[playerIndex], hp: Math.max(copy[playerIndex].hp - 1, 0) };
+      else if (outcome === 'item') copy[playerIndex] = { ...copy[playerIndex], items: [...copy[playerIndex].items, `Treasure (Zone ${zone})`] };
       playersRef.current = copy;
       return copy;
     });
-
     if (outcome === 'trap') return NARRATION.trapTriggered;
     if (outcome === 'item') return NARRATION.itemFound;
     return `Player ${playerIndex + 1} scouts ahead, but the room is eerily calm. Nothing happens.`;
   };
 
   const resetGame = () => {
-    abortNarration();
-    stopCamera();
-    stopCharacterCamera();
-    clearNudgeTimers();
+    abortNarration(); stopCamera(); stopCharacterCamera(); clearNudgeTimers();
     narrationAbortRef.current = true;
-    setScreen('main');
-    setPlayerCount(2);
-    playerCountRef.current = 2;
-    setCurrentPlayer(0);
-    currentPlayerRef.current = 0;
-    setCharacters([]);
-    charactersRef.current = [];
-    setScannedCards([]);
-    scannedCardsRef.current = [];
-    setRoundPhase('playerTurn');
-    roundPhaseRef.current = 'playerTurn';
+    setScreen('main'); setPlayerCount(2); playerCountRef.current = 2;
+    setCurrentPlayer(0); currentPlayerRef.current = 0;
+    setCharacters([]); charactersRef.current = [];
+    setScannedCards([]); scannedCardsRef.current = [];
+    setRoundPhase('playerTurn'); roundPhaseRef.current = 'playerTurn';
     setQrData('');
-    setBoss({ head: 5, body: 5, shield: 5 });
-    setBossDefeated(false);
-    setShardSchedule([]);
-    shardScheduleRef.current = [];
-    setNextShardIndex(0);
-    nextShardIndexRef.current = 0;
-    setCharScanFeedback('');
-    setCharCameraError('');
-    setActAnimating(false);
+    setBoss({ head: 5, body: 5, shield: 5 }); setBossDefeated(false);
+    setShardSchedule([]); shardScheduleRef.current = [];
+    setNextShardIndex(0); nextShardIndexRef.current = 0;
+    setCharScanFeedback(''); setCharCameraError(''); setActAnimating(false);
   };
 
-  // ─── Quick-launch helpers for test buttons ─────────────────────────────────
-  const launchTestCharacterScan = () => {
+  const launchGame = (useQr) => {
     abortNarration();
     narrationAbortRef.current = false;
-    setPlayerCount(2);
-    playerCountRef.current = 2;
-    setCurrentPlayer(0);
-    currentPlayerForScan.current = 0;
-    setCharacters([]);
-    charactersRef.current = [];
+    setNoQrMode(!useQr);
+    setScreen('intro');
+  };
+
+  const launchTestCharacterScan = () => {
+    abortNarration(); narrationAbortRef.current = false;
+    setPlayerCount(2); playerCountRef.current = 2;
+    setCurrentPlayer(0); currentPlayerForScan.current = 0;
+    setCharacters([]); charactersRef.current = [];
     setScreen('characterSelect');
   };
 
   const launchTestEventScan = () => {
-    abortNarration();
-    narrationAbortRef.current = false;
-    // Seed dummy players so game logic has something to work with
+    abortNarration(); narrationAbortRef.current = false;
     const dummyPlayers = [{ char: 'Goblin', hp: 5, items: [] }, { char: 'Troll', hp: 5, items: [] }];
-    setPlayers(dummyPlayers);
-    playersRef.current = dummyPlayers;
-    setPlayerCount(2);
-    playerCountRef.current = 2;
-    setCharacters(['Goblin', 'Troll']);
-    charactersRef.current = ['Goblin', 'Troll'];
-    setCurrentPlayer(0);
-    currentPlayerRef.current = 0;
-    setRoundsCompleted(0);
-    roundsCompletedRef.current = 0;
-    setAct(1);
-    actRef.current = 1;
-    setBossDefeated(false);
-    setQrData('');
-    setScannedCards([]);
-    scannedCardsRef.current = [];
+    setPlayers(dummyPlayers); playersRef.current = dummyPlayers;
+    setPlayerCount(2); playerCountRef.current = 2;
+    setCharacters(['Goblin', 'Troll']); charactersRef.current = ['Goblin', 'Troll'];
+    setCurrentPlayer(0); currentPlayerRef.current = 0;
+    setRoundsCompleted(0); roundsCompletedRef.current = 0;
+    setAct(1); actRef.current = 1;
+    setBossDefeated(false); setQrData('');
+    setScannedCards([]); scannedCardsRef.current = [];
     const sched = createShardSchedule();
-    setShardSchedule(sched);
-    shardScheduleRef.current = sched;
-    setNextShardIndex(0);
-    nextShardIndexRef.current = 0;
+    setShardSchedule(sched); shardScheduleRef.current = sched;
+    setNextShardIndex(0); nextShardIndexRef.current = 0;
     pendingScanPlayerRef.current = 0;
-    setRoundPhase('scanQR');
-    roundPhaseRef.current = 'scanQR';
+    setRoundPhase('scanQR'); roundPhaseRef.current = 'scanQR';
     setScreen('game');
   };
 
   const launchTestBoss = () => {
-    abortNarration();
-    narrationAbortRef.current = false;
-    setBoss({ head: 5, body: 5, shield: 5 });
-    setBossDefeated(false);
-    setAct(3);
-    actRef.current = 3;
-    speak(NARRATION.bossEntrance);
-    setScreen('boss');
+    abortNarration(); narrationAbortRef.current = false;
+    setBoss({ head: 5, body: 5, shield: 5 }); setBossDefeated(false);
+    setAct(3); actRef.current = 3;
+    speak(NARRATION.bossEntrance); setScreen('boss');
   };
 
   // ─── Boss damage ───────────────────────────────────────────────────────────
@@ -650,10 +623,8 @@ export default function App() {
       const updated = { ...prev, [part]: newVal };
       if (newVal === 0) {
         const allDead = Object.keys(updated).every(k => updated[k] === 0);
-        if (allDead) {
-          setBossDefeated(true);
-          speak(NARRATION.bossDefeated);
-        } else {
+        if (allDead) { setBossDefeated(true); speak(NARRATION.bossDefeated); }
+        else {
           if (part === 'head') speak(NARRATION.bossHeadZero);
           if (part === 'body') speak(NARRATION.bossBodyZero);
           if (part === 'shield') speak(NARRATION.bossShieldZero);
@@ -663,9 +634,7 @@ export default function App() {
     });
   };
 
-  const ExitButton = ({ onClick }) => (
-    <button onClick={onClick} style={exitStyle}>×</button>
-  );
+  const ExitButton = ({ onClick }) => <button onClick={onClick} style={exitStyle}>×</button>;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SCREENS
@@ -677,32 +646,35 @@ export default function App() {
       <div style={menuStyle}>
         <h1 style={titleStyle}>OBRYNDEL</h1>
 
-        <button
-          style={buttonStyle}
-          onClick={() => {
-            narrationAbortRef.current = false;
-            setScreen('intro');
-          }}
-        >
-          Start Game
-        </button>
+        {/* Primary launch buttons */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginTop: 8 }}>
+          <button style={buttonStyle} onClick={() => launchGame(true)}>
+            Start Game
+          </button>
+          <button
+            style={{
+              ...buttonStyle,
+              background: 'linear-gradient(180deg,#1b3a2e,#0a1f17)',
+              border: '1px solid rgba(80,200,120,0.22)',
+              color: '#C5F0D0',
+            }}
+            onClick={() => launchGame(false)}
+          >
+            🎲 Play Without QR Scanner
+          </button>
+          <p style={{ color: 'rgba(200,180,130,0.35)', fontSize: '0.72rem', margin: '2px 0 0', letterSpacing: 1 }}>
+            Use buttons instead of card scanning
+          </p>
+        </div>
 
-        {/* ── Test / Debug section ── */}
+        {/* Test shortcuts */}
         <div style={testSectionStyle}>
           <p style={testLabelStyle}>— test shortcuts —</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-            <button style={testButtonStyle} onClick={launchTestCharacterScan}>
-              🎴 Scan Characters
-            </button>
-            <button style={testButtonStyle} onClick={launchTestEventScan}>
-              🗺️ Scan Event Cards
-            </button>
-            <button style={testButtonStyle} onClick={launchTestBoss}>
-              💀 Boss Fight
-            </button>
-            <button style={testButtonStyle} onClick={() => { abortNarration(); setScreen('patternTest'); }}>
-              🔷 Pattern Test
-            </button>
+            <button style={testButtonStyle} onClick={launchTestCharacterScan}>🎴 Scan Characters</button>
+            <button style={testButtonStyle} onClick={launchTestEventScan}>🗺️ Scan Event Cards</button>
+            <button style={testButtonStyle} onClick={launchTestBoss}>💀 Boss Fight</button>
+            <button style={testButtonStyle} onClick={() => { abortNarration(); setScreen('patternTest'); }}>🔷 Pattern Test</button>
           </div>
         </div>
       </div>
@@ -711,16 +683,14 @@ export default function App() {
 
   // ─── Intro ─────────────────────────────────────────────────────────────────
   if (screen === 'intro') {
-    return <IntroScreen
-      onDone={() => setScreen('playerCount')}
-      onAbort={abortNarration}
-    />;
+    return <IntroScreen onDone={() => setScreen('playerCount')} onAbort={abortNarration} />;
   }
 
   // ─── Player count ──────────────────────────────────────────────────────────
   if (screen === 'playerCount') {
     return (
       <div style={textBoxStyle}>
+        {noQrMode && <ModeBadge />}
         <h2 style={{ color: '#FFD700' }}>Welcome to Obryndel!</h2>
         <p>Choose number of scoundrels:</p>
         <div style={{ marginTop: 20, marginBottom: 30 }}>
@@ -731,19 +701,12 @@ export default function App() {
             style={{ width: 250, display: 'block', margin: '12px auto 0' }}
           />
         </div>
-        <button
-          style={buttonStyle}
-          onClick={() => {
-            abortNarration();
-            setCurrentPlayer(0);
-            currentPlayerForScan.current = 0;
-            setCharacters([]);
-            charactersRef.current = [];
-            setScreen('characterSelect');
-          }}
-        >
-          Continue
-        </button>
+        <button style={buttonStyle} onClick={() => {
+          abortNarration();
+          setCurrentPlayer(0); currentPlayerForScan.current = 0;
+          setCharacters([]); charactersRef.current = [];
+          setScreen('characterSelect');
+        }}>Continue</button>
       </div>
     );
   }
@@ -751,8 +714,80 @@ export default function App() {
   // ─── Character selection ───────────────────────────────────────────────────
   if (screen === 'characterSelect') {
     const pickedChars = characters.filter(c => c);
-    const remaining = availableCharacters.filter(c => !pickedChars.includes(c));
+    const remaining = AVAILABLE_CHARACTERS.filter(c => !pickedChars.includes(c));
 
+    // ── NO-QR character picker ─────────────────────────────────────────────
+    if (noQrMode) {
+      return (
+        <div style={textBoxStyle}>
+          <ExitButton onClick={() => { abortNarration(); resetGame(); }} />
+          <ModeBadge />
+          <div style={{ ...cardStyle, width: '100%', maxWidth: 680, padding: 28, marginTop: 20 }}>
+            <h2 style={{ color: '#D9B65A', marginTop: 0, fontFamily: "'Merriweather', Georgia, serif" }}>
+              Player {currentPlayer + 1}: Choose Your Character
+            </h2>
+            <p style={{ color: '#cfc1a3', marginBottom: 24 }}>
+              Pick a character from the cards below.
+            </p>
+
+            {/* Character pick buttons */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginBottom: 24 }}>
+              {AVAILABLE_CHARACTERS.map(char => {
+                const taken = pickedChars.includes(char);
+                return (
+                  <button
+                    key={char}
+                    disabled={taken}
+                    onClick={() => handleNoQrCharacterPick(char)}
+                    style={{
+                      padding: '18px 12px',
+                      borderRadius: 12,
+                      border: taken
+                        ? '1px solid rgba(255,255,255,0.04)'
+                        : '1px solid rgba(213,169,62,0.30)',
+                      background: taken
+                        ? 'rgba(0,0,0,0.2)'
+                        : 'linear-gradient(180deg,rgba(90,58,20,0.8),rgba(30,15,5,0.8))',
+                      color: taken ? '#4a3a2a' : '#F0DFA0',
+                      cursor: taken ? 'not-allowed' : 'pointer',
+                      fontSize: '1.5rem',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                      transition: 'transform 120ms ease, box-shadow 120ms ease',
+                      boxShadow: taken ? 'none' : '0 6px 20px rgba(0,0,0,0.5)',
+                    }}
+                    onMouseEnter={e => { if (!taken) e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+                  >
+                    <span style={{ fontSize: '2.2rem' }}>{CHARACTER_EMOJIS[char]}</span>
+                    <span style={{ fontFamily: "'Cinzel', Georgia, serif", letterSpacing: 1 }}>{char}</span>
+                    {taken && <span style={{ fontSize: '0.7rem', color: '#6a5a3a', marginTop: 2 }}>Taken</span>}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Player status row */}
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {Array.from({ length: playerCount }).map((_, i) => (
+                <div key={i} style={{
+                  padding: '8px 14px', borderRadius: 8,
+                  background: characters[i] ? 'rgba(60,40,10,0.7)' : 'rgba(0,0,0,0.3)',
+                  color: characters[i] ? '#e6d8ad' : '#6a5a3a',
+                  border: characters[i] ? '1px solid rgba(213,169,62,0.2)' : '1px solid rgba(255,255,255,0.04)',
+                  minWidth: 120, fontSize: 13,
+                }}>
+                  {characters[i]
+                    ? `✓ ${CHARACTER_EMOJIS[characters[i]]} ${characters[i]}`
+                    : `Player ${i + 1} — ?`}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── QR character picker (original) ─────────────────────────────────────
     return (
       <div style={textBoxStyle}>
         <ExitButton onClick={() => { abortNarration(); stopCharacterCamera(); clearNudgeTimers(); resetGame(); }} />
@@ -763,39 +798,25 @@ export default function App() {
           <p style={{ color: '#cfc1a3', marginTop: 6, marginBottom: 18 }}>
             Hold your character QR card up to the <strong style={{ color: '#EFD88B' }}>front camera</strong>.
           </p>
-
-          <div style={{
-            position: 'relative', width: 280, height: 280,
-            margin: '0 auto 18px', borderRadius: 14, overflow: 'hidden',
-            border: '2px solid rgba(213,169,62,0.35)', background: '#000',
-          }}>
-            <video
-              ref={charVideoRef}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
-              muted playsInline
-            />
+          <div style={{ position: 'relative', width: 280, height: 280, margin: '0 auto 18px', borderRadius: 14, overflow: 'hidden', border: '2px solid rgba(213,169,62,0.35)', background: '#000' }}>
+            <video ref={charVideoRef} style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} muted playsInline />
             {charCameraActive.current && (
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
                 <div style={{ width: 160, height: 160, border: '2px solid rgba(213,169,62,0.75)', borderRadius: 10 }} />
               </div>
             )}
             {!charCameraActive.current && (
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6a5a3a', fontSize: 14 }}>
-                Waiting…
-              </div>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6a5a3a', fontSize: 14 }}>Waiting…</div>
             )}
           </div>
           <canvas ref={charCanvasRef} style={{ display: 'none' }} />
-
           {charScanFeedback && <p style={{ color: '#ff9a60', marginBottom: 12, fontSize: 14 }}>{charScanFeedback}</p>}
           {charCameraError && <p style={{ color: '#ff7070', marginBottom: 12, fontSize: 14 }}>{charCameraError}</p>}
-
           <div style={{ marginBottom: 18, color: '#9a8a6a', fontSize: 12, lineHeight: 1.7 }}>
             <strong style={{ color: '#b09a6a' }}>Card codes:</strong><br />
             Character-001 → Goblin &nbsp;|&nbsp; Character-002 → Troll &nbsp;|&nbsp;
             Character-003 → Cyclops &nbsp;|&nbsp; Character-004 → Witch
           </div>
-
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
             {Array.from({ length: playerCount }).map((_, i) => (
               <div key={i} style={{
@@ -809,15 +830,13 @@ export default function App() {
               </div>
             ))}
           </div>
-          {remaining.length > 0 && (
-            <p style={{ color: '#7a6a4a', fontSize: 12, marginTop: 14 }}>Still available: {remaining.join(', ')}</p>
-          )}
+          {remaining.length > 0 && <p style={{ color: '#7a6a4a', fontSize: 12, marginTop: 14 }}>Still available: {remaining.join(', ')}</p>}
         </div>
       </div>
     );
   }
 
-  // ─── Boss phase ────────────────────────────────────────────────────────────
+  // ─── Boss ──────────────────────────────────────────────────────────────────
   if (screen === 'boss') {
     const flashDamage = (part) => {
       const el = document.getElementById(part + 'Damage');
@@ -826,16 +845,13 @@ export default function App() {
       setTimeout(() => { el.style.opacity = 0; }, 1000);
     };
     const handleDamage = (part) => { damageBoss(part); flashDamage(part); };
-
     return (
       <div style={textBoxStyle}>
         <ExitButton onClick={resetGame} />
         <h2 style={{ color: '#FFD700', marginBottom: 10 }}>ACT 3: FINAL BOSS</h2>
         {bossDefeated ? (
           <>
-            <p style={{ color: '#EDE6CF', maxWidth: 560, lineHeight: 1.8, fontStyle: 'italic', marginBottom: 24 }}>
-              {NARRATION.bossDefeated}
-            </p>
+            <p style={{ color: '#EDE6CF', maxWidth: 560, lineHeight: 1.8, fontStyle: 'italic', marginBottom: 24 }}>{NARRATION.bossDefeated}</p>
             <h2 style={{ color: '#FFD700' }}>Victory!</h2>
             <button style={buttonStyle} onClick={resetGame}>Main Menu</button>
           </>
@@ -858,9 +874,7 @@ export default function App() {
               </div>
             </div>
             <div style={{ textAlign: 'center', marginTop: 30, marginBottom: 10 }}>
-              <p>Head HP: {boss.head}</p>
-              <p>Body HP: {boss.body}</p>
-              <p>Shield HP: {boss.shield}</p>
+              <p>Head HP: {boss.head}</p><p>Body HP: {boss.body}</p><p>Shield HP: {boss.shield}</p>
             </div>
             <div style={bossButtonBar}>
               <button style={buttonStyle} onClick={() => handleDamage('head')}>Hit Head</button>
@@ -875,24 +889,19 @@ export default function App() {
 
   // ─── Game ──────────────────────────────────────────────────────────────────
   if (screen === 'game') {
+    const activePlayer = players[currentPlayer];
     return (
       <div style={textBoxStyle}>
-        <div style={{
-          position: 'fixed', top: 24, left: 0, right: 0,
-          display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 50,
-        }}>
-          <div style={{
-            color: '#D9B65A', fontWeight: 700, fontSize: actAnimating ? '3.5rem' : '1.4rem',
-            transition: 'font-size 0.6s cubic-bezier(0.22,1,0.36,1)',
-            textShadow: actAnimating ? '0 0 40px rgba(213,169,62,0.6)' : 'none',
-            letterSpacing: 4,
-          }}>
+        {/* ACT indicator */}
+        <div style={{ position: 'fixed', top: 24, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 50 }}>
+          <div style={{ color: '#D9B65A', fontWeight: 700, fontSize: actAnimating ? '3.5rem' : '1.4rem', transition: 'font-size 0.6s cubic-bezier(0.22,1,0.36,1)', textShadow: actAnimating ? '0 0 40px rgba(213,169,62,0.6)' : 'none', letterSpacing: 4 }}>
             ACT {act}
           </div>
         </div>
 
+        {/* Event result modal */}
         {qrData && (
-          <div style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 80 }}>
+          <div style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 80, background: 'rgba(0,0,0,0.6)' }}>
             <div style={{ ...cardStyle, maxWidth: 720, padding: 24 }}>
               <h3 style={{ marginTop: 0, color: '#EFD88B' }}>Event</h3>
               <p style={{ color: '#EDE6CF' }}>{qrData}</p>
@@ -904,28 +913,114 @@ export default function App() {
         )}
 
         <ExitButton onClick={resetGame} />
-        <h2 style={{ marginTop: 80 }}>Player {currentPlayer + 1}</h2>
+        {noQrMode && <ModeBadge />}
 
-        <video ref={videoRef} style={{ display: 'none' }} />
-        <canvas ref={canvasRef} style={{ display: 'none' }} />
+        {/* Player info */}
+        <div style={{ marginTop: 80, marginBottom: 20 }}>
+          <h2 style={{ marginBottom: 4 }}>
+            Player {currentPlayer + 1}
+            {activePlayer?.char && (
+              <span style={{ color: '#D9B65A', marginLeft: 10, fontSize: '1.2rem' }}>
+                {CHARACTER_EMOJIS[activePlayer.char]} {activePlayer.char}
+              </span>
+            )}
+          </h2>
+          {activePlayer && (
+            <p style={{ color: '#9a8a6a', fontSize: 14, margin: 0 }}>
+              HP: {activePlayer.hp} &nbsp;|&nbsp; Items: {activePlayer.items.length > 0 ? activePlayer.items.join(', ') : 'None'}
+            </p>
+          )}
+        </div>
 
-        {roundPhase === 'scanQR' && (
-          <p style={{ color: '#9a8a6a', fontSize: 14, marginTop: 12 }}>Scanning tile card…</p>
+        {/* ── NO-QR event picker ── */}
+        {noQrMode && roundPhase === 'scanQR' && !qrData && (
+          <div style={{ ...cardStyle, width: '100%', maxWidth: 500, padding: 24, marginTop: 8 }}>
+            <h3 style={{ color: '#EFD88B', marginTop: 0 }}>🃏 Draw an Event Card</h3>
+            <p style={{ color: '#9a8a6a', fontSize: 13, marginBottom: 20 }}>
+              Discard the top card from the deck, then tap the matching outcome below.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              {MANUAL_EVENTS.map(evt => (
+                <button
+                  key={evt.id}
+                  onClick={() => handleNoQrEvent(evt.id)}
+                  style={{
+                    padding: '16px 10px', borderRadius: 12, cursor: 'pointer',
+                    border: '1px solid rgba(213,169,62,0.22)',
+                    background: evt.id === 'boss'
+                      ? 'linear-gradient(180deg,rgba(80,20,20,0.9),rgba(30,5,5,0.9))'
+                      : 'linear-gradient(180deg,rgba(50,35,15,0.8),rgba(15,10,5,0.8))',
+                    color: evt.id === 'boss' ? '#ffaaaa' : '#EFD88B',
+                    fontSize: '0.9rem', textAlign: 'center',
+                    display: 'flex', flexDirection: 'column', gap: 4,
+                    transition: 'transform 120ms ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+                >
+                  <span style={{ fontSize: '1.4rem' }}>{evt.label.split(' ')[0]}</span>
+                  <span style={{ fontFamily: "'Cinzel', Georgia, serif", letterSpacing: 0.5 }}>
+                    {evt.label.split(' ').slice(1).join(' ')}
+                  </span>
+                  <span style={{ color: 'rgba(200,180,130,0.45)', fontSize: '0.72rem', marginTop: 2 }}>{evt.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         )}
-        {cameraError && <p style={{ color: 'red' }}>{cameraError}</p>}
+
+        {/* ── QR mode scanner ── */}
+        {!noQrMode && (
+          <>
+            <video ref={videoRef} style={{ display: 'none' }} />
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+            {roundPhase === 'scanQR' && <p style={{ color: '#9a8a6a', fontSize: 14, marginTop: 12 }}>Scanning tile card…</p>}
+            {cameraError && <p style={{ color: 'red' }}>{cameraError}</p>}
+          </>
+        )}
+
+        {/* Player overview strip */}
+        {players.length > 0 && (
+          <div style={{ display: 'flex', gap: 10, marginTop: 28, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {players.map((p, i) => (
+              <div key={i} style={{
+                padding: '8px 14px', borderRadius: 8, fontSize: 12, minWidth: 100,
+                background: i === currentPlayer ? 'rgba(90,60,10,0.7)' : 'rgba(20,15,10,0.5)',
+                border: i === currentPlayer ? '1px solid rgba(213,169,62,0.4)' : '1px solid rgba(255,255,255,0.04)',
+                color: i === currentPlayer ? '#EFD88B' : '#7a6a4a',
+              }}>
+                {CHARACTER_EMOJIS[p.char] || '?'} P{i + 1} — HP: {p.hp}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
 
-  // ─── Pattern Test ──────────────────────────────────────────────────────────
-  if (screen === 'patternTest') {
-    return <PatternTest onExit={resetGame} />;
-  }
+  // ─── Pattern test ──────────────────────────────────────────────────────────
+  if (screen === 'patternTest') return <PatternTest onExit={resetGame} />;
 
   return null;
 }
 
-// ─── Intro screen component ────────────────────────────────────────────────────
+// ─── No-QR mode badge ─────────────────────────────────────────────────────────
+function ModeBadge() {
+  return (
+    <div style={{
+      position: 'fixed', top: 18, right: 66,
+      background: 'rgba(20,60,35,0.85)',
+      border: '1px solid rgba(80,200,120,0.25)',
+      borderRadius: 8, padding: '4px 10px',
+      color: 'rgba(140,230,160,0.8)', fontSize: '0.7rem', letterSpacing: 1.5,
+      textTransform: 'uppercase', zIndex: 90,
+    }}>
+      🎲 No QR
+    </div>
+  );
+}
+
+// ─── Intro screen ─────────────────────────────────────────────────────────────
 function IntroScreen({ onDone, onAbort }) {
   const lines = [
     "Baron Thobrick's quest to shatter the Mythical Crystal of the Ogre has been successful.",
@@ -942,32 +1037,18 @@ function IntroScreen({ onDone, onAbort }) {
     const run = async () => {
       stopCurrentAudio(0);
       const p = speakText(NARRATION.intro);
-
       const delays = [0, 2200, 4800, 7400, 8200, 9000];
       delays.forEach((d, i) => {
-        setTimeout(() => {
-          if (!abortedRef.current) setVisibleLines(prev => [...prev, i]);
-        }, d);
+        setTimeout(() => { if (!abortedRef.current) setVisibleLines(prev => [...prev, i]); }, d);
       });
-
       await p;
-      if (!abortedRef.current) {
-        setTimeout(() => { if (!abortedRef.current) onDone(); }, 1200);
-      }
+      if (!abortedRef.current) setTimeout(() => { if (!abortedRef.current) onDone(); }, 1200);
     };
     run();
-    return () => {
-      abortedRef.current = true;
-      stopCurrentAudio(300);
-    };
+    return () => { abortedRef.current = true; stopCurrentAudio(300); };
   }, []);
 
-  const handleSkip = () => {
-    abortedRef.current = true;
-    stopCurrentAudio(300);
-    onAbort();
-    onDone();
-  };
+  const handleSkip = () => { abortedRef.current = true; stopCurrentAudio(300); onAbort(); onDone(); };
 
   return (
     <div style={{ ...menuStyle, justifyContent: 'center', gap: 0 }}>
@@ -983,22 +1064,15 @@ function IntroScreen({ onDone, onAbort }) {
             transform: visibleLines.includes(i) ? 'translateY(0)' : 'translateY(10px)',
             transition: 'opacity 0.7s ease, transform 0.7s ease',
             lineHeight: 1.6,
-          }}>
-            {line}
-          </p>
+          }}>{line}</p>
         ))}
       </div>
-      <button
-        style={{ ...buttonStyle, marginTop: 40, opacity: 0.6, fontSize: '0.85rem', padding: '10px 20px' }}
-        onClick={handleSkip}
-      >
-        Skip
-      </button>
+      <button style={{ ...buttonStyle, marginTop: 40, opacity: 0.6, fontSize: '0.85rem', padding: '10px 20px' }} onClick={handleSkip}>Skip</button>
     </div>
   );
 }
 
-// ─── Styles ────────────────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const menuStyle = {
   minHeight: '100vh', display: 'flex', flexDirection: 'column',
   alignItems: 'center', justifyContent: 'center',
@@ -1021,20 +1095,14 @@ const buttonStyle = {
   transition: 'transform 140ms cubic-bezier(.2,.8,.2,1), box-shadow 140ms ease',
 };
 
-// Subtler style for test buttons so they read as secondary / dev-facing
 const testSectionStyle = {
-  marginTop: 48,
-  padding: '20px 28px',
-  borderTop: '1px solid rgba(255,255,255,0.05)',
-  textAlign: 'center',
+  marginTop: 48, padding: '20px 28px',
+  borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center',
 };
 
 const testLabelStyle = {
-  color: 'rgba(180,160,100,0.35)',
-  fontSize: '0.7rem',
-  letterSpacing: 3,
-  textTransform: 'uppercase',
-  margin: '0 0 14px',
+  color: 'rgba(180,160,100,0.35)', fontSize: '0.7rem',
+  letterSpacing: 3, textTransform: 'uppercase', margin: '0 0 14px',
 };
 
 const testButtonStyle = {
