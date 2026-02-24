@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import jsQR from 'jsqr';
 import PatternTest from './PatternTest';
+import ObryndelMiniGame from './ObryndelMiniGame';
 
 // Boss sprites
 import bossHead from './assets/boss-head.png';
@@ -460,7 +461,6 @@ export default function App() {
       setAct(3);
       return;
     }
-    // 'scan' — resolve a random event just like scanning a tile would
     const targetPlayer = pendingScanPlayerRef.current != null ? pendingScanPlayerRef.current : currentPlayerRef.current;
     let eventMsg = '';
     setPlayers(prev => {
@@ -532,7 +532,6 @@ export default function App() {
     if (newAct !== actRef.current) { setAct(newAct); actRef.current = newAct; triggerActAnimation(); }
   }, [roundsCompleted, screen]);
 
-  // In no-QR mode, when it's time to "scan", show the event picker instead
   useEffect(() => {
     if (roundPhase === 'playerTurn' && screen === 'game') {
       if (!qrData) {
@@ -679,6 +678,23 @@ export default function App() {
           <p style={{ color: 'rgba(200,180,130,0.35)', fontSize: '0.72rem', margin: '2px 0 0', letterSpacing: 1 }}>
             Use buttons instead of card scanning
           </p>
+
+          {/* ─── Co-op Prototype button ─── */}
+          <button
+            style={{
+              ...buttonStyle,
+              background: 'linear-gradient(180deg,#1a2b3a,#0a1220)',
+              border: '1px solid rgba(80,140,200,0.28)',
+              color: '#C0D8F0',
+              marginTop: 6,
+            }}
+            onClick={() => { abortNarration(); setScreen('miniGame'); }}
+          >
+            🗺️ Co-op Prototype
+          </button>
+          <p style={{ color: 'rgba(160,190,220,0.3)', fontSize: '0.72rem', margin: '-4px 0 0', letterSpacing: 1 }}>
+            Cooperative shard-gathering mini game
+          </p>
         </div>
 
         {/* Test shortcuts */}
@@ -693,6 +709,11 @@ export default function App() {
         </div>
       </div>
     );
+  }
+
+  // ─── Co-op Prototype mini game ─────────────────────────────────────────────
+  if (screen === 'miniGame') {
+    return <ObryndelMiniGame onExit={() => setScreen('main')} />;
   }
 
   // ─── Intro ─────────────────────────────────────────────────────────────────
@@ -730,7 +751,6 @@ export default function App() {
     const pickedChars = characters.filter(c => c);
     const remaining = AVAILABLE_CHARACTERS.filter(c => !pickedChars.includes(c));
 
-    // ── NO-QR character picker ─────────────────────────────────────────────
     if (noQrMode) {
       return (
         <div style={textBoxStyle}>
@@ -743,16 +763,12 @@ export default function App() {
             <p style={{ color: '#cfc1a3', marginBottom: 24 }}>
               Pick a character from the cards below.
             </p>
-
-            {/* Narration text */}
             {narrationText && (
               <div style={narrationBoxStyle}>
                 <span style={{ opacity: 0.45, fontSize: '0.7rem', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Thobrick speaks…</span>
                 {narrationText}
               </div>
             )}
-
-            {/* Character pick buttons */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginBottom: 24 }}>
               {AVAILABLE_CHARACTERS.map(char => {
                 const taken = pickedChars.includes(char);
@@ -762,14 +778,9 @@ export default function App() {
                     disabled={taken}
                     onClick={() => handleNoQrCharacterPick(char)}
                     style={{
-                      padding: '18px 12px',
-                      borderRadius: 12,
-                      border: taken
-                        ? '1px solid rgba(255,255,255,0.04)'
-                        : '1px solid rgba(213,169,62,0.30)',
-                      background: taken
-                        ? 'rgba(0,0,0,0.2)'
-                        : 'linear-gradient(180deg,rgba(90,58,20,0.8),rgba(30,15,5,0.8))',
+                      padding: '18px 12px', borderRadius: 12,
+                      border: taken ? '1px solid rgba(255,255,255,0.04)' : '1px solid rgba(213,169,62,0.30)',
+                      background: taken ? 'rgba(0,0,0,0.2)' : 'linear-gradient(180deg,rgba(90,58,20,0.8),rgba(30,15,5,0.8))',
                       color: taken ? '#4a3a2a' : '#F0DFA0',
                       cursor: taken ? 'not-allowed' : 'pointer',
                       fontSize: '1.5rem',
@@ -787,8 +798,6 @@ export default function App() {
                 );
               })}
             </div>
-
-            {/* Player status row */}
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
               {Array.from({ length: playerCount }).map((_, i) => (
                 <div key={i} style={{
@@ -798,9 +807,7 @@ export default function App() {
                   border: characters[i] ? '1px solid rgba(213,169,62,0.2)' : '1px solid rgba(255,255,255,0.04)',
                   minWidth: 120, fontSize: 13,
                 }}>
-                  {characters[i]
-                    ? `✓ ${CHARACTER_EMOJIS[characters[i]]} ${characters[i]}`
-                    : `Player ${i + 1} — ?`}
+                  {characters[i] ? `✓ ${CHARACTER_EMOJIS[characters[i]]} ${characters[i]}` : `Player ${i + 1} — ?`}
                 </div>
               ))}
             </div>
@@ -809,7 +816,6 @@ export default function App() {
       );
     }
 
-    // ── QR character picker (original) ─────────────────────────────────────
     return (
       <div style={textBoxStyle}>
         <ExitButton onClick={() => { abortNarration(); stopCharacterCamera(); clearNudgeTimers(); resetGame(); }} />
@@ -914,14 +920,11 @@ export default function App() {
     const activePlayer = players[currentPlayer];
     return (
       <div style={textBoxStyle}>
-        {/* ACT indicator */}
         <div style={{ position: 'fixed', top: 24, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 50 }}>
           <div style={{ color: '#D9B65A', fontWeight: 700, fontSize: actAnimating ? '3.5rem' : '1.4rem', transition: 'font-size 0.6s cubic-bezier(0.22,1,0.36,1)', textShadow: actAnimating ? '0 0 40px rgba(213,169,62,0.6)' : 'none', letterSpacing: 4 }}>
             ACT {act}
           </div>
         </div>
-
-        {/* Event result modal */}
         {qrData && (
           <div style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 80, background: 'rgba(0,0,0,0.6)' }}>
             <div style={{ ...cardStyle, maxWidth: 720, padding: 24 }}>
@@ -933,11 +936,8 @@ export default function App() {
             </div>
           </div>
         )}
-
         <ExitButton onClick={resetGame} />
         {noQrMode && <ModeBadge />}
-
-        {/* Player info */}
         <div style={{ marginTop: 80, marginBottom: 20 }}>
           <h2 style={{ marginBottom: 4 }}>
             Player {currentPlayer + 1}
@@ -953,16 +953,12 @@ export default function App() {
             </p>
           )}
         </div>
-
-        {/* Narration text (no-QR mode) */}
         {noQrMode && narrationText && roundPhase !== 'scanQR' && !qrData && (
           <div style={{ ...narrationBoxStyle, maxWidth: 500, marginBottom: 16 }}>
             <span style={{ opacity: 0.45, fontSize: '0.7rem', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Thobrick speaks…</span>
             {narrationText}
           </div>
         )}
-
-        {/* ── NO-QR event picker ── */}
         {noQrMode && roundPhase === 'scanQR' && !qrData && (
           <div style={{ ...cardStyle, width: '100%', maxWidth: 500, padding: 24, marginTop: 8 }}>
             <h3 style={{ color: '#EFD88B', marginTop: 0 }}>🃏 Draw an Event Card</h3>
@@ -1000,8 +996,6 @@ export default function App() {
             </div>
           </div>
         )}
-
-        {/* ── QR mode scanner ── */}
         {!noQrMode && (
           <>
             <video ref={videoRef} style={{ display: 'none' }} />
@@ -1010,8 +1004,6 @@ export default function App() {
             {cameraError && <p style={{ color: 'red' }}>{cameraError}</p>}
           </>
         )}
-
-        {/* Player overview strip */}
         {players.length > 0 && (
           <div style={{ display: 'flex', gap: 10, marginTop: 28, flexWrap: 'wrap', justifyContent: 'center' }}>
             {players.map((p, i) => (
