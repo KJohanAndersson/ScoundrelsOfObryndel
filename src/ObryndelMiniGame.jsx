@@ -476,7 +476,7 @@ function PlayerToken({ color, emoji, atStart }) {
 }
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
-export default function ObryndelMiniGame() {
+export default function ObryndelMiniGame({ onExit }) {
   const [phase, setPhase] = useState("setup"); // setup | game | victory
   const [playerCount, setPlayerCount] = useState(null);
   const [grid, setGrid] = useState({});
@@ -697,7 +697,7 @@ export default function ObryndelMiniGame() {
                 The Scoundrels of Obryndel have triumphed!<br /><br />
                 <em>Baron Thobrick's power crumbles…</em>
               </div>
-              <button className="start-btn" onClick={() => { setPhase("setup"); setPlayerCount(null); }}>
+              <button className="start-btn" onClick={() => { setPhase("setup"); setPlayerCount(null); if (onExit) onExit(); }}>
                 Play Again
               </button>
             </div>
@@ -889,7 +889,7 @@ export default function ObryndelMiniGame() {
             <button
               className="start-btn"
               style={{ fontSize: "0.8rem", padding: "10px 20px", opacity: 0.5 }}
-              onClick={() => { setPhase("setup"); setPlayerCount(null); }}
+              onClick={() => { setPhase("setup"); setPlayerCount(null); if (onExit) onExit(); }}
             >
               ← Main Menu
             </button>
