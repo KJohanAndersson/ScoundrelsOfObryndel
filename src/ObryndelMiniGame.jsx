@@ -445,7 +445,7 @@ export default function ObryndelMiniGame({ onExit }) {
   const [modEnemy,   setModEnemy]   = useState(false);
   const [modBW,      setModBW]      = useState(false);
   const [modMaze,    setModMaze]    = useState(false);
-  const [modDark,    setModDark]    = useState(false);
+  const [modExplore, setModExplore] = useState(false); // exploration mode (renamed from dark)
   const [modEvents,  setModEvents]  = useState(false);
   const [modColors,  setModColors]  = useState(true); // colored tiles + swapping
   const [darkRadius, setDarkRadius] = useState(3);
@@ -456,6 +456,7 @@ export default function ObryndelMiniGame({ onExit }) {
   const [mazeWalls,   setMazeWalls]   = useState(null);
   const [objects,     setObjects]     = useState([]); // [{id,emoji,label,x,y}]
   const [vanished,    setVanished]    = useState(new Set());
+  const [discoveredCells, setDiscoveredCells] = useState(new Set()); // exploration mode: stays visible once seen
   const [positions,   setPositions]   = useState([]);
   const [inKingdom,   setInKingdom]   = useState([]); // bool per player
   const [kPositions,  setKPositions]  = useState([]); // {x,y} in kingdom coords
@@ -483,8 +484,8 @@ export default function ObryndelMiniGame({ onExit }) {
   useEffect(() => {
     stateRef.current = {
       curPlayer, positions, inKingdom, kPositions, grid, inventory, atBase, dead, stunned,
-      dropped, droppedPos, vanished, enemies, enemyActive, playerCount,
-      modBW, modVanish, modEnemy, modMaze, modDark, modEvents, modColors,
+      dropped, droppedPos, vanished, discoveredCells, enemies, enemyActive, playerCount,
+      modBW, modVanish, modEnemy, modMaze, modExplore, modEvents, modColors,
       darkRadius, gridSize, mazeWalls, objects, abilityCooldown,
       abilityStepsLeft, charChoices, extraMove, allGathered, kingdomGrid,
     };
@@ -503,7 +504,7 @@ export default function ObryndelMiniGame({ onExit }) {
 
   // Compute visibility for current player
   const computeVisible = useCallback((playerIdx, posArr, mWalls, gs, dr) => {
-    if (!stateRef.current.modDark) return null; // null = all visible
+    if (!stateRef.current.modExplore) return null; // null = all visible
     const pos = posArr[playerIdx];
     return bfsVisibleCells(pos, dr, mWalls, new Set(), gs);
   }, []);
@@ -563,6 +564,7 @@ export default function ObryndelMiniGame({ onExit }) {
     setGrid(g);
     setKingdomGrid(makeKingdomGrid(gs));
     setVanished(new Set());
+    setDiscoveredCells(new Set());
 
     const starts = getStartCells(gs).slice(0, pc);
     setPositions(starts.map(p => ({...p})));
@@ -590,8 +592,8 @@ export default function ObryndelMiniGame({ onExit }) {
     addLog(`Quest begins with ${pc} scoundrel${pc>1?"s":""}!`);
     addLog("🏰 Bring all relics to the altar to shatter the barrier sealing Obryndel!");
     if (modMaze) addLog("🏚️ A maze has formed around you…");
-    if (modDark) addLog(`🌑 Darkness falls — you can see ${darkRadius} steps.`);
-    if (modEvents) addLog("🃏 Event cards are in play…");
+    if (modExplore) addLog(`🌑 Exploration mode — you can see ${darkRadius} steps ahead.`);
+    if (modEvents) addLog("🃏 Event cards are in play — drawn each turn!");
   };
 
   // ── Trigger event card ────────────────────────────────────────────────────
@@ -618,15 +620,16 @@ export default function ObryndelMiniGame({ onExit }) {
       const np = [...s.positions]; np[cp]={x:nx,y:ny};
       setPositions(np);
       addLog(`🌀 ${PLAYER_NAMES[cp]} was teleported!`);
+      advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
     } else if (card.id === "stun") {
       const ns = [...s.stunned]; ns[cp] = 1;
       setStunned(ns);
       addLog(`💫 ${PLAYER_NAMES[cp]} is stunned next turn!`);
-      // Advance turn
-      advanceTurn(cp, s.dead, [...s.stunned], s.playerCount);
+      advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
     } else if (card.id === "motivation") {
       setExtraMove(true);
       addLog(`⚡ ${PLAYER_NAMES[cp]} gets an extra move!`);
+      // Don't advance — player uses their extra move
     }
   }, [eventCard, addLog]);
 
@@ -938,19 +941,14 @@ export default function ObryndelMiniGame({ onExit }) {
           newInventory[cp]=true;
           msg+=` Picked up ${obj.label}! 🎉`;
 
-          // Spawn enemy on first pickup
+          // Spawn enemy at kingdom entrance on first pickup
           if (!newEnemyActive && s.modEnemy) {
             newEnemyActive = true;
-            const ectr = getStartCenter(gs);
-            newEnemies = [{x:ectr.x+2,y:ectr.y+2,fleeing:0,stunned:0}];
+            const cx = Math.floor(gs/2);
+            newEnemies = [{x: cx, y: gs-1, fleeing:0, stunned:0}];
             setEnemyActive(true);
             setEnemies(newEnemies);
-            addLog("👁️ A Shadow awakens — it hunts those who carry relics!");
-          }
-
-          // Event card on pickup
-          if (s.modEvents) {
-            triggerEventCard();
+            addLog("👁️ A Shadow emerges from the Kingdom gates — it hunts those who carry relics!");
           }
 
           // Vanish tiles
@@ -981,11 +979,16 @@ export default function ObryndelMiniGame({ onExit }) {
         }
       }
 
-      // Return to base with shard
+      // Return to base with shard — move object to start position
       if (isStartCellFn(nx,ny,gs) && newInventory[cp] && !newAtBase[cp]) {
         newAtBase[cp]=true;
         newInventory[cp]=false;
         msg+=` ${PLAYER_NAMES[cp]} delivered their relic to the altar! ✨`;
+        // Move the object to the start cell so it appears there
+        const myColor = PLAYER_COLORS[cp];
+        const sc = getStartCells(gs);
+        const startPos = sc[cp % sc.length];
+        newObjects = newObjects.map(o => o.id===myColor ? {...o, x:startPos.x, y:startPos.y} : o);
         const totalDone = newAtBase.filter(Boolean).length;
         if (totalDone >= s.playerCount && !s.allGathered) {
           setAllGathered(true);
@@ -1002,13 +1005,14 @@ export default function ObryndelMiniGame({ onExit }) {
       setDead(newDead);
       setGrid(newGrid);
       setVanished(newVanished);
+      setObjects(newObjects);
       setSwFirst(null);
       addLog(msg);
 
       // Handle Gribberth extra steps
       if (s.abilityStepsLeft > 1) {
         setAbilityStepsLeft(s.abilityStepsLeft-1);
-        return; // don't advance turn
+        return;
       } else if (s.abilityStepsLeft === 1) {
         setAbilityStepsLeft(0);
       }
@@ -1019,8 +1023,11 @@ export default function ObryndelMiniGame({ onExit }) {
         return;
       }
 
-      // Don't advance if event card is pending
-      if (s.modEvents && eventCard) return;
+      // Draw event card at end of turn
+      if (s.modEvents) {
+        triggerEventCard();
+        return; // turn advances after resolving event
+      }
 
       // Advance turn
       advanceTurnState(cp, newDead, s.stunned, s.playerCount);
@@ -1052,6 +1059,7 @@ export default function ObryndelMiniGame({ onExit }) {
       setGrid(newGrid);
       addLog(`${PLAYER_NAMES[s.curPlayer]} swapped tiles.`);
       setSwFirst(null);
+      if (s.modEvents) { triggerEventCard(); return; }
       advanceTurnState(s.curPlayer, s.dead, s.stunned, s.playerCount);
     }
   }, [phase, swFirst, eventCard, addLog]);
@@ -1079,7 +1087,7 @@ export default function ObryndelMiniGame({ onExit }) {
         <div className="setup-card">
           <h2>Choose Your Scoundrels</h2>
           <div className="pc-opts">
-            {[2,3,4].map(n=>(
+            {[1,2,3,4].map(n=>(
               <button key={n} className={`pc-btn${playerCount===n?" sel":""}`} onClick={()=>setPlayerCount(n)}>{n}</button>
             ))}
           </div>
@@ -1092,7 +1100,7 @@ export default function ObryndelMiniGame({ onExit }) {
               <input type="range" min={10} max={20} value={gridSize} onChange={e=>setGridSize(Number(e.target.value))} />
               <span className="slider-val">{gridSize}×{gridSize}</span>
             </div>
-            {modDark && (
+            {modExplore && (
               <div className="slider-row">
                 <span className="slider-lbl">Vision Range</span>
                 <input type="range" min={1} max={8} value={darkRadius} onChange={e=>setDarkRadius(Number(e.target.value))} />
@@ -1106,11 +1114,11 @@ export default function ObryndelMiniGame({ onExit }) {
             <div className="mods">
               <ModToggle active={modColors} onClick={()=>setModColors(v=>!v)} icon="🎨" label="Colored Tiles" desc="The board is filled with colored tiles. Players may only walk on their own color or white tiles. Click tiles to swap colors and open new paths." />
               <ModToggle active={modMaze} onClick={()=>setModMaze(v=>!v)} icon="🏚️" label="Maze" desc="A labyrinth fills the board. Walls block movement and vision. Objects are placed near the edges of the map." />
-              <ModToggle active={modDark} onClick={()=>setModDark(v=>!v)} icon="🌑" label="Darkness" desc="Players can only see N steps ahead. Vision is blocked by maze walls. Enemy only visible when in your field of view." />
+              <ModToggle active={modExplore} onClick={()=>setModExplore(v=>!v)} icon="🌑" label="Exploration Mode" desc="The map is shrouded in darkness. Tiles you've visited stay visible for all players. Discover the world as you venture out." />
               <ModToggle active={modVanish} onClick={()=>setModVanish(v=>!v)} icon="💨" label="Vanishing Tiles" desc="Each relic collected causes tiles to crumble. Occupied tiles are always safe." />
-              <ModToggle active={modEnemy} onClick={()=>setModEnemy(v=>!v)} icon="👁️" label="The Shadow" desc="An enemy spawns when the first relic is picked up. It hunts relic carriers. Allies can revive the fallen." />
+              <ModToggle active={modEnemy} onClick={()=>setModEnemy(v=>!v)} icon="👁️" label="The Shadow" desc="An enemy spawns at the kingdom entrance when the first relic is picked up. It hunts relic carriers. Allies can revive the fallen." />
               <ModToggle active={modBW} onClick={()=>setModBW(v=>!v)} icon="🖤" label="Black & White" desc="Only white tiles may be walked on. Color-swapping carves new paths." />
-              <ModToggle active={modEvents} onClick={()=>setModEvents(v=>!v)} icon="🃏" label="Event Cards" desc="Random events trigger when you pick up a relic! Teleportation traps, stuns, and sudden bursts of speed await…" />
+              <ModToggle active={modEvents} onClick={()=>setModEvents(v=>!v)} icon="🃏" label="Event Cards" desc="At the end of every turn, draw an event card! Teleportation traps, stuns, and sudden bursts of speed await…" />
             </div>
           </div>
 
@@ -1162,12 +1170,20 @@ export default function ObryndelMiniGame({ onExit }) {
     const gs = gridSize;
     const cellPx = Math.max(20, Math.min(44, Math.floor(560/gs)));
 
-    // Compute visible cells for dark mode (only when current player is in wilderness)
+    // Compute visible cells for exploration mode (only when current player is in wilderness)
     let visibleCells = null;
-    if (modDark && !inKingdom[cp]) {
+    if (modExplore && !inKingdom[cp]) {
       const pos = positions[cp];
       if (pos) {
         visibleCells = bfsVisibleCells(pos, darkRadius, mazeWalls, vanished, gs);
+        // Merge newly visible cells into discovered set
+        if (visibleCells) {
+          setDiscoveredCells(prev => {
+            const next = new Set(prev);
+            visibleCells.forEach(k => next.add(k));
+            return next;
+          });
+        }
       }
     }
 
@@ -1188,12 +1204,14 @@ export default function ObryndelMiniGame({ onExit }) {
           const isObj = !!objMapXY[key];
           const obj = objMapXY[key];
 
-          // Dark mode visibility (only for wilderness)
-          let isDark = false, isEdge = false;
-          if (modDark && visibleCells && !inKingdom[cp]) {
-            isDark = !visibleCells.has(key);
-            if (wildernessPositions.some(p=>p&&p.x===x&&p.y===y)) isDark=false;
-            if (!isDark && visibleCells.has(key)) {
+          // Exploration mode visibility
+          let isDark = false, isEdge = false, isDiscovered = false;
+          if (modExplore && !inKingdom[cp]) {
+            const inView = visibleCells && visibleCells.has(key);
+            const playerHere = positions.some((p,i)=>!inKingdom[i]&&p.x===x&&p.y===y);
+            isDiscovered = discoveredCells.has(key);
+            isDark = !inView && !playerHere && !isDiscovered;
+            if (inView && visibleCells) {
               const d = bfsDist(positions[cp],{x,y},mazeWalls,vanished,gs);
               if (d===darkRadius) isEdge=true;
             }
@@ -1201,7 +1219,7 @@ export default function ObryndelMiniGame({ onExit }) {
 
           const playersHere = positions.map((p,i)=>!inKingdom[i]&&p.x===x&&p.y===y?i:-1).filter(i=>i>=0);
           const enemiesHere = enemyActive && enemies.filter(e=>e.x===x&&e.y===y);
-          const enemyVisible = enemiesHere && enemiesHere.length>0 && (!modDark || !visibleCells || visibleCells.has(key));
+          const enemyVisible = enemiesHere && enemiesHere.length>0 && (!modExplore || !visibleCells || visibleCells.has(key));
           const droppedHere = dropped.map((d,i)=>{
             const dp=droppedPos[i]; return d&&dp&&dp.x===x&&dp.y===y?i:-1;
           }).filter(i=>i>=0);
@@ -1233,9 +1251,10 @@ export default function ObryndelMiniGame({ onExit }) {
                 "cell",
                 isGone?"gone":"",
                 isStart?"start-cell":"",
-                isSwAble&&!isDark?"sw-able":"",
+                isSwAble&&!isDark&&!isDiscovered?"sw-able":"",
                 isSwSel?"sw-sel":"",
                 isDark?"dark-cell":"",
+                isDiscovered&&(!visibleCells||!visibleCells.has(key))?"discovered-cell":"",
                 isEdge&&!isDark?"dark-edge":"",
                 wallClasses,
               ].join(" ")}
@@ -1255,6 +1274,8 @@ export default function ObryndelMiniGame({ onExit }) {
                 boxShadow: isStart ? "0 0 14px rgba(237,230,207,.4)"
                   : isEntranceCell&&allGathered ? "0 0 12px rgba(213,169,62,.4)"
                   : undefined,
+                // Discovered but not currently visible: dim overlay
+                filter: (isDiscovered&&(!visibleCells||!visibleCells.has(key))) ? "brightness(0.38) saturate(0.4)" : undefined,
                 fontSize: cellPx<28?"8px":cellPx<36?"10px":"13px",
               }}
               onClick={()=>handleCellClick(x,y)}
@@ -1453,7 +1474,7 @@ export default function ObryndelMiniGame({ onExit }) {
               <div className="leg-i"><div className="leg-d" style={{background:"rgba(237,230,207,.65)",border:"1px solid rgba(237,230,207,.3)"}}/><span>Safe</span></div>
               {modEnemy && enemyActive && <div className="leg-i"><span style={{fontSize:"0.9em"}}>👁️</span><span>The Shadow</span></div>}
               {modVanish && <div className="leg-i"><span style={{fontSize:"0.9em"}}>💨</span><span>{vanished.size} gone</span></div>}
-              {modDark && <div className="leg-i"><span style={{fontSize:"0.9em"}}>🌑</span><span>Vision: {darkRadius}</span></div>}
+              {modExplore && <div className="leg-i"><span style={{fontSize:"0.9em"}}>🌑</span><span>Vision: {darkRadius}</span></div>}
             </div>
           </div>
 
@@ -1541,13 +1562,13 @@ export default function ObryndelMiniGame({ onExit }) {
             </div>
 
             {/* Active modifiers */}
-            {(modColors||modVanish||modEnemy||modBW||modMaze||modDark||modEvents) && (
+            {(modColors||modVanish||modEnemy||modBW||modMaze||modExplore||modEvents) && (
               <div className="s-card">
                 <div className="s-hdr">Active Modifiers</div>
                 <div style={{display:"flex",flexDirection:"column",gap:5}}>
                   {modColors && <div style={{fontSize:"0.7rem",color:"rgba(213,160,50,.5)"}}>🎨 Colored Tiles + Swapping</div>}
                   {modMaze && <div style={{fontSize:"0.7rem",color:"rgba(200,160,80,.5)"}}>🏚️ Maze is active</div>}
-                  {modDark && <div style={{fontSize:"0.7rem",color:"rgba(150,150,200,.5)"}}>🌑 Darkness — vision {darkRadius} steps</div>}
+                  {modExplore && <div style={{fontSize:"0.7rem",color:"rgba(150,150,200,.5)"}}>🌑 Exploration — vision {darkRadius} steps</div>}
                   {modVanish && <div style={{fontSize:"0.7rem",color:"rgba(180,155,90,.48)"}}>💨 Vanishing Tiles ({vanished.size} gone)</div>}
                   {modEnemy && <div style={{fontSize:"0.7rem",color:"rgba(255,100,100,.48)"}}>👁️ The Shadow {enemyActive?"is hunting":"awaits first relic"}</div>}
                   {modBW && <div style={{fontSize:"0.7rem",color:"rgba(200,200,200,.38)"}}>🖤 Black &amp; White mode</div>}
