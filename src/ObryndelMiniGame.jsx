@@ -196,21 +196,19 @@ function placeObjects(gridSize, startCX, startCY, mazeWalls, playerCount) {
   const centerCell = { x: startCX, y: startCY };
   const placed = [];
   const usedKeys = new Set();
-  // Reserve start area
-  for (let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) {
-    usedKeys.add(cellKey(startCX+dx, startCY+dy));
+  // Reserve start area (bottom 2 rows at center)
+  for (let dy=-2;dy<=0;dy++) for(let dx=-2;dx<=2;dx++) {
+    const px=startCX+dx, py=startCY+dy;
+    if (px>=0&&px<gridSize&&py>=0&&py<gridSize) usedKeys.add(cellKey(px,py));
   }
 
-  // Wilderness rows only (exclude kingdom rows at bottom)
-  const wildernessRows = gridSize - KINGDOM_ROWS;
-
-  // A cell is "near edge" if within 2 of top/left/right border, or within 2 of wilderness bottom
+  // A cell is "near edge" if within 2 of any border (top/left/right/bottom)
   const isNearEdge = (x, y) =>
-    x <= 1 || x >= gridSize-2 || y <= 1 || y >= wildernessRows-2;
+    x <= 1 || x >= gridSize-2 || y <= 1 || y >= gridSize-2;
 
   for (let i = 0; i < playerCount; i++) {
     const candidates = [];
-    for (let y=0; y<wildernessRows; y++) {
+    for (let y=0; y<gridSize; y++) {
       for (let x=0; x<gridSize; x++) {
         const k = cellKey(x,y);
         if (usedKeys.has(k)) continue;
@@ -223,12 +221,6 @@ function placeObjects(gridSize, startCX, startCY, mazeWalls, playerCount) {
     for (const c of candidates) {
       const d = bfsDist(centerCell, c, mazeWalls, new Set(), gridSize);
       if (d < Infinity) { best = c; break; }
-    }
-    if (!best) {
-      for (const c of candidates) {
-        const d = bfsDist(centerCell, c, mazeWalls, new Set(), gridSize);
-        if (d < Infinity) { best = c; break; }
-      }
     }
     if (best) {
       placed.push({ ...OBJECT_DEFS[i], x: best.x, y: best.y });
@@ -246,32 +238,25 @@ function makeGrid(gridSize, playerCount, bwMode, hasMaze, hasColors) {
   else if (bwMode) colors = ["white","black"];
   else colors = PLAYER_COLORS.slice(0, playerCount);
 
-  const totalRows = gridSize; // kingdom rows are the bottom KINGDOM_ROWS of gridSize
-  for (let y = 0; y < totalRows; y++) {
+  for (let y = 0; y < gridSize; y++) {
     for (let x = 0; x < gridSize; x++) {
-      // Kingdom rows are always white
-      if (isKingdomCell(y, gridSize)) {
-        grid[cellKey(x,y)] = "white";
-      } else {
-        grid[cellKey(x,y)] = colors[Math.floor(Math.random()*colors.length)];
-      }
+      grid[cellKey(x,y)] = colors[Math.floor(Math.random()*colors.length)];
     }
   }
   return grid;
 }
 
-// Kingdom occupies the bottom KINGDOM_ROWS rows of the unified grid
-const KINGDOM_ROWS = 4;
+// Kingdom is a separate area below the wilderness
+const KINGDOM_ROWS = 5;
 
-// Start area is at the bottom center of the wilderness (just above kingdom)
+// Start area is at the BOTTOM CENTER of the wilderness map
 function getStartCenter(gridSize) {
-  return { x: Math.floor(gridSize/2), y: gridSize - KINGDOM_ROWS - 1 };
+  return { x: Math.floor(gridSize/2), y: gridSize - 1 };
 }
 
 function getStartCells(gridSize) {
   const cx = Math.floor(gridSize/2);
-  const cy = gridSize - KINGDOM_ROWS - 1;
-  // 2x2 block centered on cx,cy (entrance row + one above)
+  const cy = gridSize - 1; // bottom row of wilderness
   return [
     {x:cx-1, y:cy-1}, {x:cx, y:cy-1},
     {x:cx-1, y:cy},   {x:cx, y:cy},
@@ -280,18 +265,25 @@ function getStartCells(gridSize) {
 
 function isStartCellFn(x, y, gridSize) {
   const cx = Math.floor(gridSize/2);
-  const cy = gridSize - KINGDOM_ROWS - 1;
+  const cy = gridSize - 1;
   return (x===cx-1||x===cx) && (y===cy-1||y===cy);
 }
 
-// Kingdom rows: bottom KINGDOM_ROWS rows of the grid
-function isKingdomCell(y, gridSize) {
-  return y >= gridSize - KINGDOM_ROWS;
+// Kingdom entrance columns (center 2 columns at top of kingdom)
+function isKingdomEntrance(x, y, gridSize) {
+  const cx = Math.floor(gridSize/2);
+  return y === 0 && (x===cx-1||x===cx);
 }
 
-// The barrier row is the first kingdom row
-function isBarrierRow(y, gridSize) {
-  return y === gridSize - KINGDOM_ROWS;
+// Make the kingdom grid (always white, no obstructions)
+function makeKingdomGrid(gridSize) {
+  const kg = {};
+  for (let y = 0; y < KINGDOM_ROWS; y++) {
+    for (let x = 0; x < gridSize; x++) {
+      kg[cellKey(x, y)] = "white";
+    }
+  }
+  return kg;
 }
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
@@ -329,6 +321,7 @@ h1.og-title{font-family:'Cinzel',serif;font-size:clamp(1.6rem,5vw,3rem);font-wei
 .kingdom-grid{display:grid;gap:0;background:rgba(80,50,20,.15);border:1px solid rgba(213,169,62,.3);border-radius:10px;padding:4px;box-shadow:0 0 30px rgba(213,169,62,.08)}
 .kingdom-locked{opacity:.3;filter:grayscale(1)}
 .kingdom-unlocked{animation:kingdomReveal 1s ease}
+.kingdom-grid-outer{background:rgba(80,50,20,.15) !important;border:1px solid rgba(213,169,62,.3) !important;box-shadow:0 0 30px rgba(213,169,62,.08) !important;border-radius:10px !important}
 @keyframes kingdomReveal{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .cell{position:relative;display:flex;align-items:center;justify-content:center;font-size:clamp(9px,1.5vw,15px);cursor:default;transition:transform 80ms ease,opacity 350ms ease;border:1px solid rgba(0,0,0,.3);overflow:hidden}
 .cell.gone{opacity:0;pointer-events:none}
@@ -462,6 +455,8 @@ export default function ObryndelMiniGame({ onExit }) {
   const [objects,     setObjects]     = useState([]); // [{id,emoji,label,x,y}]
   const [vanished,    setVanished]    = useState(new Set());
   const [positions,   setPositions]   = useState([]);
+  const [inKingdom,   setInKingdom]   = useState([]); // bool per player
+  const [kPositions,  setKPositions]  = useState([]); // {x,y} in kingdom coords
   const [curPlayer,   setCurPlayer]   = useState(0);
   const [swFirst,     setSwFirst]     = useState(null);
   const [inventory,   setInventory]   = useState([]);
@@ -485,7 +480,7 @@ export default function ObryndelMiniGame({ onExit }) {
   const stateRef = useRef({});
   useEffect(() => {
     stateRef.current = {
-      curPlayer, positions, grid, inventory, atBase, dead, stunned,
+      curPlayer, positions, inKingdom, kPositions, grid, inventory, atBase, dead, stunned,
       dropped, droppedPos, vanished, enemies, enemyActive, playerCount,
       modBW, modVanish, modEnemy, modMaze, modDark, modEvents, modColors,
       darkRadius, gridSize, mazeWalls, objects, abilityCooldown,
@@ -544,14 +539,6 @@ export default function ObryndelMiniGame({ onExit }) {
           mWalls.delete(wk);
         }
       }
-      // Open walls in kingdom rows so they're freely traversable
-      for (let y = gs - KINGDOM_ROWS; y < gs; y++) {
-        for (let x = 0; x < gs; x++) {
-          for (const [dx,dy] of [[0,-1],[1,0],[0,1],[-1,0]]) {
-            mWalls.delete(wallKey(x,y,dx,dy));
-          }
-        }
-      }
       setMazeWalls(mWalls);
     } else {
       setMazeWalls(null);
@@ -572,11 +559,13 @@ export default function ObryndelMiniGame({ onExit }) {
     }
 
     setGrid(g);
-    setKingdomGrid({}); // no longer used separately
+    setKingdomGrid(makeKingdomGrid(gs));
     setVanished(new Set());
 
     const starts = getStartCells(gs).slice(0, pc);
     setPositions(starts.map(p => ({...p})));
+    setInKingdom(Array(pc).fill(false));
+    setKPositions(Array(pc).fill(null));
     setInventory(Array(pc).fill(false));
     setDropped(Array(pc).fill(false));
     setDroppedPos(Array(pc).fill(null));
@@ -827,17 +816,72 @@ export default function ObryndelMiniGame({ onExit }) {
 
       if (s.dead[cp]) { addLog(`${PLAYER_NAMES[cp]} is dead!`); return; }
 
+      const isInKingdom = s.inKingdom[cp];
+
+      // ── Kingdom movement (free, no restrictions) ──────────────────────────
+      if (isInKingdom) {
+        const kpos = s.kPositions[cp];
+        const nx = kpos.x + dir[0], ny = kpos.y + dir[1];
+        // Bounds check within kingdom
+        if (nx<0||nx>=gs||ny<0||ny>=KINGDOM_ROWS) {
+          // Moving up out of kingdom row 0 → re-enter wilderness at bottom
+          if (ny < 0) {
+            const cx = Math.floor(gs/2);
+            const wX = kpos.x, wY = gs-1;
+            // Place back at matching wilderness bottom row
+            const newInK = [...s.inKingdom]; newInK[cp] = false;
+            const newKP = [...s.kPositions]; newKP[cp] = null;
+            const newPos = [...s.positions]; newPos[cp] = {x: wX, y: wY};
+            setInKingdom(newInK); setKPositions(newKP); setPositions(newPos);
+            addLog(`${PLAYER_NAMES[cp]} returned to the wilderness.`);
+            advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
+          } else {
+            addLog("Out of bounds!");
+          }
+          return;
+        }
+        const newKP = [...s.kPositions]; newKP[cp] = {x:nx,y:ny};
+        setKPositions(newKP);
+        addLog(`${PLAYER_NAMES[cp]} moves through Obryndel.`);
+
+        // Victory: any player deep in the kingdom (row 2+)
+        if (ny >= 2) {
+          setPhase("victory"); return;
+        }
+
+        // Handle extra steps / extra move
+        if (s.abilityStepsLeft > 1) { setAbilityStepsLeft(s.abilityStepsLeft-1); return; }
+        else if (s.abilityStepsLeft === 1) { setAbilityStepsLeft(0); }
+        if (s.extraMove) { setExtraMove(false); return; }
+        advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
+        return;
+      }
+
+      // ── Wilderness movement ───────────────────────────────────────────────
       const cur = s.positions[cp];
       const nx = cur.x + dir[0], ny = cur.y + dir[1];
 
-      if (nx<0||nx>=gs||ny<0||ny>=gs) { addLog("Out of bounds!"); return; }
+      // Moving down from bottom wilderness row → try to enter kingdom
+      if (ny >= gs) {
+        if (!s.allGathered) {
+          addLog("⚔️ A magical barrier seals the Kingdom of Obryndel! Bring all relics to the altar first."); return;
+        }
+        // Enter kingdom at top row, same x column (clamped)
+        const kx = Math.max(0, Math.min(gs-1, cur.x));
+        const newInK = [...s.inKingdom]; newInK[cp] = true;
+        const newKP = [...s.kPositions]; newKP[cp] = {x:kx, y:0};
+        setInKingdom(newInK); setKPositions(newKP);
+        addLog(`${PLAYER_NAMES[cp]} enters the Kingdom of Obryndel! ⚡`);
+        if (s.abilityStepsLeft > 1) { setAbilityStepsLeft(s.abilityStepsLeft-1); return; }
+        else if (s.abilityStepsLeft === 1) { setAbilityStepsLeft(0); }
+        if (s.extraMove) { setExtraMove(false); return; }
+        advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
+        return;
+      }
+
+      if (nx<0||nx>=gs||ny<0) { addLog("Out of bounds!"); return; }
       const nk = cellKey(nx,ny);
       if (s.vanished.has(nk)) { addLog("That tile has crumbled!"); return; }
-
-      // Block entry into kingdom rows until barrier is shattered
-      if (isKingdomCell(ny, gs) && !s.allGathered) {
-        addLog("⚔️ A magical barrier seals the Kingdom of Obryndel! Bring all relics to the altar first."); return;
-      }
 
       // Check maze wall
       if (s.mazeWalls && s.mazeWalls.has(wallKey(cur.x,cur.y,dir[0],dir[1]))) {
@@ -945,25 +989,6 @@ export default function ObryndelMiniGame({ onExit }) {
           setAllGathered(true);
           setKingdomUnlocked(true);
           addLog("⚡ You've gathered all the artifacts to summon the power of the Void! The magic barrier has been shattered! Enter the Kingdom of Obryndel!");
-        }
-      }
-
-      // Victory: all relics delivered AND at least one player has entered the kingdom
-      if (newAtBase.filter(Boolean).length >= s.playerCount) {
-        const anyInKingdom = newPositions.some((p,i) => !newDead[i] && isKingdomCell(p.y, gs));
-        if (anyInKingdom) {
-          setPositions(newPositions);
-          setInventory(newInventory);
-          setDropped(newDropped);
-          setDroppedPos(newDroppedPos);
-          setAtBase(newAtBase);
-          setDead(newDead);
-          setGrid(newGrid);
-          setVanished(newVanished);
-          setSwFirst(null);
-          addLog(msg);
-          setPhase("victory");
-          return;
         }
       }
 
@@ -1135,15 +1160,12 @@ export default function ObryndelMiniGame({ onExit }) {
     const gs = gridSize;
     const cellPx = Math.max(20, Math.min(44, Math.floor(560/gs)));
 
-    // Compute visible cells for dark mode
+    // Compute visible cells for dark mode (only when current player is in wilderness)
     let visibleCells = null;
-    if (modDark) {
-      // Union of all living players' visibility
-      // But each player only sees during THEIR turn
+    if (modDark && !inKingdom[cp]) {
       const pos = positions[cp];
       if (pos) {
         visibleCells = bfsVisibleCells(pos, darkRadius, mazeWalls, vanished, gs);
-        // Always show other players' positions regardless
       }
     }
 
@@ -1151,45 +1173,45 @@ export default function ObryndelMiniGame({ onExit }) {
     const objMapXY = {};
     objects.forEach(o => { objMapXY[cellKey(o.x,o.y)] = o; });
 
-    const renderGrid = () => {
+    // Only wilderness players (not in kingdom) for visibility and position checks
+    const wildernessPositions = positions.map((p,i) => inKingdom[i] ? null : p);
+
+    const renderWilderness = () => {
       return Array.from({length:gs},(_,y)=>
         Array.from({length:gs},(_,x)=>{
           const key = cellKey(x,y);
           const color = grid[key]||"empty";
           const isGone = vanished.has(key);
           const isStart = isStartCellFn(x,y,gs);
-          const isKingdom = isKingdomCell(y,gs);
-          const isBarrier = !allGathered && isKingdom; // visually sealed
           const isObj = !!objMapXY[key];
           const obj = objMapXY[key];
 
-          // Dark mode visibility
+          // Dark mode visibility (only for wilderness)
           let isDark = false, isEdge = false;
-          if (modDark && visibleCells) {
+          if (modDark && visibleCells && !inKingdom[cp]) {
             isDark = !visibleCells.has(key);
-            if (positions.some(p=>p.x===x&&p.y===y)) isDark=false;
+            if (wildernessPositions.some(p=>p&&p.x===x&&p.y===y)) isDark=false;
             if (!isDark && visibleCells.has(key)) {
-              const d = bfsDist({x:positions[cp].x,y:positions[cp].y},{x,y},mazeWalls,vanished,gs);
+              const d = bfsDist(positions[cp],{x,y},mazeWalls,vanished,gs);
               if (d===darkRadius) isEdge=true;
             }
           }
 
-          const playersHere = positions.map((p,i)=>p.x===x&&p.y===y?i:-1).filter(i=>i>=0);
+          const playersHere = positions.map((p,i)=>!inKingdom[i]&&p.x===x&&p.y===y?i:-1).filter(i=>i>=0);
           const enemiesHere = enemyActive && enemies.filter(e=>e.x===x&&e.y===y);
-          const enemyVisible = enemiesHere && enemiesHere.length>0 && (!modDark || (visibleCells && visibleCells.has(key)));
+          const enemyVisible = enemiesHere && enemiesHere.length>0 && (!modDark || !visibleCells || visibleCells.has(key));
           const droppedHere = dropped.map((d,i)=>{
             const dp=droppedPos[i]; return d&&dp&&dp.x===x&&dp.y===y?i:-1;
           }).filter(i=>i>=0);
 
-          // Maze walls (none in kingdom rows since we cleared them)
           const wallN = mazeWalls && mazeWalls.has(wallKey(x,y,0,-1));
           const wallE = mazeWalls && mazeWalls.has(wallKey(x,y,1,0));
           const wallS = mazeWalls && mazeWalls.has(wallKey(x,y,0,1));
           const wallW = mazeWalls && mazeWalls.has(wallKey(x,y,-1,0));
 
           const isSwSel = swFirst&&swFirst.x===x&&swFirst.y===y;
-          const isSwAble = modColors && !isKingdom && !isStart && !isObj && !isGone
-            && !positions.some((p,i)=>!dead[i]&&p.x===x&&p.y===y)
+          const isSwAble = modColors && !isStart && !isObj && !isGone
+            && !positions.some((p,i)=>!dead[i]&&!inKingdom[i]&&p.x===x&&p.y===y)
             && !(enemyActive && enemies.some(e=>e.x===x&&e.y===y));
 
           const wallClasses = [
@@ -1197,16 +1219,10 @@ export default function ObryndelMiniGame({ onExit }) {
             wallS?"maze-wall-s":"", wallW?"maze-wall-w":""
           ].filter(Boolean).join(" ");
 
-          // Kingdom cell styling
-          const kingdomBg = isBarrier
-            ? "rgba(60,10,80,0.85)"   // sealed: dark purple
-            : "rgba(213,185,120,0.25)"; // open: warm gold-white
-          const kingdomBorder = isBarrier
-            ? "rgba(180,80,220,0.4)"
-            : "rgba(213,169,62,0.35)";
-
-          // Castle icon in center of kingdom
-          const isCastleCell = isKingdom && x===Math.floor(gs/2) && y===gs-Math.floor(KINGDOM_ROWS/2)-1;
+          // Bottom row hint: glowing entrance if barrier shattered
+          const isBottomRow = y === gs-1;
+          const cx2 = Math.floor(gs/2);
+          const isEntranceCell = isBottomRow && (x===cx2-1||x===cx2);
 
           return (
             <div
@@ -1215,47 +1231,30 @@ export default function ObryndelMiniGame({ onExit }) {
                 "cell",
                 isGone?"gone":"",
                 isStart?"start-cell":"",
-                isKingdom?"kingdom-cell":"",
-                isBarrier?"kingdom-barrier":"",
                 isSwAble&&!isDark?"sw-able":"",
                 isSwSel?"sw-sel":"",
-                isDark&&!isKingdom?"dark-cell":"",
-                isEdge&&!isDark&&!isKingdom?"dark-edge":"",
+                isDark?"dark-cell":"",
+                isEdge&&!isDark?"dark-edge":"",
                 wallClasses,
               ].join(" ")}
               style={{
                 width:cellPx, height:cellPx,
-                background: (isDark&&!isKingdom) ? "#080604"
+                background: isDark ? "#080604"
                   : isGone ? "transparent"
-                  : isKingdom ? kingdomBg
                   : color==="black" ? COLOR_BG.black
                   : COLOR_BG[color]||COLOR_BG.empty,
-                borderColor: isKingdom ? kingdomBorder
-                  : isStart?"rgba(237,230,207,.4)"
+                borderColor: isStart?"rgba(237,230,207,.4)"
+                  : isEntranceCell&&allGathered?"rgba(213,169,62,.6)"
                   : isObj?"rgba(237,230,207,.2)"
                   : color==="black"?"rgba(255,255,255,.03)"
                   : `${COLOR_HEX[color]||"#1a1510"}22`,
                 boxShadow: isStart ? "0 0 14px rgba(237,230,207,.4)"
-                  : isBarrier ? "inset 0 0 8px rgba(180,80,220,0.3)"
-                  : isKingdom&&!isBarrier ? "inset 0 0 6px rgba(213,169,62,0.15)"
+                  : isEntranceCell&&allGathered ? "0 0 12px rgba(213,169,62,.4)"
                   : undefined,
                 fontSize: cellPx<28?"8px":cellPx<36?"10px":"13px",
               }}
               onClick={()=>handleCellClick(x,y)}
             >
-              {/* Barrier shimmer overlay */}
-              {isBarrier && !isDark && (
-                <div style={{position:"absolute",inset:0,background:"repeating-linear-gradient(45deg,rgba(180,80,220,0.08) 0px,rgba(180,80,220,0.08) 2px,transparent 2px,transparent 8px)",pointerEvents:"none",zIndex:1}}/>
-              )}
-              {/* Barrier rune */}
-              {isBarrier && x===Math.floor(gs/2) && y===gs-KINGDOM_ROWS && (
-                <span style={{position:"absolute",fontSize:"1.1em",opacity:.5,zIndex:2,filter:"drop-shadow(0 0 4px rgba(180,80,220,0.9))"}}>🔒</span>
-              )}
-              {/* Castle icon */}
-              {isCastleCell && !isBarrier && (
-                <span style={{position:"absolute",fontSize:"1.2em",opacity:.85,zIndex:2,filter:"drop-shadow(0 0 6px rgba(213,169,62,0.9))"}}>🏰</span>
-              )}
-              {/* Object icon */}
               {isObj && obj && !isGone && !isDark && (
                 <span style={{opacity: inventory[PLAYER_COLORS.indexOf(obj.id)] ? 0.12 : 0.9, filter:"drop-shadow(0 1px 3px rgba(0,0,0,.8))"}}>
                   {obj.emoji}
@@ -1264,19 +1263,20 @@ export default function ObryndelMiniGame({ onExit }) {
               {isStart && playersHere.length===0 && !enemyVisible && (
                 <span style={{fontSize:"0.7em",opacity:.28}}>✦</span>
               )}
-              {/* Dropped shards */}
-              {!isDark && droppedHere && droppedHere.map(di=>(
+              {/* Entrance arrow when unlocked */}
+              {isEntranceCell && allGathered && playersHere.length===0 && (
+                <span style={{fontSize:"0.7em",opacity:.6,filter:"drop-shadow(0 0 4px rgba(213,169,62,.8))"}}>↓</span>
+              )}
+              {!isDark && droppedHere.map(di=>(
                 <span key={di} style={{position:"absolute",top:1,right:1,fontSize:"0.65em",opacity:.8,zIndex:8}}>
                   {OBJECT_DEFS[di].emoji}
                 </span>
               ))}
-              {/* Enemy */}
               {enemyVisible && enemiesHere.map((en,ei)=>(
                 <div key={ei} className="eby" style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1em",zIndex:20,filter:`drop-shadow(0 0 6px rgba(200,20,20,.95))${en.stunned>0?" grayscale(1)":""}`}}>
                   👁️
                 </div>
               ))}
-              {/* Players */}
               {playersHere.map(pi=>(
                 <div key={pi} style={{
                   position:"absolute",
@@ -1286,8 +1286,63 @@ export default function ObryndelMiniGame({ onExit }) {
                     :{inset:0,display:"flex",alignItems:"center",justifyContent:"center"}),
                   display:"flex",alignItems:"center",justifyContent:"center",
                   zIndex:10,
-                  opacity:dead[pi] ? 0.25 : 1,
+                  opacity:dead[pi]?0.25:1,
                   filter:dead[pi]?"grayscale(1)":"drop-shadow(0 1px 4px rgba(0,0,0,.9))",
+                }}>
+                  {cpChar&&pi===cp?cpChar.emoji:PLAYER_EMOJIS[pi]}
+                </div>
+              ))}
+            </div>
+          );
+        })
+      );
+    };
+
+    const renderKingdom = () => {
+      const locked = !allGathered;
+      return Array.from({length:KINGDOM_ROWS},(_,ky)=>
+        Array.from({length:gs},(_,kx)=>{
+          const key = cellKey(kx,ky);
+          const isCastle = kx===Math.floor(gs/2) && ky===Math.floor(KINGDOM_ROWS/2);
+          const playersHere = kPositions.map((p,i)=>inKingdom[i]&&p&&p.x===kx&&p.y===ky?i:-1).filter(i=>i>=0);
+          const isEntrance = ky===0 && (kx===Math.floor(gs/2)-1||kx===Math.floor(gs/2));
+
+          return (
+            <div
+              key={key}
+              className="cell kingdom-cell"
+              style={{
+                width:cellPx, height:cellPx,
+                background: locked
+                  ? ky===0?"rgba(80,20,100,0.9)":"rgba(50,10,70,0.85)"
+                  : isEntrance?"rgba(237,220,160,0.55)":"rgba(213,185,120,0.2)",
+                borderColor: locked?"rgba(180,80,220,0.35)":"rgba(213,169,62,0.3)",
+                boxShadow: locked&&ky===0?"inset 0 0 10px rgba(180,80,220,0.4)":undefined,
+                fontSize: cellPx<28?"8px":cellPx<36?"10px":"13px",
+                cursor:"default",
+              }}
+            >
+              {/* Barrier visuals on top row */}
+              {locked && ky===0 && (
+                <div style={{position:"absolute",inset:0,background:"repeating-linear-gradient(45deg,rgba(180,80,220,0.1) 0px,rgba(180,80,220,0.1) 2px,transparent 2px,transparent 8px)",pointerEvents:"none",zIndex:1}}/>
+              )}
+              {locked && ky===0 && kx===Math.floor(gs/2) && (
+                <span style={{position:"absolute",fontSize:"1.1em",opacity:.7,zIndex:2,filter:"drop-shadow(0 0 6px rgba(180,80,220,1))"}}>🔒</span>
+              )}
+              {isCastle && !locked && (
+                <span style={{position:"absolute",fontSize:"1.3em",opacity:.9,zIndex:2,filter:"drop-shadow(0 0 8px rgba(213,169,62,1))"}}>🏰</span>
+              )}
+              {/* Players in kingdom */}
+              {playersHere.map(pi=>(
+                <div key={pi} style={{
+                  position:"absolute",
+                  fontSize:playersHere.length>1?"0.7em":"0.95em",
+                  ...(playersHere.length>1
+                    ?{top:pi%2===0?"1px":undefined,bottom:pi%2===1?"1px":undefined,left:Math.floor(pi/2)===0?"1px":undefined,right:Math.floor(pi/2)===1?"1px":undefined}
+                    :{inset:0,display:"flex",alignItems:"center",justifyContent:"center"}),
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  zIndex:10,
+                  filter:"drop-shadow(0 1px 4px rgba(0,0,0,.9))",
                 }}>
                   {cpChar&&pi===cp?cpChar.emoji:PLAYER_EMOJIS[pi]}
                 </div>
@@ -1344,9 +1399,23 @@ export default function ObryndelMiniGame({ onExit }) {
           {/* Grid area */}
           <div className="grid-wrap">
             <div className="grid-container">
-              {/* Unified grid — kingdom rows are at the bottom */}
+              {/* Wilderness grid */}
               <div className="grid" style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(${gs},${cellPx}px)`}}>
-                {renderGrid()}
+                {renderWilderness()}
+              </div>
+
+              {/* Kingdom separator */}
+              <div className="kingdom-separator">
+                <div className="kingdom-sep-line"/>
+                <div className="kingdom-sep-text">
+                  {allGathered ? "⚡ Kingdom of Obryndel — Enter!" : "🔒 Kingdom of Obryndel — Sealed by Magic"}
+                </div>
+                <div className="kingdom-sep-line"/>
+              </div>
+
+              {/* Kingdom grid — always present, locked until barrier shatters */}
+              <div className="grid kingdom-grid-outer" style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(${KINGDOM_ROWS},${cellPx}px)`}}>
+                {renderKingdom()}
               </div>
             </div>
 
