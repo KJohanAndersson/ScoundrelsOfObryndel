@@ -191,7 +191,7 @@ function bfsVisibleCells(from, dist, mazeWalls, vanishedSet, gridSize) {
   return visible;
 }
 
-// ─── Place objects near the edges of the map (within 2 squares), reachable ───
+// ─── Place objects near the edges of the wilderness (within 2 squares of edge), reachable ───
 function placeObjects(gridSize, startCX, startCY, mazeWalls, playerCount) {
   const centerCell = { x: startCX, y: startCY };
   const placed = [];
@@ -201,14 +201,16 @@ function placeObjects(gridSize, startCX, startCY, mazeWalls, playerCount) {
     usedKeys.add(cellKey(startCX+dx, startCY+dy));
   }
 
-  // A cell is "near edge" if it's within 2 squares of any border
+  // Wilderness rows only (exclude kingdom rows at bottom)
+  const wildernessRows = gridSize - KINGDOM_ROWS;
+
+  // A cell is "near edge" if within 2 of top/left/right border, or within 2 of wilderness bottom
   const isNearEdge = (x, y) =>
-    x <= 1 || x >= gridSize-2 || y <= 1 || y >= gridSize-2;
+    x <= 1 || x >= gridSize-2 || y <= 1 || y >= wildernessRows-2;
 
   for (let i = 0; i < playerCount; i++) {
-    // Collect all valid near-edge candidates, shuffle, pick best reachable
     const candidates = [];
-    for (let y=0; y<gridSize; y++) {
+    for (let y=0; y<wildernessRows; y++) {
       for (let x=0; x<gridSize; x++) {
         const k = cellKey(x,y);
         if (usedKeys.has(k)) continue;
@@ -216,14 +218,12 @@ function placeObjects(gridSize, startCX, startCY, mazeWalls, playerCount) {
         candidates.push({x,y});
       }
     }
-    // Shuffle
     candidates.sort(()=>Math.random()-.5);
     let best = null;
     for (const c of candidates) {
       const d = bfsDist(centerCell, c, mazeWalls, new Set(), gridSize);
       if (d < Infinity) { best = c; break; }
     }
-    // Fallback: any reachable near-edge cell ignoring already-used constraint
     if (!best) {
       for (const c of candidates) {
         const d = bfsDist(centerCell, c, mazeWalls, new Set(), gridSize);
@@ -245,34 +245,53 @@ function makeGrid(gridSize, playerCount, bwMode, hasMaze, hasColors) {
   if (!hasColors) colors = ["white"];
   else if (bwMode) colors = ["white","black"];
   else colors = PLAYER_COLORS.slice(0, playerCount);
-  for (let y = 0; y < gridSize; y++) {
+
+  const totalRows = gridSize; // kingdom rows are the bottom KINGDOM_ROWS of gridSize
+  for (let y = 0; y < totalRows; y++) {
     for (let x = 0; x < gridSize; x++) {
-      grid[cellKey(x,y)] = colors[Math.floor(Math.random()*colors.length)];
+      // Kingdom rows are always white
+      if (isKingdomCell(y, gridSize)) {
+        grid[cellKey(x,y)] = "white";
+      } else {
+        grid[cellKey(x,y)] = colors[Math.floor(Math.random()*colors.length)];
+      }
     }
   }
   return grid;
 }
 
-// Start area center
+// Kingdom occupies the bottom KINGDOM_ROWS rows of the unified grid
+const KINGDOM_ROWS = 4;
+
+// Start area is at the bottom center of the wilderness (just above kingdom)
 function getStartCenter(gridSize) {
-  return { x: Math.floor(gridSize/2), y: Math.floor(gridSize/2) };
+  return { x: Math.floor(gridSize/2), y: gridSize - KINGDOM_ROWS - 1 };
 }
 
 function getStartCells(gridSize) {
-  const cx = Math.floor(gridSize/2), cy = Math.floor(gridSize/2);
+  const cx = Math.floor(gridSize/2);
+  const cy = gridSize - KINGDOM_ROWS - 1;
+  // 2x2 block centered on cx,cy (entrance row + one above)
   return [
-    {x:cx-1,y:cy-1},{x:cx,y:cy-1},{x:cx-1,y:cy},{x:cx,y:cy}
+    {x:cx-1, y:cy-1}, {x:cx, y:cy-1},
+    {x:cx-1, y:cy},   {x:cx, y:cy},
   ];
 }
 
 function isStartCellFn(x, y, gridSize) {
-  const cx = Math.floor(gridSize/2), cy = Math.floor(gridSize/2);
+  const cx = Math.floor(gridSize/2);
+  const cy = gridSize - KINGDOM_ROWS - 1;
   return (x===cx-1||x===cx) && (y===cy-1||y===cy);
 }
 
-// Kingdom area: bottom 3 rows
-function isKingdomCell(x, y, gridSize) {
-  return y >= gridSize;  // separate area below
+// Kingdom rows: bottom KINGDOM_ROWS rows of the grid
+function isKingdomCell(y, gridSize) {
+  return y >= gridSize - KINGDOM_ROWS;
+}
+
+// The barrier row is the first kingdom row
+function isBarrierRow(y, gridSize) {
+  return y === gridSize - KINGDOM_ROWS;
 }
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
@@ -317,6 +336,8 @@ h1.og-title{font-family:'Cinzel',serif;font-size:clamp(1.6rem,5vw,3rem);font-wei
 .cell.sw-able:hover{transform:scale(1.07);z-index:2}
 .cell.sw-sel{outline:2px solid rgba(255,220,80,.9);outline-offset:-2px;box-shadow:0 0 14px rgba(255,220,80,.4);transform:scale(1.09);z-index:3}
 .cell.start-cell{box-shadow:0 0 14px rgba(237,230,207,.4)}
+.cell.kingdom-cell{border-color:rgba(213,169,62,.3) !important}
+.cell.kingdom-barrier{cursor:not-allowed}
 .cell.dark-cell{background:#0a0806 !important;border-color:rgba(0,0,0,.8) !important}
 .cell.dark-edge{filter:brightness(0.45)}
 .cell-wall-top{border-top:2px solid rgba(255,220,120,.7) !important}
@@ -515,12 +536,20 @@ export default function ObryndelMiniGame({ onExit }) {
     let mWalls = null;
     if (modMaze) {
       mWalls = generateMaze(gs, gs);
-      // Open up center area
+      // Open up start area walls
       const startCells = getStartCells(gs);
       for (const sc of startCells) {
         for (const [dx,dy] of [[0,-1],[1,0],[0,1],[-1,0]]) {
           const wk = wallKey(sc.x,sc.y,dx,dy);
           mWalls.delete(wk);
+        }
+      }
+      // Open walls in kingdom rows so they're freely traversable
+      for (let y = gs - KINGDOM_ROWS; y < gs; y++) {
+        for (let x = 0; x < gs; x++) {
+          for (const [dx,dy] of [[0,-1],[1,0],[0,1],[-1,0]]) {
+            mWalls.delete(wallKey(x,y,dx,dy));
+          }
         }
       }
       setMazeWalls(mWalls);
@@ -533,24 +562,17 @@ export default function ObryndelMiniGame({ onExit }) {
     const sc = getStartCells(gs);
     sc.forEach(c => { g[cellKey(c.x,c.y)] = "white"; });
 
-    // Kingdom grid (always 10 wide)
-    const kg = {};
-    for (let y=0;y<3;y++) for(let x=0;x<gs;x++) {
-      kg[cellKey(x,y)] = PLAYER_COLORS[Math.floor(Math.random()*pc)];
-    }
-    setKingdomGrid(kg);
-
     const ctr = getStartCenter(gs);
     const objs = placeObjects(gs, ctr.x, ctr.y, mWalls, pc);
     setObjects(objs);
 
     // When colored tiles are active, object cells must be white (walkable by all)
-    // and must never be swappable
     if (modColors) {
       objs.forEach(o => { g[cellKey(o.x, o.y)] = "white"; });
     }
 
     setGrid(g);
+    setKingdomGrid({}); // no longer used separately
     setVanished(new Set());
 
     const starts = getStartCells(gs).slice(0, pc);
@@ -575,6 +597,7 @@ export default function ObryndelMiniGame({ onExit }) {
     setExtraMove(false);
     setPhase("game");
     addLog(`Quest begins with ${pc} scoundrel${pc>1?"s":""}!`);
+    addLog("🏰 Bring all relics to the altar to shatter the barrier sealing Obryndel!");
     if (modMaze) addLog("🏚️ A maze has formed around you…");
     if (modDark) addLog(`🌑 Darkness falls — you can see ${darkRadius} steps.`);
     if (modEvents) addLog("🃏 Event cards are in play…");
@@ -811,6 +834,11 @@ export default function ObryndelMiniGame({ onExit }) {
       const nk = cellKey(nx,ny);
       if (s.vanished.has(nk)) { addLog("That tile has crumbled!"); return; }
 
+      // Block entry into kingdom rows until barrier is shattered
+      if (isKingdomCell(ny, gs) && !s.allGathered) {
+        addLog("⚔️ A magical barrier seals the Kingdom of Obryndel! Bring all relics to the altar first."); return;
+      }
+
       // Check maze wall
       if (s.mazeWalls && s.mazeWalls.has(wallKey(cur.x,cur.y,dir[0],dir[1]))) {
         addLog("A wall blocks your path!"); return;
@@ -879,14 +907,6 @@ export default function ObryndelMiniGame({ onExit }) {
             triggerEventCard();
           }
 
-          // Check all gathered
-          const totalGathered = newInventory.filter(Boolean).length + newAtBase.filter(Boolean).length;
-          if (totalGathered >= s.playerCount && !s.allGathered) {
-            setAllGathered(true);
-            setKingdomUnlocked(true);
-            addLog("⚡ You've gathered all the artifacts to summon the power of the Void! The magic barrier has been shattered!");
-          }
-
           // Vanish tiles
           if (s.modVanish) {
             const totalCarried = newInventory.filter(Boolean).length;
@@ -919,10 +939,31 @@ export default function ObryndelMiniGame({ onExit }) {
       if (isStartCellFn(nx,ny,gs) && newInventory[cp] && !newAtBase[cp]) {
         newAtBase[cp]=true;
         newInventory[cp]=false;
-        msg+=` ${PLAYER_NAMES[cp]} forged their relic at the altar! ✨`;
+        msg+=` ${PLAYER_NAMES[cp]} delivered their relic to the altar! ✨`;
         const totalDone = newAtBase.filter(Boolean).length;
-        if (totalDone>=s.playerCount) {
+        if (totalDone >= s.playerCount && !s.allGathered) {
+          setAllGathered(true);
+          setKingdomUnlocked(true);
+          addLog("⚡ You've gathered all the artifacts to summon the power of the Void! The magic barrier has been shattered! Enter the Kingdom of Obryndel!");
+        }
+      }
+
+      // Victory: all relics delivered AND at least one player has entered the kingdom
+      if (newAtBase.filter(Boolean).length >= s.playerCount) {
+        const anyInKingdom = newPositions.some((p,i) => !newDead[i] && isKingdomCell(p.y, gs));
+        if (anyInKingdom) {
+          setPositions(newPositions);
+          setInventory(newInventory);
+          setDropped(newDropped);
+          setDroppedPos(newDroppedPos);
+          setAtBase(newAtBase);
+          setDead(newDead);
+          setGrid(newGrid);
+          setVanished(newVanished);
+          setSwFirst(null);
+          addLog(msg);
           setPhase("victory");
+          return;
         }
       }
 
@@ -1110,49 +1151,44 @@ export default function ObryndelMiniGame({ onExit }) {
     const objMapXY = {};
     objects.forEach(o => { objMapXY[cellKey(o.x,o.y)] = o; });
 
-    const renderGrid = (forKingdom=false) => {
-      const gHeight = forKingdom ? 3 : gs;
-      const gWidth = gs;
-      const gSource = forKingdom ? kingdomGrid : grid;
-
-      return Array.from({length:gHeight},(_,y)=>
-        Array.from({length:gWidth},(_,x)=>{
+    const renderGrid = () => {
+      return Array.from({length:gs},(_,y)=>
+        Array.from({length:gs},(_,x)=>{
           const key = cellKey(x,y);
-          const color = gSource[key]||"empty";
-          const isGone = !forKingdom && vanished.has(key);
-          const isStart = !forKingdom && isStartCellFn(x,y,gs);
-          const isObj = !forKingdom && !!objMapXY[key];
-          const obj = !forKingdom ? objMapXY[key] : null;
+          const color = grid[key]||"empty";
+          const isGone = vanished.has(key);
+          const isStart = isStartCellFn(x,y,gs);
+          const isKingdom = isKingdomCell(y,gs);
+          const isBarrier = !allGathered && isKingdom; // visually sealed
+          const isObj = !!objMapXY[key];
+          const obj = objMapXY[key];
 
           // Dark mode visibility
           let isDark = false, isEdge = false;
-          if (modDark && !forKingdom && visibleCells) {
+          if (modDark && visibleCells) {
             isDark = !visibleCells.has(key);
-            // Check if player is here - always visible
             if (positions.some(p=>p.x===x&&p.y===y)) isDark=false;
-            // Edge cells (at distance = radius) are slightly darker
             if (!isDark && visibleCells.has(key)) {
-              // Check if it's at the boundary
               const d = bfsDist({x:positions[cp].x,y:positions[cp].y},{x,y},mazeWalls,vanished,gs);
               if (d===darkRadius) isEdge=true;
             }
           }
 
           const playersHere = positions.map((p,i)=>p.x===x&&p.y===y?i:-1).filter(i=>i>=0);
-          const enemiesHere = !forKingdom && enemyActive && enemies.filter(e=>e.x===x&&e.y===y);
+          const enemiesHere = enemyActive && enemies.filter(e=>e.x===x&&e.y===y);
           const enemyVisible = enemiesHere && enemiesHere.length>0 && (!modDark || (visibleCells && visibleCells.has(key)));
-          const droppedHere = !forKingdom && dropped.map((d,i)=>{
+          const droppedHere = dropped.map((d,i)=>{
             const dp=droppedPos[i]; return d&&dp&&dp.x===x&&dp.y===y?i:-1;
           }).filter(i=>i>=0);
 
-          // Maze walls
-          const wallN = !forKingdom && mazeWalls && mazeWalls.has(wallKey(x,y,0,-1));
-          const wallE = !forKingdom && mazeWalls && mazeWalls.has(wallKey(x,y,1,0));
-          const wallS = !forKingdom && mazeWalls && mazeWalls.has(wallKey(x,y,0,1));
-          const wallW = !forKingdom && mazeWalls && mazeWalls.has(wallKey(x,y,-1,0));
+          // Maze walls (none in kingdom rows since we cleared them)
+          const wallN = mazeWalls && mazeWalls.has(wallKey(x,y,0,-1));
+          const wallE = mazeWalls && mazeWalls.has(wallKey(x,y,1,0));
+          const wallS = mazeWalls && mazeWalls.has(wallKey(x,y,0,1));
+          const wallW = mazeWalls && mazeWalls.has(wallKey(x,y,-1,0));
 
           const isSwSel = swFirst&&swFirst.x===x&&swFirst.y===y;
-          const isSwAble = modColors && !forKingdom && !isStart && !isObj && !isGone
+          const isSwAble = modColors && !isKingdom && !isStart && !isObj && !isGone
             && !positions.some((p,i)=>!dead[i]&&p.x===x&&p.y===y)
             && !(enemyActive && enemies.some(e=>e.x===x&&e.y===y));
 
@@ -1161,6 +1197,17 @@ export default function ObryndelMiniGame({ onExit }) {
             wallS?"maze-wall-s":"", wallW?"maze-wall-w":""
           ].filter(Boolean).join(" ");
 
+          // Kingdom cell styling
+          const kingdomBg = isBarrier
+            ? "rgba(60,10,80,0.85)"   // sealed: dark purple
+            : "rgba(213,185,120,0.25)"; // open: warm gold-white
+          const kingdomBorder = isBarrier
+            ? "rgba(180,80,220,0.4)"
+            : "rgba(213,169,62,0.35)";
+
+          // Castle icon in center of kingdom
+          const isCastleCell = isKingdom && x===Math.floor(gs/2) && y===gs-Math.floor(KINGDOM_ROWS/2)-1;
+
           return (
             <div
               key={key}
@@ -1168,26 +1215,46 @@ export default function ObryndelMiniGame({ onExit }) {
                 "cell",
                 isGone?"gone":"",
                 isStart?"start-cell":"",
+                isKingdom?"kingdom-cell":"",
+                isBarrier?"kingdom-barrier":"",
                 isSwAble&&!isDark?"sw-able":"",
                 isSwSel?"sw-sel":"",
-                isDark?"dark-cell":"",
-                isEdge&&!isDark?"dark-edge":"",
+                isDark&&!isKingdom?"dark-cell":"",
+                isEdge&&!isDark&&!isKingdom?"dark-edge":"",
                 wallClasses,
               ].join(" ")}
               style={{
                 width:cellPx, height:cellPx,
-                background: isDark ? "#080604"
+                background: (isDark&&!isKingdom) ? "#080604"
                   : isGone ? "transparent"
+                  : isKingdom ? kingdomBg
                   : color==="black" ? COLOR_BG.black
                   : COLOR_BG[color]||COLOR_BG.empty,
-                borderColor: isStart?"rgba(237,230,207,.4)"
+                borderColor: isKingdom ? kingdomBorder
+                  : isStart?"rgba(237,230,207,.4)"
                   : isObj?"rgba(237,230,207,.2)"
                   : color==="black"?"rgba(255,255,255,.03)"
                   : `${COLOR_HEX[color]||"#1a1510"}22`,
+                boxShadow: isStart ? "0 0 14px rgba(237,230,207,.4)"
+                  : isBarrier ? "inset 0 0 8px rgba(180,80,220,0.3)"
+                  : isKingdom&&!isBarrier ? "inset 0 0 6px rgba(213,169,62,0.15)"
+                  : undefined,
                 fontSize: cellPx<28?"8px":cellPx<36?"10px":"13px",
               }}
               onClick={()=>handleCellClick(x,y)}
             >
+              {/* Barrier shimmer overlay */}
+              {isBarrier && !isDark && (
+                <div style={{position:"absolute",inset:0,background:"repeating-linear-gradient(45deg,rgba(180,80,220,0.08) 0px,rgba(180,80,220,0.08) 2px,transparent 2px,transparent 8px)",pointerEvents:"none",zIndex:1}}/>
+              )}
+              {/* Barrier rune */}
+              {isBarrier && x===Math.floor(gs/2) && y===gs-KINGDOM_ROWS && (
+                <span style={{position:"absolute",fontSize:"1.1em",opacity:.5,zIndex:2,filter:"drop-shadow(0 0 4px rgba(180,80,220,0.9))"}}>🔒</span>
+              )}
+              {/* Castle icon */}
+              {isCastleCell && !isBarrier && (
+                <span style={{position:"absolute",fontSize:"1.2em",opacity:.85,zIndex:2,filter:"drop-shadow(0 0 6px rgba(213,169,62,0.9))"}}>🏰</span>
+              )}
               {/* Object icon */}
               {isObj && obj && !isGone && !isDark && (
                 <span style={{opacity: inventory[PLAYER_COLORS.indexOf(obj.id)] ? 0.12 : 0.9, filter:"drop-shadow(0 1px 3px rgba(0,0,0,.8))"}}>
@@ -1269,7 +1336,7 @@ export default function ObryndelMiniGame({ onExit }) {
         {allGathered && (
           <div className="all-gathered-banner" style={{width:"100%",maxWidth:700,marginBottom:8}}>
             ⚡ You've gathered all the artifacts to summon the power of the Void!<br/>
-            The magic barrier has been shattered! The Kingdom of Obryndel awaits…
+            The magic barrier has been shattered! Enter the Kingdom of Obryndel to claim victory!
           </div>
         )}
 
@@ -1277,41 +1344,9 @@ export default function ObryndelMiniGame({ onExit }) {
           {/* Grid area */}
           <div className="grid-wrap">
             <div className="grid-container">
-              {/* Main grid */}
+              {/* Unified grid — kingdom rows are at the bottom */}
               <div className="grid" style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(${gs},${cellPx}px)`}}>
-                {renderGrid(false)}
-              </div>
-
-              {/* Kingdom separator */}
-              <div className="kingdom-separator">
-                <div className="kingdom-sep-line"/>
-                <div className="kingdom-sep-text">
-                  {kingdomUnlocked ? "⚡ Kingdom of Obryndel — Unlocked!" : "🔒 Kingdom of Obryndel — Sealed by Magic"}
-                </div>
-                <div className="kingdom-sep-line"/>
-              </div>
-
-              {/* Kingdom grid */}
-              <div className={`kingdom-grid${kingdomUnlocked?"":" kingdom-locked"} ${kingdomUnlocked?"kingdom-unlocked":""}`}
-                style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(3,${cellPx}px)`,display:"grid"}}>
-                {Array.from({length:3},(_,y)=>
-                  Array.from({length:gs},(_,x)=>{
-                    const key=cellKey(x,y);
-                    const color=kingdomGrid[key]||"red";
-                    return (
-                      <div key={key} className="cell" style={{
-                        width:cellPx,height:cellPx,
-                        background:COLOR_BG[color]||COLOR_BG.empty,
-                        borderColor:`${COLOR_HEX[color]||"#1a1510"}22`,
-                        fontSize:cellPx<28?"8px":cellPx<36?"10px":"13px",
-                      }}>
-                        {y===1&&x===Math.floor(gs/2)&&(
-                          <span style={{fontSize:"1.1em"}}>🏰</span>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
+                {renderGrid()}
               </div>
             </div>
 
@@ -1401,8 +1436,8 @@ export default function ObryndelMiniGame({ onExit }) {
                         <div className="p-rn" style={{color:COLOR_HEX[PLAYER_COLORS[i]]}}>{char?char.name:PLAYER_NAMES[i]}</div>
                         <div className="p-rs">
                           {isDead?"Dead — move onto them to revive"
-                          :isDone?"✓ Relic forged at the altar!"
-                          :hasObj?`Carrying ${obj.emoji} — return to base!`
+                          :isDone?(allGathered?"⚔️ Enter the Kingdom of Obryndel!":"✓ Relic delivered to altar!")
+                          :hasObj?`Carrying ${obj.emoji} — return to the altar!`
                           :hasDrop?`${obj.emoji} dropped — reclaim it!`
                           :`Seeking ${obj.emoji} ${obj.label}`}
                         </div>
