@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PLAYER_COLORS = ["red", "blue", "yellow", "green"];
 const PLAYER_NAMES  = ["Red", "Blue", "Yellow", "Green"];
-const PLAYER_EMOJIS = ["🔴", "🔵", "🟡", "🟢"];
+const PLAYER_EMOJIS = ["ðŸ”´", "ðŸ”µ", "ðŸŸ¡", "ðŸŸ¢"];
 
 const OBJECT_DEFS = [
-  { id: "red",    emoji: "🗡️", label: "Red Shard"     },
-  { id: "blue",   emoji: "🔮", label: "Blue Orb"      },
-  { id: "yellow", emoji: "📜", label: "Yellow Scroll" },
-  { id: "green",  emoji: "🌿", label: "Green Root"    },
+  { id: "red",    emoji: "ðŸ—¡ï¸", label: "Red Shard"     },
+  { id: "blue",   emoji: "ðŸ”®", label: "Blue Orb"      },
+  { id: "yellow", emoji: "ðŸ“œ", label: "Yellow Scroll" },
+  { id: "green",  emoji: "ðŸŒ¿", label: "Green Root"    },
 ];
 
 const CHARACTERS = [
@@ -17,7 +17,7 @@ const CHARACTERS = [
     id: "gribberth",
     name: "Gribberth Twelvetoe",
     race: "Goblin",
-    emoji: "👺",
+    emoji: "ðŸ‘º",
     abilityName: "Quick Toes",
     abilityDesc: "Move three steps this turn. You may sprint past an enemy without being caught.",
     abilityCooldown: 3,
@@ -27,7 +27,7 @@ const CHARACTERS = [
     id: "craglasha",
     name: "Craglasha Rawrolgh",
     race: "Orc",
-    emoji: "👹",
+    emoji: "ðŸ‘¹",
     abilityName: "Roar of the Mother",
     abilityDesc: "Enemies within 2 steps flee in fear for 2 rounds.",
     abilityCooldown: 3,
@@ -37,7 +37,7 @@ const CHARACTERS = [
     id: "brontarox",
     name: "Brontarox of Mount Lroth",
     race: "Cyclops",
-    emoji: "🌀",
+    emoji: "ðŸŒ€",
     abilityName: "Boulder Throw",
     abilityDesc: "Stun an enemy within 3 steps for 2 rounds.",
     abilityCooldown: 3,
@@ -47,7 +47,7 @@ const CHARACTERS = [
     id: "rithea",
     name: "Rithea Wartwaggle",
     race: "Witch",
-    emoji: "🧙",
+    emoji: "ðŸ§™",
     abilityName: "Zap!",
     abilityDesc: "Teleport an enemy within 2 steps to a random location on the map.",
     abilityCooldown: 3,
@@ -70,14 +70,14 @@ const COLOR_BG = {
 };
 
 const EVENT_CARDS = [
-  { id: "teleport", icon: "🌀", name: "Teleportation Trap!", desc: "You are teleported to a random location on the map!" },
-  { id: "stun",     icon: "💫", name: "Brick to the Head!", desc: "You are stunned and skip your next turn!" },
-  { id: "motivation",icon:"⚡", name: "Sudden Motivation!", desc: "You may make one extra move this turn!" },
+  { id: "teleport", icon: "ðŸŒ€", name: "Teleportation Trap!", desc: "You are teleported to a random location on the map!" },
+  { id: "stun",     icon: "ðŸ’«", name: "Brick to the Head!", desc: "You are stunned and skip your next turn!" },
+  { id: "motivation",icon:"Ã¢Å¡Â¡", name: "Sudden Motivation!", desc: "You may make one extra move this turn!" },
 ];
 
 const cellKey = (x, y) => `${x},${y}`;
 
-// ─── Maze generation (Recursive Backtracker) ──────────────────────────────────
+// â”€â”€â”€ Maze generation (Recursive Backtracker) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function generateMaze(W, H) {
   const visited = new Set();
   const walls = new Set();
@@ -176,7 +176,7 @@ function bfsVisibleCells(from, dist, mazeWalls, vanishedSet, gridSize) {
   return visible;
 }
 
-// ─── Place objects near the edges ─────────────────────────────────────────────
+// â”€â”€â”€ Place objects near the edges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function placeObjects(gridSize, startCX, startCY, mazeWalls, playerCount) {
   const centerCell = { x: startCX, y: startCY };
   const placed = [];
@@ -213,7 +213,7 @@ function placeObjects(gridSize, startCX, startCY, mazeWalls, playerCount) {
   return placed;
 }
 
-// ─── Grid generation ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Grid generation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function makeGrid(gridSize, playerCount, bwMode, hasMaze, hasColors) {
   const grid = {};
   let colors;
@@ -230,18 +230,83 @@ function makeGrid(gridSize, playerCount, bwMode, hasMaze, hasColors) {
 }
 
 const KINGDOM_ROWS = 5;
-const ROOM_DIRECTIONS = [
-  { id: "left", dx: -1, dy: 0, label: "Left Wing" },
-  { id: "up", dx: 0, dy: -1, label: "North Wing" },
-  { id: "right", dx: 1, dy: 0, label: "Right Wing" },
-  { id: "down", dx: 0, dy: 1, label: "South Wing" },
-];
-const CHALLENGE_BY_RACE = {
-  Goblin: "Dash through a blinking obstacle that appears every other turn.",
-  Orc: "Scream at a room full of enemies and scatter them.",
-  Cyclops: "Throw a boulder across a gap to hit a distant switch.",
-  Witch: "Teleport an artifact out of a ring of fire.",
-};
+const CHALLENGE_OBJECT = { id: "challenge", emoji: "ðŸ’Ž", label: "Challenge Relic" };
+
+function getRaceFromCharId(charId) {
+  return CHARACTERS.find(c => c.id === charId)?.race || null;
+}
+
+function buildChallengeRoom(chars, playerCount) {
+  const gs = 10;
+  const races = chars.map(getRaceFromCharId).filter(Boolean);
+  const hasGoblin = races.includes("Goblin");
+  const hasOrc = races.includes("Orc");
+  const hasCyclops = races.includes("Cyclops");
+  const hasWitch = races.includes("Witch");
+
+  // If Goblin + Witch are selected without Orc, force the combo challenge:
+  // Witch teleports guard, Goblin sprints before guard returns.
+  const guardMode = hasOrc ? "orc" : (hasGoblin && hasWitch ? "witch" : null);
+  const needsFlameTeleport = hasWitch && guardMode !== "witch";
+
+  const grid = {};
+  const blocked = new Set();
+  for (let y = 0; y < gs; y++) {
+    for (let x = 0; x < gs; x++) {
+      const inStartZone = y >= 8 && x >= 3 && x <= 6;
+      const inCorridor = x >= 4 && x <= 5 && y <= 7;
+      const open = inStartZone || inCorridor;
+      grid[cellKey(x, y)] = open ? "white" : "black";
+      if (!open) blocked.add(cellKey(x, y));
+    }
+  }
+
+  const startCells = getStartCells(gs).slice(0, playerCount);
+  const objectPos = { x: 4, y: 1 };
+  const teleportTarget = { x: 5, y: 1 };
+  const spikeTiles = hasGoblin
+    ? new Set([cellKey(4, 4), cellKey(5, 4), cellKey(4, 5), cellKey(5, 5)])
+    : new Set();
+  const gapTiles = hasCyclops
+    ? new Set([cellKey(4, 3), cellKey(5, 3)])
+    : new Set();
+  const enemies = guardMode
+    ? [
+      { x: 4, y: 2, homeX: 4, homeY: 2, fleeing: 0, returnIn: 0 },
+      { x: 5, y: 2, homeX: 5, homeY: 2, fleeing: 0, returnIn: 0 },
+    ]
+    : [];
+
+  const instructions = ["Collect the single relic to win this challenge room."];
+  if (hasGoblin) instructions.push("Goblin: use Quick Toes and sprint across the spike row while it is down.");
+  if (hasOrc) instructions.push("Orc: use Roar to make the guards flee and open the path.");
+  if (hasCyclops) instructions.push("Cyclops: use Boulder Throw to activate the switch and create a bridge over the gap.");
+  if (hasWitch && guardMode === "witch") instructions.push("Witch: teleport the guard away. The guard returns after 5 turns.");
+  if (needsFlameTeleport) instructions.push("Witch: teleport the relic out of the flames to make it collectible.");
+
+  return {
+    grid,
+    blocked,
+    startCells,
+    objectPos,
+    teleportTarget,
+    spikeTiles,
+    spikesActive: hasGoblin ? true : false,
+    gapTiles,
+    bridgeActive: !hasCyclops,
+    flamesActive: needsFlameTeleport,
+    enemies,
+    guardMode,
+    turn: 0,
+    completed: {
+      goblin: !hasGoblin,
+      orc: !hasOrc,
+      cyclops: !hasCyclops,
+      witch: !hasWitch,
+    },
+    instructions,
+  };
+}
 
 function getStartCenter(gridSize) {
   return { x: Math.floor(gridSize/2), y: gridSize - 1 };
@@ -272,7 +337,7 @@ function makeKingdomGrid(gridSize) {
   return kg;
 }
 
-// ─── CSS ──────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ CSS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const fonts = `@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap');`;
 const css = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -385,7 +450,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 function ModToggle({ active, icon, label, desc, onClick }) {
   return (
     <div className={`mod-row${active?" on":""}`} onClick={onClick}>
-      <div className="mod-chk">{active?"✓":""}</div>
+      <div className="mod-chk">{active?"âœ“":""}</div>
       <div>
         <div className="mod-title">{icon} {label}</div>
         <div className="mod-desc">{desc}</div>
@@ -402,15 +467,15 @@ function CharacterCard({ char, chosen, taken, onChoose }) {
       <div className="char-emoji">{char.emoji}</div>
       <div className="char-name">{char.name}</div>
       <div className="char-race">{char.race}</div>
-      <div className="char-ability-name">✦ {char.abilityName}</div>
+      <div className="char-ability-name">âœ¦ {char.abilityName}</div>
       <div className="char-ability">{char.abilityDesc}</div>
-      {chosen && <div style={{marginTop:6,fontSize:".6rem",color:"#F6E6A8",fontFamily:"'Cinzel',serif"}}>✓ Chosen</div>}
+      {chosen && <div style={{marginTop:6,fontSize:".6rem",color:"#F6E6A8",fontFamily:"'Cinzel',serif"}}>âœ“ Chosen</div>}
       {taken && <div style={{marginTop:6,fontSize:".6rem",color:"rgba(255,100,100,.7)"}}>Taken</div>}
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ObryndelMiniGame({ onExit }) {
   // Setup state
   const [phase,        setPhase]        = useState("setup");
@@ -456,11 +521,7 @@ export default function ObryndelMiniGame({ onExit }) {
   const [allGathered, setAllGathered] = useState(false);
   const [extraMove,   setExtraMove]   = useState(false);
   const [kingdomGrid, setKingdomGrid] = useState({});
-  const [roomMeta,    setRoomMeta]    = useState({});
-  const [roomByCoord, setRoomByCoord] = useState({});
-  const [roomLocks,   setRoomLocks]   = useState({});
-  const [roomChallenges, setRoomChallenges] = useState({});
-  const [playerRooms, setPlayerRooms] = useState([]);
+  const [challengeState, setChallengeState] = useState(null);
 
   const stateRef = useRef({});
   
@@ -472,7 +533,7 @@ export default function ObryndelMiniGame({ onExit }) {
       modBW, modVanish, modEnemy, modMaze, modExplore, modEvents, modColors, modChallengeRooms,
       darkRadius, gridSize, mazeWalls, objects, abilityCooldown,
       abilityStepsLeft, charChoices, extraMove, allGathered, kingdomGrid,
-      roomMeta, roomByCoord, roomLocks, roomChallenges, playerRooms,
+      challengeState,
     };
   });
 
@@ -487,7 +548,7 @@ export default function ObryndelMiniGame({ onExit }) {
     setLog(prev => [msg, ...prev].slice(0, 30));
   }, []);
 
-  // ─── FIX: Calculate visibility safely with useMemo ───────────────────────
+  // â”€â”€â”€ FIX: Calculate visibility safely with useMemo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const visibleCells = useMemo(() => {
     if (!modExplore) return null;
     if (inKingdom[curPlayer]) return null;
@@ -515,7 +576,7 @@ export default function ObryndelMiniGame({ onExit }) {
     });
   }, [visibleCells]);
 
-  // ── Character selection ───────────────────────────────────────────────────
+  // â”€â”€ Character selection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const beginCharSelect = () => {
     setCharChoices(Array(playerCount).fill(null));
     setSetupPlayer(0);
@@ -533,66 +594,22 @@ export default function ObryndelMiniGame({ onExit }) {
     }
   };
 
-  // ── Start game ────────────────────────────────────────────────────────────
+  // â”€â”€ Start game â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const startGame = (chars) => {
     const pc = playerCount;
     const gs = modChallengeRooms ? 10 : gridSize;
     if (modChallengeRooms) setGridSize(10);
 
     if (modChallengeRooms) {
-      const center = { x: Math.floor(gs / 2), y: gs - 2 };
-      const roomGrid = {};
-      for (let y = 0; y < gs; y++) {
-        for (let x = 0; x < gs; x++) roomGrid[cellKey(x, y)] = "black";
-      }
-
-      const nextRoomMeta = {
-        start: { id: "start", x: center.x, y: center.y, name: "Starting Chamber", isStart: true },
-      };
-      const nextRoomByCoord = { [cellKey(center.x, center.y)]: "start" };
-      const nextRoomLocks = {};
-      const nextRoomChallenges = {};
-      const nextObjects = [];
-      const dirs = ROOM_DIRECTIONS.slice(0, pc);
-
-      dirs.forEach((dir, i) => {
-        const branchId = `branch-${i}`;
-        const lockedId = `locked-${i}`;
-        const bx = center.x + dir.dx;
-        const by = center.y + dir.dy;
-        const lx = center.x + dir.dx * 2;
-        const ly = center.y + dir.dy * 2;
-        const race = CHARACTERS.find(c => c.id === chars[i])?.race || "Goblin";
-
-        roomGrid[cellKey(bx, by)] = "white";
-        roomGrid[cellKey(lx, ly)] = "white";
-        nextRoomMeta[branchId] = { id: branchId, x: bx, y: by, name: dir.label, lockedTo: lockedId };
-        nextRoomMeta[lockedId] = { id: lockedId, x: lx, y: ly, name: `${dir.label} Vault` };
-        nextRoomByCoord[cellKey(bx, by)] = branchId;
-        nextRoomByCoord[cellKey(lx, ly)] = lockedId;
-        nextRoomLocks[`${branchId}|${lockedId}`] = true;
-        nextRoomChallenges[branchId] = {
-          race,
-          completed: false,
-          desc: CHALLENGE_BY_RACE[race] || CHALLENGE_BY_RACE.Goblin,
-        };
-        nextObjects.push({ ...OBJECT_DEFS[i], x: lx, y: ly });
-      });
-
-      roomGrid[cellKey(center.x, center.y)] = "white";
-
-      setGrid(roomGrid);
+      const challenge = buildChallengeRoom(chars, pc);
+      setGrid(challenge.grid);
       setMazeWalls(null);
-      setObjects(nextObjects);
+      setObjects([{ ...CHALLENGE_OBJECT, x: challenge.objectPos.x, y: challenge.objectPos.y }]);
       setKingdomGrid({});
-      setRoomMeta(nextRoomMeta);
-      setRoomByCoord(nextRoomByCoord);
-      setRoomLocks(nextRoomLocks);
-      setRoomChallenges(nextRoomChallenges);
-      setPlayerRooms(Array(pc).fill("start"));
+      setChallengeState(challenge);
       setVanished(new Set());
       setDiscoveredCells(new Set());
-      setPositions(Array.from({ length: pc }, () => ({ x: center.x, y: center.y })));
+      setPositions(challenge.startCells.map(p => ({ ...p })));
       setInKingdom(Array(pc).fill(false));
       setKPositions(Array(pc).fill(null));
       setInventory(Array(pc).fill(false));
@@ -613,7 +630,8 @@ export default function ObryndelMiniGame({ onExit }) {
       setExtraMove(false);
       setPhase("game");
       addLog(`Quest begins with ${pc} scoundrel${pc>1?"s":""}!`);
-      addLog("Challenge Rooms: move between connected rooms and unlock vaults with character abilities.");
+      addLog("Challenge Room mode: complete the skill challenge and collect the single relic.");
+      challenge.instructions.forEach(line => addLog(`â€¢ ${line}`));
       return;
     }
 
@@ -669,20 +687,16 @@ export default function ObryndelMiniGame({ onExit }) {
     setEventCard(null);
     setAllGathered(false);
     setExtraMove(false);
-    setRoomMeta({});
-    setRoomByCoord({});
-    setRoomLocks({});
-    setRoomChallenges({});
-    setPlayerRooms([]);
+    setChallengeState(null);
     setPhase("game");
     addLog(`Quest begins with ${pc} scoundrel${pc>1?"s":""}!`);
-    addLog("🏰 Bring all relics to the altar to shatter the barrier sealing Obryndel!");
-    if (modMaze) addLog("🏚️ A maze has formed around you…");
-    if (modExplore) addLog(`🌑 Exploration mode — you can see ${darkRadius} steps ahead.`);
-    if (modEvents) addLog("🃏 Event cards are in play — drawn each turn!");
+    addLog("ðŸ° Bring all relics to the altar to shatter the barrier sealing Obryndel!");
+    if (modMaze) addLog("ðŸšï¸ A maze has formed around youâ€¦");
+    if (modExplore) addLog(`ðŸŒ‘ Exploration mode â€” you can see ${darkRadius} steps ahead.`);
+    if (modEvents) addLog("ðŸƒ Event cards are in play â€” drawn each turn!");
   };
 
-  // ── Trigger event card ────────────────────────────────────────────────────
+  // â”€â”€ Trigger event card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const triggerEventCard = useCallback(() => {
     const card = EVENT_CARDS[Math.floor(Math.random()*EVENT_CARDS.length)];
     setEventCard(card);
@@ -704,16 +718,16 @@ export default function ObryndelMiniGame({ onExit }) {
       }
       const np = [...s.positions]; np[cp]={x:nx,y:ny};
       setPositions(np);
-      addLog(`🌀 ${PLAYER_NAMES[cp]} was teleported!`);
+      addLog(`ðŸŒ€ ${PLAYER_NAMES[cp]} was teleported!`);
       advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
     } else if (card.id === "stun") {
       const ns = [...s.stunned]; ns[cp] = 1;
       setStunned(ns);
-      addLog(`💫 ${PLAYER_NAMES[cp]} is stunned next turn!`);
+      addLog(`ðŸ’« ${PLAYER_NAMES[cp]} is stunned next turn!`);
       advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
     } else if (card.id === "motivation") {
       setExtraMove(true);
-      addLog(`⚡ ${PLAYER_NAMES[cp]} gets an extra move!`);
+      addLog(`Ã¢Å¡Â¡ ${PLAYER_NAMES[cp]} gets an extra move!`);
     }
   }, [eventCard, addLog]);
 
@@ -723,26 +737,69 @@ export default function ObryndelMiniGame({ onExit }) {
     while ((deadArr[next]) && guard < pc) { next=(next+1)%pc; guard++; }
     const ns2 = [...stunnedArr];
     if (ns2[next] > 0) {
-      addLog(`💫 ${PLAYER_NAMES[next]} is stunned and loses their turn!`);
+      addLog(`ðŸ’« ${PLAYER_NAMES[next]} is stunned and loses their turn!`);
       ns2[next]--;
       setStunned(ns2);
       let skip = (next+1)%pc; guard=0;
       while (deadArr[skip] && guard<pc) { skip=(skip+1)%pc; guard++; }
       setCurPlayer(skip);
-      addLog(`— ${PLAYER_NAMES[skip]}'s turn —`);
+      addLog(`â€” ${PLAYER_NAMES[skip]}'s turn â€”`);
     } else {
       setCurPlayer(next);
-      addLog(`— ${PLAYER_NAMES[next]}'s turn —`);
+      addLog(`â€” ${PLAYER_NAMES[next]}'s turn â€”`);
     }
     setAbilityCooldown(prev => {
       const n=[...prev]; if(n[next]>0) n[next]--; return n;
     });
+
+    if (stateRef.current.modChallengeRooms && stateRef.current.challengeState) {
+      const cs = stateRef.current.challengeState;
+      const nextSpikesActive = cs.spikeTiles.size ? !cs.spikesActive : cs.spikesActive;
+
+      if (nextSpikesActive && cs.spikeTiles.size) {
+        const curPos = stateRef.current.positions;
+        const bounced = [];
+        const nextPos = curPos.map((p, i) => {
+          if (cs.spikeTiles.has(cellKey(p.x, p.y))) {
+            bounced.push(i);
+            return { ...cs.startCells[i % cs.startCells.length] };
+          }
+          return p;
+        });
+        if (bounced.length) {
+          setPositions(nextPos);
+          addLog(`Ã¢Å¡Â  Spikes rise! ${bounced.map(i => PLAYER_NAMES[i]).join(", ")} are thrown back.`);
+        }
+      }
+
+      const updatedEnemies = cs.enemies.map(e => {
+        if (e.returnIn > 0) {
+          if (e.returnIn === 1) return { ...e, x: e.homeX, y: e.homeY, returnIn: 0 };
+          return { ...e, returnIn: e.returnIn - 1 };
+        }
+        if (e.fleeing > 0) {
+          const ny = Math.min(9, e.y + 1);
+          return { ...e, y: ny, fleeing: e.fleeing - 1 };
+        }
+        if (e.x !== e.homeX || e.y !== e.homeY) return { ...e, x: e.homeX, y: e.homeY };
+        return e;
+      });
+
+      setChallengeState({
+        ...cs,
+        turn: cs.turn + 1,
+        spikesActive: nextSpikesActive,
+        enemies: updatedEnemies,
+      });
+      return;
+    }
+
     if (stateRef.current.enemyActive) {
       moveEnemies(next);
     }
   };
 
-  // ── Move enemies ──────────────────────────────────────────────────────────
+  // â”€â”€ Move enemies â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const moveEnemies = useCallback((nextPlayer) => {
     const s = stateRef.current;
     if (!s.enemyActive) return;
@@ -795,14 +852,14 @@ export default function ObryndelMiniGame({ onExit }) {
           setInventory(prev=>{const n=[...prev];n[caughtIdx]=false;return n;});
           setDropped(prev=>{const n=[...prev];n[caughtIdx]=true;return n;});
           setDroppedPos(prev=>{const n=[...prev];n[caughtIdx]={x:bestStep.x,y:bestStep.y};return n;});
-          addLog(`💀 The Shadow caught ${PLAYER_NAMES[caughtIdx]}! Shard dropped.`);
+          addLog(`ðŸ’€ The Shadow caught ${PLAYER_NAMES[caughtIdx]}! Shard dropped.`);
         }
         return newEnemy;
       });
     });
   }, [addLog]);
 
-  // ── Use ability ───────────────────────────────────────────────────────────
+  // â”€â”€ Use ability â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const useAbility = useCallback(() => {
     const s = stateRef.current;
     const cp = s.curPlayer;
@@ -815,35 +872,72 @@ export default function ObryndelMiniGame({ onExit }) {
     let used = false;
 
     if (s.modChallengeRooms) {
-      const roomId = s.playerRooms[cp];
-      const room = s.roomMeta[roomId];
-      const challenge = s.roomChallenges[roomId];
-      if (!room || !challenge || !room.lockedTo) {
-        addLog("No challenge to solve in this room.");
-        return;
+      if (!s.challengeState) return;
+      const cs = s.challengeState;
+      let nextCs = { ...cs, completed: { ...cs.completed } };
+      let consumedTurn = true;
+
+      if (charId === "gribberth") {
+        setAbilityStepsLeft(3);
+        addLog(`${char.emoji} ${PLAYER_NAMES[cp]} uses Quick Toes! Move 3 steps this turn.`);
+        consumedTurn = false;
+        used = true;
+      } else if (charId === "craglasha") {
+        if (!cs.enemies.length) {
+          addLog("No guards to frighten here.");
+          return;
+        }
+        nextCs.enemies = cs.enemies.map(e => ({ ...e, fleeing: 2, returnIn: 0 }));
+        nextCs.completed.orc = true;
+        setChallengeState(nextCs);
+        addLog(`${char.emoji} Roar! The guards flee from the doorway.`);
+        used = true;
+      } else if (charId === "brontarox") {
+        if (cs.bridgeActive) {
+          addLog("The bridge is already in place.");
+          return;
+        }
+        nextCs.bridgeActive = true;
+        nextCs.completed.cyclops = true;
+        setChallengeState(nextCs);
+        addLog(`${char.emoji} Boulder Throw! The switch is hit and the gap is bridged.`);
+        used = true;
+      } else if (charId === "rithea") {
+        if (cs.guardMode === "witch" && cs.enemies.length) {
+          const moved = cs.enemies.map((e, i) =>
+            i === 0 ? { ...e, x: 3, y: 8, returnIn: 5, fleeing: 0 } : e
+          );
+          nextCs.enemies = moved;
+          nextCs.completed.witch = true;
+          setChallengeState(nextCs);
+          addLog(`${char.emoji} Zap! A guard is teleported away, but it will return in 5 turns.`);
+          used = true;
+        } else if (cs.flamesActive) {
+          nextCs.flamesActive = false;
+          nextCs.objectPos = { ...cs.teleportTarget };
+          nextCs.completed.witch = true;
+          setChallengeState(nextCs);
+          setObjects([{ ...CHALLENGE_OBJECT, x: cs.teleportTarget.x, y: cs.teleportTarget.y }]);
+          addLog(`${char.emoji} Zap! The relic is teleported out of the flames.`);
+          used = true;
+        } else {
+          addLog("No valid teleport target right now.");
+          return;
+        }
       }
-      if (challenge.completed) {
-        addLog("This challenge has already been solved.");
-        return;
-      }
-      if (char.race !== challenge.race) {
-        addLog(`This challenge requires a ${challenge.race}.`);
-        return;
-      }
-      const lockKey = `${roomId}|${room.lockedTo}`;
-      setRoomChallenges(prev => ({ ...prev, [roomId]: { ...prev[roomId], completed: true } }));
-      setRoomLocks(prev => ({ ...prev, [lockKey]: false }));
-      addLog(`${char.emoji} ${PLAYER_NAMES[cp]} solves the ${char.race} challenge and unlocks the vault door!`);
-      const nc = [...s.abilityCooldown]; nc[cp] = char.abilityCooldown;
+
+      if (!used) return;
+      const nc = [...s.abilityCooldown];
+      nc[cp] = char.abilityCooldown;
       setAbilityCooldown(nc);
       setSwFirst(null);
-      advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
+      if (consumedTurn) advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
       return;
     }
 
     if (charId === "gribberth") {
       setAbilityStepsLeft(3);
-      addLog(`${char.emoji} ${PLAYER_NAMES[cp]} activates Quick Toes — 3 steps!`);
+      addLog(`${char.emoji} ${PLAYER_NAMES[cp]} activates Quick Toes â€” 3 steps!`);
       used = true;
     } else if (charId === "craglasha") {
       setEnemies(prev => prev.map(e => {
@@ -886,7 +980,7 @@ export default function ObryndelMiniGame({ onExit }) {
     }
   }, [addLog]);
 
-  // ── WASD handler ──────────────────────────────────────────────────────────
+  // â”€â”€ WASD handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     if (phase !== "game" || eventCard) return;
     const handler = (e) => {
@@ -902,53 +996,72 @@ export default function ObryndelMiniGame({ onExit }) {
       if (s.dead[cp]) { addLog(`${PLAYER_NAMES[cp]} is dead!`); return; }
 
       if (s.modChallengeRooms) {
+        if (!s.challengeState) return;
+        const cs = s.challengeState;
         const cur = s.positions[cp];
         const nx = cur.x + dir[0], ny = cur.y + dir[1];
-        if (nx < 0 || nx >= gs || ny < 0 || ny >= gs) { addLog("No room that way."); return; }
+        if (nx < 0 || nx >= gs || ny < 0 || ny >= gs) { addLog("Wall."); return; }
+        const nk = cellKey(nx, ny);
+        if (cs.blocked.has(nk)) { addLog("A wall blocks your path."); return; }
 
-        const fromId = s.roomByCoord[cellKey(cur.x, cur.y)];
-        const toId = s.roomByCoord[cellKey(nx, ny)];
-        if (!fromId || !toId) { addLog("No connected room that way."); return; }
-
-        if (s.roomLocks[`${fromId}|${toId}`] || s.roomLocks[`${toId}|${fromId}`]) {
-          addLog("The doorway is locked. Complete the room challenge first.");
+        const charRace = CHARACTERS.find(c=>c.id===s.charChoices[cp])?.race;
+        const isGoblin = charRace === "Goblin";
+        const hasSprint = s.abilityStepsLeft > 0;
+        const onSpike = cs.spikeTiles.has(nk);
+        if (onSpike && cs.spikesActive && !(isGoblin && hasSprint)) {
+          addLog("The spikes are up! You cannot cross now.");
+          return;
+        }
+        const onGap = cs.gapTiles.has(nk);
+        if (onGap && !cs.bridgeActive) {
+          addLog("A gap blocks the way. A distant switch might help.");
+          return;
+        }
+        const guard = cs.enemies.find(e => e.x===nx && e.y===ny && e.fleeing===0 && e.returnIn===0);
+        if (guard && !(isGoblin && hasSprint)) {
+          addLog("A guard blocks that tile.");
           return;
         }
 
         const newPositions = [...s.positions];
-        const newPlayerRooms = [...s.playerRooms];
         newPositions[cp] = { x: nx, y: ny };
-        newPlayerRooms[cp] = toId;
 
-        const newInventory = [...s.inventory];
-        const newAtBase = [...s.atBase];
-        let msg = `${PLAYER_NAMES[cp]} enters ${s.roomMeta[toId]?.name || "a room"}.`;
-
-        const objIdx = s.objects.findIndex(o => o.x === nx && o.y === ny && !newInventory[cp]);
-        if (objIdx >= 0 && s.objects[objIdx].id === PLAYER_COLORS[cp]) {
-          newInventory[cp] = true;
-          msg += ` Picked up ${s.objects[objIdx].label}!`;
+        let msg = `${PLAYER_NAMES[cp]} moves.`;
+        let nextCs = cs;
+        if (onSpike && isGoblin && hasSprint && !cs.completed.goblin) {
+          nextCs = { ...nextCs, completed: { ...nextCs.completed, goblin: true } };
+          msg += " Goblin cleared the spike sprint!";
         }
 
-        if (toId === "start" && newInventory[cp] && !newAtBase[cp]) {
-          newAtBase[cp] = true;
-          newInventory[cp] = false;
-          msg += " Relic delivered to the starting chamber.";
-          if (newAtBase.filter(Boolean).length >= s.playerCount) {
-            setAllGathered(true);
-            setPhase("victory");
-          }
+        const onObject = cs.objectPos && cs.objectPos.x===nx && cs.objectPos.y===ny;
+        if (onObject && cs.flamesActive) {
+          addLog("Flames block the relic. Witch magic is needed.");
+          return;
+        }
+        if (onObject) {
+          setPositions(newPositions);
+          setSwFirst(null);
+          setChallengeState({ ...nextCs, objectPos: null });
+          setObjects([]);
+          setAllGathered(true);
+          addLog(`${PLAYER_NAMES[cp]} seized the ${CHALLENGE_OBJECT.label}! Challenge complete.`);
+          setPhase("victory");
+          return;
         }
 
         setPositions(newPositions);
-        setPlayerRooms(newPlayerRooms);
-        setInventory(newInventory);
-        setAtBase(newAtBase);
         setSwFirst(null);
+        setChallengeState(nextCs);
         addLog(msg);
-        if (newAtBase.filter(Boolean).length < s.playerCount) {
-          advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
+
+        if (s.abilityStepsLeft > 1) {
+          setAbilityStepsLeft(s.abilityStepsLeft-1);
+          return;
+        } else if (s.abilityStepsLeft === 1) {
+          setAbilityStepsLeft(0);
         }
+        if (s.extraMove) { setExtraMove(false); return; }
+        advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
         return;
       }
 
@@ -991,13 +1104,13 @@ export default function ObryndelMiniGame({ onExit }) {
 
       if (ny >= gs) {
         if (!s.allGathered) {
-          addLog("⚔️ A magical barrier seals the Kingdom of Obryndel! Bring all relics to the altar first."); return;
+          addLog("âš”ï¸ A magical barrier seals the Kingdom of Obryndel! Bring all relics to the altar first."); return;
         }
         const kx = Math.max(0, Math.min(gs-1, cur.x));
         const newInK = [...s.inKingdom]; newInK[cp] = true;
         const newKP = [...s.kPositions]; newKP[cp] = {x:kx, y:0};
         setInKingdom(newInK); setKPositions(newKP);
-        addLog(`${PLAYER_NAMES[cp]} enters the Kingdom of Obryndel! ⚡`);
+        addLog(`${PLAYER_NAMES[cp]} enters the Kingdom of Obryndel! Ã¢Å¡Â¡`);
         if (s.abilityStepsLeft > 1) { setAbilityStepsLeft(s.abilityStepsLeft-1); return; }
         else if (s.abilityStepsLeft === 1) { setAbilityStepsLeft(0); }
         if (s.extraMove) { setExtraMove(false); return; }
@@ -1043,7 +1156,7 @@ export default function ObryndelMiniGame({ onExit }) {
       if (s.modEnemy) {
         newDead.forEach((isDead, i) => {
           if (isDead && i!==cp && s.positions[i].x===nx && s.positions[i].y===ny) {
-            newDead[i]=false; msg+=` 💫 Revived ${PLAYER_NAMES[i]}!`;
+            newDead[i]=false; msg+=` ðŸ’« Revived ${PLAYER_NAMES[i]}!`;
           }
         });
       }
@@ -1054,14 +1167,14 @@ export default function ObryndelMiniGame({ onExit }) {
         const myColor = PLAYER_COLORS[cp];
         if (obj.id===myColor) {
           newInventory[cp]=true;
-          msg+=` Picked up ${obj.label}! 🎉`;
+          msg+=` Picked up ${obj.label}! ðŸŽ‰`;
 
           if (!newEnemyActive && s.modEnemy) {
             newEnemyActive = true;
             const cx = Math.floor(gs/2);
             setEnemies([{x: cx, y: gs-1, fleeing:0, stunned:0}]);
             setEnemyActive(true);
-            addLog("👁️ A Shadow emerges from the Kingdom gates — it hunts those who carry relics!");
+            addLog("ðŸ‘ï¸ A Shadow emerges from the Kingdom gates â€” it hunts those who carry relics!");
           }
 
           if (s.modVanish) {
@@ -1077,7 +1190,7 @@ export default function ObryndelMiniGame({ onExit }) {
             const toVanish = candidates.sort(()=>Math.random()-.5).slice(0,count);
             newVanished = new Set([...newVanished,...toVanish]);
             const vg={...newGrid}; toVanish.forEach(k=>{vg[k]="empty";}); newGrid=vg;
-            if (toVanish.length) msg+=` ${toVanish.length} tile${toVanish.length>1?"s":""} crumble away…`;
+            if (toVanish.length) msg+=` ${toVanish.length} tile${toVanish.length>1?"s":""} crumble awayâ€¦`;
           }
         }
       }
@@ -1086,14 +1199,14 @@ export default function ObryndelMiniGame({ onExit }) {
         const dp = newDroppedPos[cp];
         if (dp&&dp.x===nx&&dp.y===ny) {
           newInventory[cp]=true; newDropped[cp]=false; newDroppedPos[cp]=null;
-          msg+=` Reclaimed your shard! 🎉`;
+          msg+=` Reclaimed your shard! ðŸŽ‰`;
         }
       }
 
       if (isStartCellFn(nx,ny,gs) && newInventory[cp] && !newAtBase[cp]) {
         newAtBase[cp]=true;
         newInventory[cp]=false;
-        msg+=` ${PLAYER_NAMES[cp]} delivered their relic to the altar! ✨`;
+        msg+=` ${PLAYER_NAMES[cp]} delivered their relic to the altar! âœ¨`;
         const myColor = PLAYER_COLORS[cp];
         const sc = getStartCells(gs);
         const startPos = sc[cp % sc.length];
@@ -1101,7 +1214,7 @@ export default function ObryndelMiniGame({ onExit }) {
         const totalDone = newAtBase.filter(Boolean).length;
         if (totalDone >= s.playerCount && !s.allGathered) {
           setAllGathered(true);
-          addLog("⚡ You've gathered all the artifacts to summon the power of the Void! The magic barrier has been shattered! Enter the Kingdom of Obryndel!");
+          addLog("Ã¢Å¡Â¡ You've gathered all the artifacts to summon the power of the Void! The magic barrier has been shattered! Enter the Kingdom of Obryndel!");
         }
       }
 
@@ -1140,7 +1253,7 @@ export default function ObryndelMiniGame({ onExit }) {
     return () => window.removeEventListener("keydown", handler);
   }, [phase, eventCard, addLog, triggerEventCard, moveEnemies]);
 
-  // ── Cell click (swap) ─────────────────────────────────────────────────────
+  // â”€â”€ Cell click (swap) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleCellClick = useCallback((x, y) => {
     const s = stateRef.current;
     if (phase!=="game"||eventCard) return;
@@ -1155,7 +1268,7 @@ export default function ObryndelMiniGame({ onExit }) {
       addLog("A player is there!"); return;
     }
     if (!swFirst) {
-      setSwFirst({x,y}); addLog(`Selected (${x},${y}) — click another to swap.`);
+      setSwFirst({x,y}); addLog(`Selected (${x},${y}) â€” click another to swap.`);
     } else {
       if (swFirst.x===x&&swFirst.y===y) { setSwFirst(null); return; }
       const newGrid={...s.grid};
@@ -1183,7 +1296,7 @@ export default function ObryndelMiniGame({ onExit }) {
     advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
   }, [addLog]);
 
-  // ─── RENDER ────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (phase==="setup") {
     return (
       <div className="og">
@@ -1236,25 +1349,25 @@ export default function ObryndelMiniGame({ onExit }) {
                     return next;
                   });
                 }}
-                icon="🚪"
+                icon="ðŸšª"
                 label="Challenge Rooms"
-                desc="Exclusive mode: move by connected rooms, unlock doors through character challenges, and return all relics to the start chamber."
+                desc="Exclusive mode: one 10x10 challenge room with one relic and character-ability obstacles."
               />
-              <ModToggle active={modColors} onClick={()=>!modChallengeRooms&&setModColors(v=>!v)} icon="🎨" label="Colored Tiles" desc="The board is filled with colored tiles. Players may only walk on their own color or white tiles. Click tiles to swap colors and open new paths." />
-              <ModToggle active={modMaze} onClick={()=>!modChallengeRooms&&setModMaze(v=>!v)} icon="🏚️" label="Maze" desc="A labyrinth fills the board. Walls block movement and vision. Objects are placed near the edges of the map." />
-              <ModToggle active={modExplore} onClick={()=>!modChallengeRooms&&setModExplore(v=>!v)} icon="🌑" label="Exploration Mode" desc="The map is shrouded in darkness. Tiles you've visited stay visible for all players. Discover the world as you venture out." />
-              <ModToggle active={modVanish} onClick={()=>!modChallengeRooms&&setModVanish(v=>!v)} icon="💨" label="Vanishing Tiles" desc="Each relic collected causes tiles to crumble. Occupied tiles are always safe." />
-              <ModToggle active={modEnemy} onClick={()=>!modChallengeRooms&&setModEnemy(v=>!v)} icon="👁️" label="The Shadow" desc="An enemy spawns at the kingdom entrance when the first relic is picked up. It hunts relic carriers. Allies can revive the fallen." />
-              <ModToggle active={modBW} onClick={()=>!modChallengeRooms&&setModBW(v=>!v)} icon="🖤" label="Black & White" desc="Only white tiles may be walked on. Color-swapping carves new paths." />
-              <ModToggle active={modEvents} onClick={()=>!modChallengeRooms&&setModEvents(v=>!v)} icon="🃏" label="Event Cards" desc="At the end of every turn, draw an event card! Teleportation traps, stuns, and sudden bursts of speed await…" />
+              <ModToggle active={modColors} onClick={()=>!modChallengeRooms&&setModColors(v=>!v)} icon="ðŸŽ¨" label="Colored Tiles" desc="The board is filled with colored tiles. Players may only walk on their own color or white tiles. Click tiles to swap colors and open new paths." />
+              <ModToggle active={modMaze} onClick={()=>!modChallengeRooms&&setModMaze(v=>!v)} icon="ðŸšï¸" label="Maze" desc="A labyrinth fills the board. Walls block movement and vision. Objects are placed near the edges of the map." />
+              <ModToggle active={modExplore} onClick={()=>!modChallengeRooms&&setModExplore(v=>!v)} icon="ðŸŒ‘" label="Exploration Mode" desc="The map is shrouded in darkness. Tiles you've visited stay visible for all players. Discover the world as you venture out." />
+              <ModToggle active={modVanish} onClick={()=>!modChallengeRooms&&setModVanish(v=>!v)} icon="ðŸ’¨" label="Vanishing Tiles" desc="Each relic collected causes tiles to crumble. Occupied tiles are always safe." />
+              <ModToggle active={modEnemy} onClick={()=>!modChallengeRooms&&setModEnemy(v=>!v)} icon="ðŸ‘ï¸" label="The Shadow" desc="An enemy spawns at the kingdom entrance when the first relic is picked up. It hunts relic carriers. Allies can revive the fallen." />
+              <ModToggle active={modBW} onClick={()=>!modChallengeRooms&&setModBW(v=>!v)} icon="ðŸ–¤" label="Black & White" desc="Only white tiles may be walked on. Color-swapping carves new paths." />
+              <ModToggle active={modEvents} onClick={()=>!modChallengeRooms&&setModEvents(v=>!v)} icon="ðŸƒ" label="Event Cards" desc="At the end of every turn, draw an event card! Teleportation traps, stuns, and sudden bursts of speed awaitâ€¦" />
             </div>
           </div>
 
-          <button className="start-btn" disabled={!playerCount} onClick={beginCharSelect}>Choose Characters →</button>
+          <button className="start-btn" disabled={!playerCount} onClick={beginCharSelect}>Choose Characters â†’</button>
           <div style={{marginTop:14,fontSize:"0.7rem",color:"rgba(180,155,90,.28)",lineHeight:1.8}}>
             {modChallengeRooms
-              ? "Move room-to-room, clear character challenges, and return all relics to the starting chamber."
-              : <>Collect your relic &amp; return to the centre altar.<br/>WASD to move{modColors ? " · Click tiles to swap colors" : ""}.</>}
+              ? "Enter a 10x10 challenge room, solve ability-based obstacles, and secure the single relic."
+              : <>Collect your relic &amp; return to the centre altar.<br/>WASD to move{modColors ? " Â· Click tiles to swap colors" : ""}.</>}
           </div>
         </div>
       </div>
@@ -1269,7 +1382,7 @@ export default function ObryndelMiniGame({ onExit }) {
         <div className="og-sub">Choose Your Champion</div>
         <div className="setup-card" style={{maxWidth:680}}>
           <h2 style={{color:COLOR_HEX[PLAYER_COLORS[setupPlayer]]}}>
-            {PLAYER_EMOJIS[setupPlayer]} {PLAYER_NAMES[setupPlayer]} — Choose Your Character
+            {PLAYER_EMOJIS[setupPlayer]} {PLAYER_NAMES[setupPlayer]} â€” Choose Your Character
           </h2>
           <div className="char-select">
             {CHARACTERS.map(char=>(
@@ -1292,7 +1405,7 @@ export default function ObryndelMiniGame({ onExit }) {
     );
   }
 
-  // ── Game render ────────────────────────────────────────────────────────────
+  // â”€â”€ Game render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (phase==="game"||phase==="victory") {
     const cp = curPlayer;
     const cpColor = PLAYER_COLORS[cp];
@@ -1307,16 +1420,17 @@ export default function ObryndelMiniGame({ onExit }) {
       return Array.from({length:gs},(_,y)=>
         Array.from({length:gs},(_,x)=>{
           const key = cellKey(x,y);
-          const roomId = roomByCoord[key];
+          const challenge = modChallengeRooms ? challengeState : null;
+          const isBlockedChallengeCell = !!(challenge && challenge.blocked.has(key));
+          const isSpikeCell = !!(challenge && challenge.spikeTiles.has(key));
+          const isGapCell = !!(challenge && challenge.gapTiles.has(key));
           const color = grid[key]||"empty";
           const isGone = vanished.has(key);
-          const isStart = modChallengeRooms ? roomId === "start" : isStartCellFn(x,y,gs);
+          const isStart = modChallengeRooms
+            ? (challenge ? challenge.startCells.some(p=>p.x===x&&p.y===y) : false)
+            : isStartCellFn(x,y,gs);
           const isObj = !!objMapXY[key];
           const obj = objMapXY[key];
-          const lockForCell = modChallengeRooms && roomId && roomMeta[roomId]?.lockedTo
-            ? roomLocks[`${roomId}|${roomMeta[roomId].lockedTo}`]
-            : false;
-          const challengeForCell = modChallengeRooms && roomId ? roomChallenges[roomId] : null;
 
           let isDark = false, isEdge = false, isDiscovered = false;
           if (modExplore && !inKingdom[cp]) {
@@ -1334,7 +1448,10 @@ export default function ObryndelMiniGame({ onExit }) {
 
           const playersHere = positions.map((p,i)=>!inKingdom[i]&&p.x===x&&p.y===y?i:-1).filter(i=>i>=0);
           const enemiesHere = enemyActive && enemies.filter(e=>e.x===x&&e.y===y);
-          const enemyVisible = enemiesHere && enemiesHere.length>0 && (!modExplore || !visibleCells || visibleCells.has(key));
+          const challengeEnemiesHere = modChallengeRooms && challenge ? challenge.enemies.filter(e=>e.x===x&&e.y===y) : [];
+          const enemyVisible = (
+            (enemiesHere && enemiesHere.length>0) || challengeEnemiesHere.length>0
+          ) && (!modExplore || !visibleCells || visibleCells.has(key));
           const droppedHere = dropped.map((d,i)=>{
             const dp=droppedPos[i]; return d&&dp&&dp.x===x&&dp.y===y?i:-1;
           }).filter(i=>i>=0);
@@ -1375,10 +1492,12 @@ export default function ObryndelMiniGame({ onExit }) {
                 width:cellPx, height:cellPx,
                 background: isDark ? "#080604"
                   : isGone ? "transparent"
-                  : modChallengeRooms && !roomId ? "#080604"
+                  : modChallengeRooms && isBlockedChallengeCell ? "#080604"
+                  : modChallengeRooms && isSpikeCell && challenge && challenge.spikesActive ? "rgba(130,20,20,.9)"
+                  : modChallengeRooms && isGapCell && challenge && !challenge.bridgeActive ? "rgba(0,0,0,.95)"
                   : color==="black" ? COLOR_BG.black
                   : COLOR_BG[color]||COLOR_BG.empty,
-                borderColor: modChallengeRooms && !roomId ? "rgba(20,20,20,.9)"
+                borderColor: modChallengeRooms && isBlockedChallengeCell ? "rgba(20,20,20,.9)"
                   : isStart?"rgba(237,230,207,.4)"
                   : isEntranceCell&&allGathered?"rgba(213,169,62,.6)"
                   : isObj?"rgba(237,230,207,.2)"
@@ -1398,13 +1517,21 @@ export default function ObryndelMiniGame({ onExit }) {
                   {obj.emoji}
                 </span>
               )}
-              {lockForCell && <span style={{position:"absolute",top:1,right:1,fontSize:"0.62em",opacity:.9}}>🔒</span>}
-              {challengeForCell && !challengeForCell.completed && <span style={{position:"absolute",top:1,left:1,fontSize:"0.62em",opacity:.9}}>⚠</span>}
+              {modChallengeRooms && isSpikeCell && challenge && (
+                <span style={{position:"absolute",top:1,right:1,fontSize:"0.62em",opacity:.9}}>{challenge.spikesActive ? "!" : "."}</span>
+              )}
+              {modChallengeRooms && isGapCell && challenge && !challenge.bridgeActive && (
+                <span style={{position:"absolute",top:1,left:1,fontSize:"0.62em",opacity:.9}}>X</span>
+              )}
+              {modChallengeRooms && challenge && challenge.flamesActive && challenge.objectPos
+                && Math.abs(challenge.objectPos.x-x)+Math.abs(challenge.objectPos.y-y)===1 && (
+                <span style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.75em",opacity:.9}}>F</span>
+              )}
               {isStart && playersHere.length===0 && !enemyVisible && (
-                <span style={{fontSize:"0.7em",opacity:.28}}>✦</span>
+                <span style={{fontSize:"0.7em",opacity:.28}}>âœ¦</span>
               )}
               {isEntranceCell && allGathered && playersHere.length===0 && (
-                <span style={{fontSize:"0.7em",opacity:.6,filter:"drop-shadow(0 0 4px rgba(213,169,62,.8))"}}>↓</span>
+                <span style={{fontSize:"0.7em",opacity:.6,filter:"drop-shadow(0 0 4px rgba(213,169,62,.8))"}}>â†“</span>
               )}
               {!isDark && droppedHere.map(di=>(
                 <span key={di} style={{position:"absolute",top:1,right:1,fontSize:"0.65em",opacity:.8,zIndex:8}}>
@@ -1413,6 +1540,11 @@ export default function ObryndelMiniGame({ onExit }) {
               ))}
               {enemyVisible && enemiesHere.map((en,ei)=>(
                 <div key={ei} className="eby" style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1em",zIndex:20,filter:`drop-shadow(0 0 6px rgba(200,20,20,.95))${en.stunned>0?" grayscale(1)":""}`}}>
+                  ðŸ‘ï¸
+                </div>
+              ))}
+              {modChallengeRooms && challengeEnemiesHere.map((en,ei)=>( 
+                <div key={`ce-${ei}`} className="eby" style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1em",zIndex:20,filter:(en.fleeing>0||en.returnIn>0)?"grayscale(1) drop-shadow(0 0 6px rgba(200,20,20,.95))":"drop-shadow(0 0 6px rgba(200,20,20,.95))"}}>
                   👁️
                 </div>
               ))}
@@ -1474,13 +1606,13 @@ export default function ObryndelMiniGame({ onExit }) {
                 <div style={{position:"absolute",inset:0,background:"repeating-linear-gradient(45deg,rgba(180,80,220,0.08) 0px,rgba(180,80,220,0.08) 2px,transparent 2px,transparent 8px)",pointerEvents:"none",zIndex:1}}/>
               )}
               {locked && isEntrance && kx===cx && (
-                <span style={{position:"absolute",fontSize:"1.1em",opacity:.85,zIndex:2,filter:"drop-shadow(0 0 8px rgba(180,80,220,1))"}}>🔒</span>
+                <span style={{position:"absolute",fontSize:"1.1em",opacity:.85,zIndex:2,filter:"drop-shadow(0 0 8px rgba(180,80,220,1))"}}>ðŸ”’</span>
               )}
               {!locked && isEntrance && (
                 <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(237,210,120,.2),transparent)",pointerEvents:"none",zIndex:1}}/>
               )}
               {isCastle && !locked && (
-                <span style={{position:"absolute",fontSize:"1.3em",opacity:.9,zIndex:2,filter:"drop-shadow(0 0 8px rgba(213,169,62,1))"}}>🏰</span>
+                <span style={{position:"absolute",fontSize:"1.3em",opacity:.9,zIndex:2,filter:"drop-shadow(0 0 8px rgba(213,169,62,1))"}}>ðŸ°</span>
               )}
               {playersHere.map(pi=>(
                 <div key={pi} style={{
@@ -1521,12 +1653,21 @@ export default function ObryndelMiniGame({ onExit }) {
         {phase==="victory" && (
           <div className="victory-overlay">
             <div className="victory-card">
-              <div style={{fontSize:"2.6rem",marginBottom:10}}>⚡</div>
+              <div style={{fontSize:"2.6rem",marginBottom:10}}>Ã¢Å¡Â¡</div>
               <div className="v-title">Victory!</div>
               <div className="v-text">
-                All shards forged at the altar.<br/>
-                The Scoundrels of Obryndel have triumphed!<br/><br/>
-                <em>Baron Thobrick's power crumbles…</em>
+                {modChallengeRooms ? (
+                  <>
+                    The challenge relic has been secured.<br/>
+                    The room's trial is complete!
+                  </>
+                ) : (
+                  <>
+                    All shards forged at the altar.<br/>
+                    The Scoundrels of Obryndel have triumphed!<br/><br/>
+                    <em>Baron Thobrick's power crumbles...</em>
+                  </>
+                )}
               </div>
               <button className="start-btn" onClick={()=>{setPhase("setup");setPlayerCount(null);if(onExit)onExit();}}>
                 Play Again
@@ -1537,7 +1678,7 @@ export default function ObryndelMiniGame({ onExit }) {
 
         {allGathered && !modChallengeRooms && (
           <div className="all-gathered-banner" style={{width:"100%",maxWidth:700,marginBottom:8}}>
-            ⚡ You've gathered all the artifacts to summon the power of the Void!<br/>
+            Ã¢Å¡Â¡ You've gathered all the artifacts to summon the power of the Void!<br/>
             The magic barrier has been shattered! Enter the Kingdom of Obryndel to claim victory!
           </div>
         )}
@@ -1554,7 +1695,7 @@ export default function ObryndelMiniGame({ onExit }) {
               <div style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"3px 0",zIndex:5,position:"relative"}}>
                 <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(213,169,62,.4),transparent)"}}/>
                 <div style={{fontFamily:"'Cinzel',serif",fontSize:".6rem",letterSpacing:"3px",color:"rgba(213,169,62,.55)",textTransform:"uppercase",whiteSpace:"nowrap"}}>
-                  {allGathered ? "⚡ Kingdom of Obryndel" : "🔒 Kingdom of Obryndel"}
+                  {allGathered ? "âš¡ Kingdom of Obryndel" : "ðŸ”’ Kingdom of Obryndel"}
                 </div>
                 <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(213,169,62,.4),transparent)"}}/>
               </div>
@@ -1575,9 +1716,9 @@ export default function ObryndelMiniGame({ onExit }) {
                 <div className="leg-i"><div className="leg-d" style={{background:"#111"}}/><span>Blocked</span></div>
               </>}
               <div className="leg-i"><div className="leg-d" style={{background:"rgba(237,230,207,.65)",border:"1px solid rgba(237,230,207,.3)"}}/><span>Safe</span></div>
-              {modEnemy && enemyActive && <div className="leg-i"><span style={{fontSize:"0.9em"}}>👁️</span><span>The Shadow</span></div>}
-              {modVanish && <div className="leg-i"><span style={{fontSize:"0.9em"}}>💨</span><span>{vanished.size} gone</span></div>}
-              {modExplore && <div className="leg-i"><span style={{fontSize:"0.9em"}}>🌑</span><span>Vision: {darkRadius}</span></div>}
+              {modEnemy && enemyActive && <div className="leg-i"><span style={{fontSize:"0.9em"}}>ðŸ‘ï¸</span><span>The Shadow</span></div>}
+              {modVanish && <div className="leg-i"><span style={{fontSize:"0.9em"}}>ðŸ’¨</span><span>{vanished.size} gone</span></div>}
+              {modExplore && <div className="leg-i"><span style={{fontSize:"0.9em"}}>ðŸŒ‘</span><span>Vision: {darkRadius}</span></div>}
             </div>
           </div>
 
@@ -1586,29 +1727,29 @@ export default function ObryndelMiniGame({ onExit }) {
               <div className="s-hdr">Current Turn</div>
               {modEnemy&&enemyActive&&inventory[cp]&&(
                 <div style={{display:"inline-block",background:"rgba(180,20,20,.28)",border:"1px solid rgba(220,60,60,.28)",borderRadius:6,padding:"2px 8px",fontSize:"0.66rem",color:"rgba(255,120,120,.8)",marginBottom:8}}>
-                  👁️ The Shadow hunts you!
+                  ðŸ‘ï¸ The Shadow hunts you!
                 </div>
               )}
               <div className="p-ind">
                 <div className="p-dot" style={{background:COLOR_HEX[cpColor],boxShadow:`0 0 8px ${COLOR_HEX[cpColor]}`}}/>
                 <div className="p-nm">{cpChar?cpChar.name:PLAYER_NAMES[cp]}</div>
-                {inventory[cp]&&<span style={{fontSize:"0.82rem"}} title="Carrying relic">⚡</span>}
-                {dead[cp]&&<span style={{fontSize:"0.7rem",color:"rgba(255,80,80,.7)",marginLeft:4}}>💀 Dead</span>}
-                {stunned[cp]>0&&<span className="stun-badge">💫 Stunned</span>}
-                {abilityStepsLeft>0&&<span style={{fontSize:"0.68rem",color:"rgba(100,255,200,.8)",marginLeft:4}}>⚡ {abilityStepsLeft} steps left</span>}
-                {extraMove&&<span style={{fontSize:"0.68rem",color:"rgba(255,220,0,.8)",marginLeft:4}}>⚡ Extra move!</span>}
+                {inventory[cp]&&<span style={{fontSize:"0.82rem"}} title="Carrying relic">Ã¢Å¡Â¡</span>}
+                {dead[cp]&&<span style={{fontSize:"0.7rem",color:"rgba(255,80,80,.7)",marginLeft:4}}>ðŸ’€ Dead</span>}
+                {stunned[cp]>0&&<span className="stun-badge">ðŸ’« Stunned</span>}
+                {abilityStepsLeft>0&&<span style={{fontSize:"0.68rem",color:"rgba(100,255,200,.8)",marginLeft:4}}>Ã¢Å¡Â¡ {abilityStepsLeft} steps left</span>}
+                {extraMove&&<span style={{fontSize:"0.68rem",color:"rgba(255,220,0,.8)",marginLeft:4}}>Ã¢Å¡Â¡ Extra move!</span>}
               </div>
 
               {cpChar && (
                 <div style={{padding:"6px 8px",borderRadius:7,background:"rgba(10,20,40,.6)",border:`1px solid ${cpChar.color}33`,marginBottom:7,fontSize:".65rem",color:"rgba(180,210,240,.7)"}}>
-                  <span style={{fontFamily:"'Cinzel',serif",color:cpChar.color}}>{cpChar.abilityName}</span> — {cpChar.abilityDesc}
+                  <span style={{fontFamily:"'Cinzel',serif",color:cpChar.color}}>{cpChar.abilityName}</span> â€” {cpChar.abilityDesc}
                   {abilityCooldown[cp]>0&&<span style={{color:"rgba(255,150,100,.7)",marginLeft:6}}>(cooldown: {abilityCooldown[cp]})</span>}
                 </div>
               )}
 
               {!swFirst ? (
                 <>
-                  <div className="ph-lbl">{modChallengeRooms ? "WASD to move between rooms" : `WASD to move${modColors ? " · Click tile to swap" : ""}`}</div>
+                  <div className="ph-lbl">{modChallengeRooms ? "WASD to move in the challenge room" : `WASD to move${modColors ? " Â· Click tile to swap" : ""}`}</div>
                   <div style={{display:"flex",gap:9,alignItems:"flex-start",marginTop:5}}>
                     <div className="wasd-g" style={{marginTop:0,flexShrink:0}}>
                       <div/><div className="wk">W</div><div/>
@@ -1617,15 +1758,15 @@ export default function ObryndelMiniGame({ onExit }) {
                     {modColors && <div className="sw-hint">Click any open tile to start a color swap.</div>}
                   </div>
                   {modEnemy&&inventory[cp]&&!dead[cp]&&(
-                    <button className="drop-btn" onClick={handleDrop}>💧 Drop Relic — stop the Shadow</button>
+                    <button className="drop-btn" onClick={handleDrop}>ðŸ’§ Drop Relic â€” stop the Shadow</button>
                   )}
                   {cpChar&&abilityCooldown[cp]===0&&!dead[cp]&&(
-                    <button className="ability-btn" onClick={useAbility}>✦ {cpChar.abilityName}</button>
+                    <button className="ability-btn" onClick={useAbility}>âœ¦ {cpChar.abilityName}</button>
                   )}
                 </>
               ) : (
                 <>
-                  <div className="ph-lbl" style={{color:"rgba(255,220,80,.72)"}}>Tile selected — click another</div>
+                  <div className="ph-lbl" style={{color:"rgba(255,220,80,.72)"}}>Tile selected â€” click another</div>
                   <div className="sw-hint">Click a second tile to swap, or same tile to cancel.</div>
                 </>
               )}
@@ -1635,7 +1776,7 @@ export default function ObryndelMiniGame({ onExit }) {
               <div className="s-hdr">Scoundrels</div>
               <div className="p-list">
                 {Array.from({length:playerCount},(_,i)=>{
-                  const obj = objects[i]||OBJECT_DEFS[i];
+                  const obj = modChallengeRooms ? (objects[0]||CHALLENGE_OBJECT) : (objects[i]||OBJECT_DEFS[i]);
                   const hasObj = inventory[i];
                   const isDone = atBase[i];
                   const isDead = dead[i];
@@ -1643,15 +1784,20 @@ export default function ObryndelMiniGame({ onExit }) {
                   const char = CHARACTERS.find(c=>c.id===charChoices[i]);
                   return (
                     <div key={i} className={`p-row${i===cp?" cur":""}${isDone?" done":""}${isDead?" ded":""}`}>
-                      <div className="p-ri">{isDead?"💀":char?char.emoji:PLAYER_EMOJIS[i]}</div>
+                      <div className="p-ri">{isDead?"ðŸ’€":char?char.emoji:PLAYER_EMOJIS[i]}</div>
                       <div style={{flex:1}}>
                         <div className="p-rn" style={{color:COLOR_HEX[PLAYER_COLORS[i]]}}>{char?char.name:PLAYER_NAMES[i]}</div>
                         <div className="p-rs">
-                          {isDead?"Dead — move onto them to revive"
-                          :isDone?(allGathered?"⚔️ Enter the Kingdom of Obryndel!":"✓ Relic delivered to altar!")
-                          :hasObj?`Carrying ${obj.emoji} — return to the altar!`
-                          :hasDrop?`${obj.emoji} dropped — reclaim it!`
-                          :`Seeking ${obj.emoji} ${obj.label}`}
+                          {modChallengeRooms
+                            ? (isDead ? "Dead - step onto them to revive."
+                              : allGathered ? "Challenge complete!"
+                              : hasObj ? `Carrying ${obj.emoji} ${obj.label}!`
+                              : "Work together to secure the single challenge relic.")
+                            : (isDead ? "Dead - move onto them to revive"
+                              : isDone ? (allGathered ? "Enter the Kingdom of Obryndel!" : "Relic delivered to altar!")
+                              : hasObj ? `Carrying ${obj.emoji} - return to the altar!`
+                              : hasDrop ? `${obj.emoji} dropped - reclaim it!`
+                              : `Seeking ${obj.emoji} ${obj.label}`)}
                         </div>
                         {abilityCooldown[i]>0&&<div style={{fontSize:".58rem",color:"rgba(100,200,255,.4)"}}>Ability cooldown: {abilityCooldown[i]}</div>}
                       </div>
@@ -1661,18 +1807,38 @@ export default function ObryndelMiniGame({ onExit }) {
               </div>
             </div>
 
+            {modChallengeRooms && challengeState && (
+              <div className="s-card">
+                <div className="s-hdr">Challenge Brief</div>
+                <div style={{display:"flex",flexDirection:"column",gap:6,fontSize:"0.68rem",color:"rgba(210,190,140,.72)"}}>
+                  {challengeState.instructions.map((line, idx)=>(
+                    <div key={`brief-${idx}`}>{line}</div>
+                  ))}
+                  <div style={{marginTop:4,color:"rgba(230,160,120,.72)"}}>
+                    Spikes: {challengeState.spikesActive ? "UP" : "DOWN"} {challengeState.spikeTiles.size>0 ? "(toggle each turn)" : ""}
+                  </div>
+                  <div style={{color:"rgba(120,200,255,.72)"}}>
+                    Bridge: {challengeState.bridgeActive ? "READY" : "MISSING"} {challengeState.gapTiles.size>0 ? "(Cyclops needed)" : ""}
+                  </div>
+                  <div style={{color:"rgba(255,140,80,.72)"}}>
+                    Flames: {challengeState.flamesActive ? "ACTIVE" : "CLEARED"}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {(modColors||modVanish||modEnemy||modBW||modMaze||modExplore||modEvents||modChallengeRooms) && (
               <div className="s-card">
                 <div className="s-hdr">Active Modifiers</div>
                 <div style={{display:"flex",flexDirection:"column",gap:5}}>
-                  {modChallengeRooms && <div style={{fontSize:"0.7rem",color:"rgba(180,180,180,.6)"}}>🚪 Challenge Rooms mode</div>}
-                  {modColors && <div style={{fontSize:"0.7rem",color:"rgba(213,160,50,.5)"}}>🎨 Colored Tiles + Swapping</div>}
-                  {modMaze && <div style={{fontSize:"0.7rem",color:"rgba(200,160,80,.5)"}}>🏚️ Maze is active</div>}
-                  {modExplore && <div style={{fontSize:"0.7rem",color:"rgba(150,150,200,.5)"}}>🌑 Exploration — vision {darkRadius} steps</div>}
-                  {modVanish && <div style={{fontSize:"0.7rem",color:"rgba(180,155,90,.48)"}}>💨 Vanishing Tiles ({vanished.size} gone)</div>}
-                  {modEnemy && <div style={{fontSize:"0.7rem",color:"rgba(255,100,100,.48)"}}>👁️ The Shadow {enemyActive?"is hunting":"awaits first relic"}</div>}
-                  {modBW && <div style={{fontSize:"0.7rem",color:"rgba(200,200,200,.38)"}}>🖤 Black &amp; White mode</div>}
-                  {modEvents && <div style={{fontSize:"0.7rem",color:"rgba(200,100,220,.48)"}}>🃏 Event Cards active</div>}
+                  {modChallengeRooms && <div style={{fontSize:"0.7rem",color:"rgba(180,180,180,.6)"}}>ðŸšª Challenge Rooms mode</div>}
+                  {modColors && <div style={{fontSize:"0.7rem",color:"rgba(213,160,50,.5)"}}>ðŸŽ¨ Colored Tiles + Swapping</div>}
+                  {modMaze && <div style={{fontSize:"0.7rem",color:"rgba(200,160,80,.5)"}}>ðŸšï¸ Maze is active</div>}
+                  {modExplore && <div style={{fontSize:"0.7rem",color:"rgba(150,150,200,.5)"}}>ðŸŒ‘ Exploration â€” vision {darkRadius} steps</div>}
+                  {modVanish && <div style={{fontSize:"0.7rem",color:"rgba(180,155,90,.48)"}}>ðŸ’¨ Vanishing Tiles ({vanished.size} gone)</div>}
+                  {modEnemy && <div style={{fontSize:"0.7rem",color:"rgba(255,100,100,.48)"}}>ðŸ‘ï¸ The Shadow {enemyActive?"is hunting":"awaits first relic"}</div>}
+                  {modBW && <div style={{fontSize:"0.7rem",color:"rgba(200,200,200,.38)"}}>ðŸ–¤ Black &amp; White mode</div>}
+                  {modEvents && <div style={{fontSize:"0.7rem",color:"rgba(200,100,220,.48)"}}>ðŸƒ Event Cards active</div>}
                 </div>
               </div>
             )}
@@ -1686,7 +1852,7 @@ export default function ObryndelMiniGame({ onExit }) {
 
             <button className="start-btn" style={{fontSize:"0.76rem",padding:"8px 16px",opacity:.42}}
               onClick={()=>{setPhase("setup");setPlayerCount(null);if(onExit)onExit();}}>
-              ← Main Menu
+              â† Main Menu
             </button>
           </div>
         </div>
@@ -1696,3 +1862,4 @@ export default function ObryndelMiniGame({ onExit }) {
 
   return null;
 }
+
