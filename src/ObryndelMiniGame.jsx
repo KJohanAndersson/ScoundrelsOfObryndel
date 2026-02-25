@@ -230,6 +230,18 @@ function makeGrid(gridSize, playerCount, bwMode, hasMaze, hasColors) {
 }
 
 const KINGDOM_ROWS = 5;
+const ROOM_DIRECTIONS = [
+  { id: "left", dx: -1, dy: 0, label: "Left Wing" },
+  { id: "up", dx: 0, dy: -1, label: "North Wing" },
+  { id: "right", dx: 1, dy: 0, label: "Right Wing" },
+  { id: "down", dx: 0, dy: 1, label: "South Wing" },
+];
+const CHALLENGE_BY_RACE = {
+  Goblin: "Dash through a blinking obstacle that appears every other turn.",
+  Orc: "Scream at a room full of enemies and scatter them.",
+  Cyclops: "Throw a boulder across a gap to hit a distant switch.",
+  Witch: "Teleport an artifact out of a ring of fire.",
+};
 
 function getStartCenter(gridSize) {
   return { x: Math.floor(gridSize/2), y: gridSize - 1 };
@@ -301,10 +313,10 @@ h1.og-title{font-family:'Cinzel',serif;font-size:clamp(1.6rem,5vw,3rem);font-wei
 .cell.kingdom-cell{border-color:rgba(213,169,62,.3) !important}
 .cell.dark-cell{background:#0a0806 !important;border-color:rgba(0,0,0,.8) !important}
 .cell.dark-edge{filter:brightness(0.45)}
-.cell-wall-top{border-top:2px solid rgba(255,220,120,.7) !important}
-.cell-wall-right{border-right:2px solid rgba(255,220,120,.7) !important}
-.cell-wall-bottom{border-bottom:2px solid rgba(255,220,120,.7) !important}
-.cell-wall-left{border-left:2px solid rgba(255,220,120,.7) !important}
+.cell-wall-top{border-top:2px solid rgba(85,85,85,.95) !important}
+.cell-wall-right{border-right:2px solid rgba(85,85,85,.95) !important}
+.cell-wall-bottom{border-bottom:2px solid rgba(85,85,85,.95) !important}
+.cell-wall-left{border-left:2px solid rgba(85,85,85,.95) !important}
 .sidebar{display:flex;flex-direction:column;gap:9px;min-width:200px;max-width:262px;flex:1}
 .s-card{background:linear-gradient(180deg,rgba(36,24,18,.9),rgba(6,4,3,.9));border:1px solid rgba(213,169,62,.15);border-radius:13px;padding:15px 17px;box-shadow:0 12px 50px rgba(0,0,0,.7)}
 .s-hdr{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:3px;color:rgba(180,155,90,.4);text-transform:uppercase;margin-bottom:7px}
@@ -363,10 +375,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 @keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
-.maze-wall-n{border-top:2px solid rgba(200,160,80,.8) !important}
-.maze-wall-e{border-right:2px solid rgba(200,160,80,.8) !important}
-.maze-wall-s{border-bottom:2px solid rgba(200,160,80,.8) !important}
-.maze-wall-w{border-left:2px solid rgba(200,160,80,.8) !important}
+.maze-wall-n{border-top:2px solid rgba(85,85,85,.95) !important}
+.maze-wall-e{border-right:2px solid rgba(85,85,85,.95) !important}
+.maze-wall-s{border-bottom:2px solid rgba(85,85,85,.95) !important}
+.maze-wall-w{border-left:2px solid rgba(85,85,85,.95) !important}
 .stun-badge{background:rgba(255,220,0,.15);border:1px solid rgba(255,220,0,.4);border-radius:5px;padding:1px 6px;font-size:.6rem;color:rgba(255,220,0,.8);margin-left:4px}
 `;
 
@@ -414,6 +426,7 @@ export default function ObryndelMiniGame({ onExit }) {
   const [modExplore, setModExplore] = useState(false);
   const [modEvents,  setModEvents]  = useState(false);
   const [modColors,  setModColors]  = useState(true);
+  const [modChallengeRooms, setModChallengeRooms] = useState(false);
   const [darkRadius, setDarkRadius] = useState(3);
   const [gridSize,   setGridSize]   = useState(10);
 
@@ -443,6 +456,11 @@ export default function ObryndelMiniGame({ onExit }) {
   const [allGathered, setAllGathered] = useState(false);
   const [extraMove,   setExtraMove]   = useState(false);
   const [kingdomGrid, setKingdomGrid] = useState({});
+  const [roomMeta,    setRoomMeta]    = useState({});
+  const [roomByCoord, setRoomByCoord] = useState({});
+  const [roomLocks,   setRoomLocks]   = useState({});
+  const [roomChallenges, setRoomChallenges] = useState({});
+  const [playerRooms, setPlayerRooms] = useState([]);
 
   const stateRef = useRef({});
   
@@ -451,9 +469,10 @@ export default function ObryndelMiniGame({ onExit }) {
     stateRef.current = {
       curPlayer, positions, inKingdom, kPositions, grid, inventory, atBase, dead, stunned,
       dropped, droppedPos, vanished, discoveredCells, enemies, enemyActive, playerCount,
-      modBW, modVanish, modEnemy, modMaze, modExplore, modEvents, modColors,
+      modBW, modVanish, modEnemy, modMaze, modExplore, modEvents, modColors, modChallengeRooms,
       darkRadius, gridSize, mazeWalls, objects, abilityCooldown,
       abilityStepsLeft, charChoices, extraMove, allGathered, kingdomGrid,
+      roomMeta, roomByCoord, roomLocks, roomChallenges, playerRooms,
     };
   });
 
@@ -517,7 +536,87 @@ export default function ObryndelMiniGame({ onExit }) {
   // ── Start game ────────────────────────────────────────────────────────────
   const startGame = (chars) => {
     const pc = playerCount;
-    const gs = gridSize;
+    const gs = modChallengeRooms ? 10 : gridSize;
+    if (modChallengeRooms) setGridSize(10);
+
+    if (modChallengeRooms) {
+      const center = { x: Math.floor(gs / 2), y: gs - 2 };
+      const roomGrid = {};
+      for (let y = 0; y < gs; y++) {
+        for (let x = 0; x < gs; x++) roomGrid[cellKey(x, y)] = "black";
+      }
+
+      const nextRoomMeta = {
+        start: { id: "start", x: center.x, y: center.y, name: "Starting Chamber", isStart: true },
+      };
+      const nextRoomByCoord = { [cellKey(center.x, center.y)]: "start" };
+      const nextRoomLocks = {};
+      const nextRoomChallenges = {};
+      const nextObjects = [];
+      const dirs = ROOM_DIRECTIONS.slice(0, pc);
+
+      dirs.forEach((dir, i) => {
+        const branchId = `branch-${i}`;
+        const lockedId = `locked-${i}`;
+        const bx = center.x + dir.dx;
+        const by = center.y + dir.dy;
+        const lx = center.x + dir.dx * 2;
+        const ly = center.y + dir.dy * 2;
+        const race = CHARACTERS.find(c => c.id === chars[i])?.race || "Goblin";
+
+        roomGrid[cellKey(bx, by)] = "white";
+        roomGrid[cellKey(lx, ly)] = "white";
+        nextRoomMeta[branchId] = { id: branchId, x: bx, y: by, name: dir.label, lockedTo: lockedId };
+        nextRoomMeta[lockedId] = { id: lockedId, x: lx, y: ly, name: `${dir.label} Vault` };
+        nextRoomByCoord[cellKey(bx, by)] = branchId;
+        nextRoomByCoord[cellKey(lx, ly)] = lockedId;
+        nextRoomLocks[`${branchId}|${lockedId}`] = true;
+        nextRoomChallenges[branchId] = {
+          race,
+          completed: false,
+          desc: CHALLENGE_BY_RACE[race] || CHALLENGE_BY_RACE.Goblin,
+        };
+        nextObjects.push({ ...OBJECT_DEFS[i], x: lx, y: ly });
+      });
+
+      roomGrid[cellKey(center.x, center.y)] = "white";
+
+      setGrid(roomGrid);
+      setMazeWalls(null);
+      setObjects(nextObjects);
+      setKingdomGrid({});
+      setRoomMeta(nextRoomMeta);
+      setRoomByCoord(nextRoomByCoord);
+      setRoomLocks(nextRoomLocks);
+      setRoomChallenges(nextRoomChallenges);
+      setPlayerRooms(Array(pc).fill("start"));
+      setVanished(new Set());
+      setDiscoveredCells(new Set());
+      setPositions(Array.from({ length: pc }, () => ({ x: center.x, y: center.y })));
+      setInKingdom(Array(pc).fill(false));
+      setKPositions(Array(pc).fill(null));
+      setInventory(Array(pc).fill(false));
+      setDropped(Array(pc).fill(false));
+      setDroppedPos(Array(pc).fill(null));
+      setAtBase(Array(pc).fill(false));
+      setDead(Array(pc).fill(false));
+      setStunned(Array(pc).fill(0));
+      setEnemies([]);
+      setEnemyActive(false);
+      setAbilityCooldown(Array(pc).fill(0));
+      setAbilityStepsLeft(0);
+      setCurPlayer(0);
+      setSwFirst(null);
+      setLog([]);
+      setEventCard(null);
+      setAllGathered(false);
+      setExtraMove(false);
+      setPhase("game");
+      addLog(`Quest begins with ${pc} scoundrel${pc>1?"s":""}!`);
+      addLog("Challenge Rooms: move between connected rooms and unlock vaults with character abilities.");
+      return;
+    }
+
     let mWalls = null;
     if (modMaze) {
       mWalls = generateMaze(gs, gs);
@@ -570,6 +669,11 @@ export default function ObryndelMiniGame({ onExit }) {
     setEventCard(null);
     setAllGathered(false);
     setExtraMove(false);
+    setRoomMeta({});
+    setRoomByCoord({});
+    setRoomLocks({});
+    setRoomChallenges({});
+    setPlayerRooms([]);
     setPhase("game");
     addLog(`Quest begins with ${pc} scoundrel${pc>1?"s":""}!`);
     addLog("🏰 Bring all relics to the altar to shatter the barrier sealing Obryndel!");
@@ -710,6 +814,33 @@ export default function ObryndelMiniGame({ onExit }) {
     const gs = s.gridSize;
     let used = false;
 
+    if (s.modChallengeRooms) {
+      const roomId = s.playerRooms[cp];
+      const room = s.roomMeta[roomId];
+      const challenge = s.roomChallenges[roomId];
+      if (!room || !challenge || !room.lockedTo) {
+        addLog("No challenge to solve in this room.");
+        return;
+      }
+      if (challenge.completed) {
+        addLog("This challenge has already been solved.");
+        return;
+      }
+      if (char.race !== challenge.race) {
+        addLog(`This challenge requires a ${challenge.race}.`);
+        return;
+      }
+      const lockKey = `${roomId}|${room.lockedTo}`;
+      setRoomChallenges(prev => ({ ...prev, [roomId]: { ...prev[roomId], completed: true } }));
+      setRoomLocks(prev => ({ ...prev, [lockKey]: false }));
+      addLog(`${char.emoji} ${PLAYER_NAMES[cp]} solves the ${char.race} challenge and unlocks the vault door!`);
+      const nc = [...s.abilityCooldown]; nc[cp] = char.abilityCooldown;
+      setAbilityCooldown(nc);
+      setSwFirst(null);
+      advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
+      return;
+    }
+
     if (charId === "gribberth") {
       setAbilityStepsLeft(3);
       addLog(`${char.emoji} ${PLAYER_NAMES[cp]} activates Quick Toes — 3 steps!`);
@@ -748,7 +879,7 @@ export default function ObryndelMiniGame({ onExit }) {
     if (used) {
       const nc = [...s.abilityCooldown]; nc[cp] = char.abilityCooldown;
       setAbilityCooldown(nc);
-      if (charId !== "gribberth") {
+      if (charId !== "gribberth" || s.modChallengeRooms) {
         setSwFirst(null);
         advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
       }
@@ -769,6 +900,57 @@ export default function ObryndelMiniGame({ onExit }) {
       const gs = s.gridSize;
 
       if (s.dead[cp]) { addLog(`${PLAYER_NAMES[cp]} is dead!`); return; }
+
+      if (s.modChallengeRooms) {
+        const cur = s.positions[cp];
+        const nx = cur.x + dir[0], ny = cur.y + dir[1];
+        if (nx < 0 || nx >= gs || ny < 0 || ny >= gs) { addLog("No room that way."); return; }
+
+        const fromId = s.roomByCoord[cellKey(cur.x, cur.y)];
+        const toId = s.roomByCoord[cellKey(nx, ny)];
+        if (!fromId || !toId) { addLog("No connected room that way."); return; }
+
+        if (s.roomLocks[`${fromId}|${toId}`] || s.roomLocks[`${toId}|${fromId}`]) {
+          addLog("The doorway is locked. Complete the room challenge first.");
+          return;
+        }
+
+        const newPositions = [...s.positions];
+        const newPlayerRooms = [...s.playerRooms];
+        newPositions[cp] = { x: nx, y: ny };
+        newPlayerRooms[cp] = toId;
+
+        const newInventory = [...s.inventory];
+        const newAtBase = [...s.atBase];
+        let msg = `${PLAYER_NAMES[cp]} enters ${s.roomMeta[toId]?.name || "a room"}.`;
+
+        const objIdx = s.objects.findIndex(o => o.x === nx && o.y === ny && !newInventory[cp]);
+        if (objIdx >= 0 && s.objects[objIdx].id === PLAYER_COLORS[cp]) {
+          newInventory[cp] = true;
+          msg += ` Picked up ${s.objects[objIdx].label}!`;
+        }
+
+        if (toId === "start" && newInventory[cp] && !newAtBase[cp]) {
+          newAtBase[cp] = true;
+          newInventory[cp] = false;
+          msg += " Relic delivered to the starting chamber.";
+          if (newAtBase.filter(Boolean).length >= s.playerCount) {
+            setAllGathered(true);
+            setPhase("victory");
+          }
+        }
+
+        setPositions(newPositions);
+        setPlayerRooms(newPlayerRooms);
+        setInventory(newInventory);
+        setAtBase(newAtBase);
+        setSwFirst(null);
+        addLog(msg);
+        if (newAtBase.filter(Boolean).length < s.playerCount) {
+          advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
+        }
+        return;
+      }
 
       const isInKingdom = s.inKingdom[cp];
 
@@ -962,6 +1144,7 @@ export default function ObryndelMiniGame({ onExit }) {
   const handleCellClick = useCallback((x, y) => {
     const s = stateRef.current;
     if (phase!=="game"||eventCard) return;
+    if (s.modChallengeRooms) return;
     if (!s.modColors) return;
     const key=cellKey(x,y);
     if (s.vanished.has(key)) return;
@@ -1018,8 +1201,8 @@ export default function ObryndelMiniGame({ onExit }) {
             <div style={{fontFamily:"'Cinzel',serif",fontSize:"0.65rem",letterSpacing:3,color:"rgba(180,155,90,.32)",textTransform:"uppercase",marginBottom:11}}>Map Settings</div>
             <div className="slider-row">
               <span className="slider-lbl">Map Size</span>
-              <input type="range" min={10} max={20} value={gridSize} onChange={e=>setGridSize(Number(e.target.value))} />
-              <span className="slider-val">{gridSize}×{gridSize}</span>
+              <input type="range" min={10} max={20} value={gridSize} disabled={modChallengeRooms} onChange={e=>setGridSize(Number(e.target.value))} />
+              <span className="slider-val">{modChallengeRooms ? "10x10" : `${gridSize}x${gridSize}`}</span>
             </div>
             {modExplore && (
               <div className="slider-row">
@@ -1033,19 +1216,45 @@ export default function ObryndelMiniGame({ onExit }) {
           <div style={{borderTop:"1px solid rgba(213,169,62,.08)",paddingTop:16,marginBottom:18}}>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:"0.65rem",letterSpacing:3,color:"rgba(180,155,90,.32)",textTransform:"uppercase",marginBottom:11}}>Modifiers</div>
             <div className="mods">
-              <ModToggle active={modColors} onClick={()=>setModColors(v=>!v)} icon="🎨" label="Colored Tiles" desc="The board is filled with colored tiles. Players may only walk on their own color or white tiles. Click tiles to swap colors and open new paths." />
-              <ModToggle active={modMaze} onClick={()=>setModMaze(v=>!v)} icon="🏚️" label="Maze" desc="A labyrinth fills the board. Walls block movement and vision. Objects are placed near the edges of the map." />
-              <ModToggle active={modExplore} onClick={()=>setModExplore(v=>!v)} icon="🌑" label="Exploration Mode" desc="The map is shrouded in darkness. Tiles you've visited stay visible for all players. Discover the world as you venture out." />
-              <ModToggle active={modVanish} onClick={()=>setModVanish(v=>!v)} icon="💨" label="Vanishing Tiles" desc="Each relic collected causes tiles to crumble. Occupied tiles are always safe." />
-              <ModToggle active={modEnemy} onClick={()=>setModEnemy(v=>!v)} icon="👁️" label="The Shadow" desc="An enemy spawns at the kingdom entrance when the first relic is picked up. It hunts relic carriers. Allies can revive the fallen." />
-              <ModToggle active={modBW} onClick={()=>setModBW(v=>!v)} icon="🖤" label="Black & White" desc="Only white tiles may be walked on. Color-swapping carves new paths." />
-              <ModToggle active={modEvents} onClick={()=>setModEvents(v=>!v)} icon="🃏" label="Event Cards" desc="At the end of every turn, draw an event card! Teleportation traps, stuns, and sudden bursts of speed await…" />
+              <ModToggle
+                active={modChallengeRooms}
+                onClick={() => {
+                  setModChallengeRooms(v => {
+                    const next = !v;
+                    if (next) {
+                      setModColors(false);
+                      setModMaze(false);
+                      setModExplore(false);
+                      setModVanish(false);
+                      setModEnemy(false);
+                      setModBW(false);
+                      setModEvents(false);
+                      setGridSize(10);
+                    } else {
+                      setModColors(true);
+                    }
+                    return next;
+                  });
+                }}
+                icon="🚪"
+                label="Challenge Rooms"
+                desc="Exclusive mode: move by connected rooms, unlock doors through character challenges, and return all relics to the start chamber."
+              />
+              <ModToggle active={modColors} onClick={()=>!modChallengeRooms&&setModColors(v=>!v)} icon="🎨" label="Colored Tiles" desc="The board is filled with colored tiles. Players may only walk on their own color or white tiles. Click tiles to swap colors and open new paths." />
+              <ModToggle active={modMaze} onClick={()=>!modChallengeRooms&&setModMaze(v=>!v)} icon="🏚️" label="Maze" desc="A labyrinth fills the board. Walls block movement and vision. Objects are placed near the edges of the map." />
+              <ModToggle active={modExplore} onClick={()=>!modChallengeRooms&&setModExplore(v=>!v)} icon="🌑" label="Exploration Mode" desc="The map is shrouded in darkness. Tiles you've visited stay visible for all players. Discover the world as you venture out." />
+              <ModToggle active={modVanish} onClick={()=>!modChallengeRooms&&setModVanish(v=>!v)} icon="💨" label="Vanishing Tiles" desc="Each relic collected causes tiles to crumble. Occupied tiles are always safe." />
+              <ModToggle active={modEnemy} onClick={()=>!modChallengeRooms&&setModEnemy(v=>!v)} icon="👁️" label="The Shadow" desc="An enemy spawns at the kingdom entrance when the first relic is picked up. It hunts relic carriers. Allies can revive the fallen." />
+              <ModToggle active={modBW} onClick={()=>!modChallengeRooms&&setModBW(v=>!v)} icon="🖤" label="Black & White" desc="Only white tiles may be walked on. Color-swapping carves new paths." />
+              <ModToggle active={modEvents} onClick={()=>!modChallengeRooms&&setModEvents(v=>!v)} icon="🃏" label="Event Cards" desc="At the end of every turn, draw an event card! Teleportation traps, stuns, and sudden bursts of speed await…" />
             </div>
           </div>
 
           <button className="start-btn" disabled={!playerCount} onClick={beginCharSelect}>Choose Characters →</button>
           <div style={{marginTop:14,fontSize:"0.7rem",color:"rgba(180,155,90,.28)",lineHeight:1.8}}>
-            Collect your relic &amp; return to the centre altar.<br/>WASD to move{modColors ? " · Click tiles to swap colors" : ""}.
+            {modChallengeRooms
+              ? "Move room-to-room, clear character challenges, and return all relics to the starting chamber."
+              : <>Collect your relic &amp; return to the centre altar.<br/>WASD to move{modColors ? " · Click tiles to swap colors" : ""}.</>}
           </div>
         </div>
       </div>
@@ -1098,11 +1307,16 @@ export default function ObryndelMiniGame({ onExit }) {
       return Array.from({length:gs},(_,y)=>
         Array.from({length:gs},(_,x)=>{
           const key = cellKey(x,y);
+          const roomId = roomByCoord[key];
           const color = grid[key]||"empty";
           const isGone = vanished.has(key);
-          const isStart = isStartCellFn(x,y,gs);
+          const isStart = modChallengeRooms ? roomId === "start" : isStartCellFn(x,y,gs);
           const isObj = !!objMapXY[key];
           const obj = objMapXY[key];
+          const lockForCell = modChallengeRooms && roomId && roomMeta[roomId]?.lockedTo
+            ? roomLocks[`${roomId}|${roomMeta[roomId].lockedTo}`]
+            : false;
+          const challengeForCell = modChallengeRooms && roomId ? roomChallenges[roomId] : null;
 
           let isDark = false, isEdge = false, isDiscovered = false;
           if (modExplore && !inKingdom[cp]) {
@@ -1161,14 +1375,16 @@ export default function ObryndelMiniGame({ onExit }) {
                 width:cellPx, height:cellPx,
                 background: isDark ? "#080604"
                   : isGone ? "transparent"
+                  : modChallengeRooms && !roomId ? "#080604"
                   : color==="black" ? COLOR_BG.black
                   : COLOR_BG[color]||COLOR_BG.empty,
-                borderColor: isStart?"rgba(237,230,207,.4)"
+                borderColor: modChallengeRooms && !roomId ? "rgba(20,20,20,.9)"
+                  : isStart?"rgba(237,230,207,.4)"
                   : isEntranceCell&&allGathered?"rgba(213,169,62,.6)"
                   : isObj?"rgba(237,230,207,.2)"
                   : color==="black"?"rgba(255,255,255,.03)"
                   : `${COLOR_HEX[color]||"#1a1510"}22`,
-                borderBottom: isEntranceCell ? "none" : undefined,
+                borderBottom: isEntranceCell ? "none" : "2px solid rgba(85,85,85,.95)",
                 boxShadow: isStart ? "0 0 14px rgba(237,230,207,.4)"
                   : isEntranceCell&&allGathered ? "0 0 12px rgba(213,169,62,.4)"
                   : undefined,
@@ -1182,6 +1398,8 @@ export default function ObryndelMiniGame({ onExit }) {
                   {obj.emoji}
                 </span>
               )}
+              {lockForCell && <span style={{position:"absolute",top:1,right:1,fontSize:"0.62em",opacity:.9}}>🔒</span>}
+              {challengeForCell && !challengeForCell.completed && <span style={{position:"absolute",top:1,left:1,fontSize:"0.62em",opacity:.9}}>⚠</span>}
               {isStart && playersHere.length===0 && !enemyVisible && (
                 <span style={{fontSize:"0.7em",opacity:.28}}>✦</span>
               )}
@@ -1317,7 +1535,7 @@ export default function ObryndelMiniGame({ onExit }) {
           </div>
         )}
 
-        {allGathered && (
+        {allGathered && !modChallengeRooms && (
           <div className="all-gathered-banner" style={{width:"100%",maxWidth:700,marginBottom:8}}>
             ⚡ You've gathered all the artifacts to summon the power of the Void!<br/>
             The magic barrier has been shattered! Enter the Kingdom of Obryndel to claim victory!
@@ -1331,6 +1549,8 @@ export default function ObryndelMiniGame({ onExit }) {
                 {renderWilderness()}
               </div>
 
+              {!modChallengeRooms && (
+              <>
               <div style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"3px 0",zIndex:5,position:"relative"}}>
                 <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(213,169,62,.4),transparent)"}}/>
                 <div style={{fontFamily:"'Cinzel',serif",fontSize:".6rem",letterSpacing:"3px",color:"rgba(213,169,62,.55)",textTransform:"uppercase",whiteSpace:"nowrap"}}>
@@ -1342,6 +1562,8 @@ export default function ObryndelMiniGame({ onExit }) {
               <div className="grid grid-kingdom kingdom-grid-outer" style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(${KINGDOM_ROWS},${cellPx}px)`}}>
                 {renderKingdom()}
               </div>
+              </>
+              )}
             </div>
 
             <div className="legend">
@@ -1386,7 +1608,7 @@ export default function ObryndelMiniGame({ onExit }) {
 
               {!swFirst ? (
                 <>
-                  <div className="ph-lbl">WASD to move{modColors ? " · Click tile to swap" : ""}</div>
+                  <div className="ph-lbl">{modChallengeRooms ? "WASD to move between rooms" : `WASD to move${modColors ? " · Click tile to swap" : ""}`}</div>
                   <div style={{display:"flex",gap:9,alignItems:"flex-start",marginTop:5}}>
                     <div className="wasd-g" style={{marginTop:0,flexShrink:0}}>
                       <div/><div className="wk">W</div><div/>
@@ -1439,10 +1661,11 @@ export default function ObryndelMiniGame({ onExit }) {
               </div>
             </div>
 
-            {(modColors||modVanish||modEnemy||modBW||modMaze||modExplore||modEvents) && (
+            {(modColors||modVanish||modEnemy||modBW||modMaze||modExplore||modEvents||modChallengeRooms) && (
               <div className="s-card">
                 <div className="s-hdr">Active Modifiers</div>
                 <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                  {modChallengeRooms && <div style={{fontSize:"0.7rem",color:"rgba(180,180,180,.6)"}}>🚪 Challenge Rooms mode</div>}
                   {modColors && <div style={{fontSize:"0.7rem",color:"rgba(213,160,50,.5)"}}>🎨 Colored Tiles + Swapping</div>}
                   {modMaze && <div style={{fontSize:"0.7rem",color:"rgba(200,160,80,.5)"}}>🏚️ Maze is active</div>}
                   {modExplore && <div style={{fontSize:"0.7rem",color:"rgba(150,150,200,.5)"}}>🌑 Exploration — vision {darkRadius} steps</div>}
