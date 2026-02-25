@@ -313,15 +313,17 @@ h1.og-title{font-family:'Cinzel',serif;font-size:clamp(1.6rem,5vw,3rem);font-wei
 .start-btn:disabled{opacity:.3;cursor:not-allowed}
 .game-layout{display:flex;gap:18px;align-items:flex-start;width:100%;max-width:1200px;flex-wrap:wrap;justify-content:center}
 .grid-wrap{position:relative;flex-shrink:0}
-.grid-container{display:flex;flex-direction:column;gap:4px;align-items:center}
-.grid{display:grid;gap:0;background:rgba(0,0,0,.8);border:1px solid rgba(213,169,62,.12);border-radius:10px;padding:4px;box-shadow:0 20px 80px rgba(0,0,0,.8)}
-.kingdom-separator{width:100%;display:flex;align-items:center;gap:12px;padding:6px 0}
+.grid-container{display:flex;flex-direction:column;gap:0;align-items:center}
+.grid{display:grid;gap:0;background:rgba(0,0,0,.8);border:1px solid rgba(213,169,62,.12);padding:4px;box-shadow:0 20px 80px rgba(0,0,0,.8)}
+.grid-wilderness{border-radius:10px 10px 0 0;border-bottom:none;padding-bottom:0}
+.grid-kingdom{border-radius:0 0 10px 10px;border-top:none;padding-top:0;background:rgba(30,18,8,.8)}
+.kingdom-separator{display:none}
 .kingdom-sep-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(213,169,62,.5),transparent)}
 .kingdom-sep-text{font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:3px;color:rgba(213,169,62,.6);text-transform:uppercase;white-space:nowrap}
 .kingdom-grid{display:grid;gap:0;background:rgba(80,50,20,.15);border:1px solid rgba(213,169,62,.3);border-radius:10px;padding:4px;box-shadow:0 0 30px rgba(213,169,62,.08)}
 .kingdom-locked{opacity:.3;filter:grayscale(1)}
 .kingdom-unlocked{animation:kingdomReveal 1s ease}
-.kingdom-grid-outer{background:rgba(80,50,20,.15) !important;border:1px solid rgba(213,169,62,.3) !important;box-shadow:0 0 30px rgba(213,169,62,.08) !important;border-radius:10px !important}
+.kingdom-grid-outer{background:rgba(30,18,8,.8) !important;border:none !important;box-shadow:none !important;border-radius:0 !important}
 @keyframes kingdomReveal{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .cell{position:relative;display:flex;align-items:center;justify-content:center;font-size:clamp(9px,1.5vw,15px);cursor:default;transition:transform 80ms ease,opacity 350ms ease;border:1px solid rgba(0,0,0,.3);overflow:hidden}
 .cell.gone{opacity:0;pointer-events:none}
@@ -1248,6 +1250,8 @@ export default function ObryndelMiniGame({ onExit }) {
                   : isObj?"rgba(237,230,207,.2)"
                   : color==="black"?"rgba(255,255,255,.03)"
                   : `${COLOR_HEX[color]||"#1a1510"}22`,
+                // Entrance cells open into the kingdom — no bottom border
+                borderBottom: isEntranceCell ? "none" : undefined,
                 boxShadow: isStart ? "0 0 14px rgba(237,230,207,.4)"
                   : isEntranceCell&&allGathered ? "0 0 12px rgba(213,169,62,.4)"
                   : undefined,
@@ -1300,12 +1304,17 @@ export default function ObryndelMiniGame({ onExit }) {
 
     const renderKingdom = () => {
       const locked = !allGathered;
+      const cx = Math.floor(gs/2);
       return Array.from({length:KINGDOM_ROWS},(_,ky)=>
         Array.from({length:gs},(_,kx)=>{
           const key = cellKey(kx,ky);
-          const isCastle = kx===Math.floor(gs/2) && ky===Math.floor(KINGDOM_ROWS/2);
+          const isCastle = kx===cx && ky===Math.floor(KINGDOM_ROWS/2);
           const playersHere = kPositions.map((p,i)=>inKingdom[i]&&p&&p.x===kx&&p.y===ky?i:-1).filter(i=>i>=0);
-          const isEntrance = ky===0 && (kx===Math.floor(gs/2)-1||kx===Math.floor(gs/2));
+          // The 2 entrance columns connect directly to the wilderness start cells above
+          const isEntrance = ky===0 && (kx===cx-1||kx===cx);
+          // Non-entrance cells on top row get a visible top border to form the "walls" flanking the gate
+          const isTopRow = ky===0;
+          const isWall = isTopRow && !isEntrance;
 
           return (
             <div
@@ -1314,20 +1323,33 @@ export default function ObryndelMiniGame({ onExit }) {
               style={{
                 width:cellPx, height:cellPx,
                 background: locked
-                  ? ky===0?"rgba(80,20,100,0.9)":"rgba(50,10,70,0.85)"
-                  : isEntrance?"rgba(237,220,160,0.55)":"rgba(213,185,120,0.2)",
-                borderColor: locked?"rgba(180,80,220,0.35)":"rgba(213,169,62,0.3)",
-                boxShadow: locked&&ky===0?"inset 0 0 10px rgba(180,80,220,0.4)":undefined,
+                  ? isEntrance?"rgba(60,10,80,0.6)"
+                    : isTopRow?"rgba(80,20,100,0.9)":"rgba(50,10,70,0.85)"
+                  : isEntrance?"rgba(237,220,160,0.45)":"rgba(190,165,100,0.18)",
+                borderColor: locked?"rgba(180,80,220,0.35)":"rgba(213,169,62,0.28)",
+                // Entrance cells: no top border so they flow from the wilderness cells above
+                borderTop: isEntrance ? "none" : undefined,
+                // Non-entrance top-row cells: brighter top border = visible "gate wall"
+                borderTopWidth: isWall ? "2px" : undefined,
+                borderTopColor: isWall ? (locked?"rgba(180,80,220,0.8)":"rgba(213,169,62,0.7)") : undefined,
+                boxShadow: isEntrance&&!locked
+                  ? "inset 0 6px 12px rgba(213,169,62,.15)"
+                  : locked&&isTopRow&&!isEntrance?"inset 0 0 10px rgba(180,80,220,0.4)":undefined,
                 fontSize: cellPx<28?"8px":cellPx<36?"10px":"13px",
                 cursor:"default",
               }}
             >
-              {/* Barrier visuals on top row */}
-              {locked && ky===0 && (
-                <div style={{position:"absolute",inset:0,background:"repeating-linear-gradient(45deg,rgba(180,80,220,0.1) 0px,rgba(180,80,220,0.1) 2px,transparent 2px,transparent 8px)",pointerEvents:"none",zIndex:1}}/>
+              {/* Barrier shimmer on locked cells */}
+              {locked && !isEntrance && (
+                <div style={{position:"absolute",inset:0,background:"repeating-linear-gradient(45deg,rgba(180,80,220,0.08) 0px,rgba(180,80,220,0.08) 2px,transparent 2px,transparent 8px)",pointerEvents:"none",zIndex:1}}/>
               )}
-              {locked && ky===0 && kx===Math.floor(gs/2) && (
-                <span style={{position:"absolute",fontSize:"1.1em",opacity:.7,zIndex:2,filter:"drop-shadow(0 0 6px rgba(180,80,220,1))"}}>🔒</span>
+              {/* Lock icon on entrance when sealed */}
+              {locked && isEntrance && kx===cx && (
+                <span style={{position:"absolute",fontSize:"1.1em",opacity:.85,zIndex:2,filter:"drop-shadow(0 0 8px rgba(180,80,220,1))"}}>🔒</span>
+              )}
+              {/* Soft glow on entrance cells when open */}
+              {!locked && isEntrance && (
+                <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(237,210,120,.2),transparent)",pointerEvents:"none",zIndex:1}}/>
               )}
               {isCastle && !locked && (
                 <span style={{position:"absolute",fontSize:"1.3em",opacity:.9,zIndex:2,filter:"drop-shadow(0 0 8px rgba(213,169,62,1))"}}>🏰</span>
@@ -1400,21 +1422,21 @@ export default function ObryndelMiniGame({ onExit }) {
           <div className="grid-wrap">
             <div className="grid-container">
               {/* Wilderness grid */}
-              <div className="grid" style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(${gs},${cellPx}px)`}}>
+              <div className="grid grid-wilderness" style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(${gs},${cellPx}px)`}}>
                 {renderWilderness()}
               </div>
 
-              {/* Kingdom separator */}
-              <div className="kingdom-separator">
-                <div className="kingdom-sep-line"/>
-                <div className="kingdom-sep-text">
-                  {allGathered ? "⚡ Kingdom of Obryndel — Enter!" : "🔒 Kingdom of Obryndel — Sealed by Magic"}
+              {/* Kingdom label — floats over the join */}
+              <div style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"3px 0",zIndex:5,position:"relative"}}>
+                <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(213,169,62,.4),transparent)"}}/>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:".6rem",letterSpacing:"3px",color:"rgba(213,169,62,.55)",textTransform:"uppercase",whiteSpace:"nowrap"}}>
+                  {allGathered ? "⚡ Kingdom of Obryndel" : "🔒 Kingdom of Obryndel"}
                 </div>
-                <div className="kingdom-sep-line"/>
+                <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(213,169,62,.4),transparent)"}}/>
               </div>
 
               {/* Kingdom grid — always present, locked until barrier shatters */}
-              <div className="grid kingdom-grid-outer" style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(${KINGDOM_ROWS},${cellPx}px)`}}>
+              <div className="grid grid-kingdom kingdom-grid-outer" style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(${KINGDOM_ROWS},${cellPx}px)`}}>
                 {renderKingdom()}
               </div>
             </div>
