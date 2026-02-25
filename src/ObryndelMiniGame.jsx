@@ -1166,7 +1166,7 @@ export default function ObryndelMiniGame({ onExit }) {
             >
               {/* Object icon */}
               {isObj && obj && !isGone && !isDark && (
-                <span style={{opacity:inventory[PLAYER_COLORS.indexOf(obj.id)]?.0.12:0.9,filter:"drop-shadow(0 1px 3px rgba(0,0,0,.8))"}}>
+                <span style={{opacity: inventory[PLAYER_COLORS.indexOf(obj.id)] ? 0.12 : 0.9, filter:"drop-shadow(0 1px 3px rgba(0,0,0,.8))"}}>
                   {obj.emoji}
                 </span>
               )}
@@ -1195,7 +1195,7 @@ export default function ObryndelMiniGame({ onExit }) {
                     :{inset:0,display:"flex",alignItems:"center",justifyContent:"center"}),
                   display:"flex",alignItems:"center",justifyContent:"center",
                   zIndex:10,
-                  opacity:dead[pi]?.0.25:1,
+                  opacity:dead[pi] ? 0.25 : 1,
                   filter:dead[pi]?"grayscale(1)":"drop-shadow(0 1px 4px rgba(0,0,0,.9))",
                 }}>
                   {cpChar&&pi===cp?cpChar.emoji:PLAYER_EMOJIS[pi]}
