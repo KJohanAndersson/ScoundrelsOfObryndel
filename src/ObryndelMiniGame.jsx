@@ -1,10 +1,3 @@
-The "white screen" issue was caused by an infinite loop: you were updating state (`setDiscoveredCells`) directly inside the render loop. I have fixed this by using `useMemo` to calculate visibility and `useEffect` to safely update the discovery state.
-
-Regarding the **Build Error**, it is likely caused by a syntax error or a missing import in the previous code block. I have reviewed the code, ensured `useMemo` is imported, and verified all syntax is correct.
-
-Here is the fully corrected and build-safe code:
-
-```javascript
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
