@@ -191,48 +191,60 @@ function bfsVisibleCells(from, dist, mazeWalls, vanishedSet, gridSize) {
   return visible;
 }
 
-// ─── Place objects ensuring min distance from center and reachability ─────────
+// ─── Place objects near the edges of the map (within 2 squares), reachable ───
 function placeObjects(gridSize, startCX, startCY, mazeWalls, playerCount) {
   const centerCell = { x: startCX, y: startCY };
   const placed = [];
   const usedKeys = new Set();
-  // Add center area to used
+  // Reserve start area
   for (let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) {
     usedKeys.add(cellKey(startCX+dx, startCY+dy));
   }
 
+  // A cell is "near edge" if it's within 2 squares of any border
+  const isNearEdge = (x, y) =>
+    x <= 1 || x >= gridSize-2 || y <= 1 || y >= gridSize-2;
+
   for (let i = 0; i < playerCount; i++) {
-    let best = null, bestDist = -1;
-    for (let attempt = 0; attempt < 300; attempt++) {
-      const x = Math.floor(Math.random() * gridSize);
-      const y = Math.floor(Math.random() * gridSize);
-      const k = cellKey(x,y);
-      if (usedKeys.has(k)) continue;
-      const d = bfsDist(centerCell, {x,y}, mazeWalls, new Set(), gridSize);
-      if (d < 4 || d > 8) continue;
-      if (d > bestDist) { bestDist = d; best = {x,y}; }
-    }
-    if (!best) {
-      // fallback: any reachable cell far enough
-      for (let y2=0;y2<gridSize;y2++) for(let x2=0;x2<gridSize;x2++) {
-        const k=cellKey(x2,y2);
+    // Collect all valid near-edge candidates, shuffle, pick best reachable
+    const candidates = [];
+    for (let y=0; y<gridSize; y++) {
+      for (let x=0; x<gridSize; x++) {
+        const k = cellKey(x,y);
         if (usedKeys.has(k)) continue;
-        const d=bfsDist(centerCell,{x:x2,y:y2},mazeWalls,new Set(),gridSize);
-        if (d>=4&&!usedKeys.has(k)) { best={x:x2,y:y2}; break; }
+        if (!isNearEdge(x,y)) continue;
+        candidates.push({x,y});
+      }
+    }
+    // Shuffle
+    candidates.sort(()=>Math.random()-.5);
+    let best = null;
+    for (const c of candidates) {
+      const d = bfsDist(centerCell, c, mazeWalls, new Set(), gridSize);
+      if (d < Infinity) { best = c; break; }
+    }
+    // Fallback: any reachable near-edge cell ignoring already-used constraint
+    if (!best) {
+      for (const c of candidates) {
+        const d = bfsDist(centerCell, c, mazeWalls, new Set(), gridSize);
+        if (d < Infinity) { best = c; break; }
       }
     }
     if (best) {
       placed.push({ ...OBJECT_DEFS[i], x: best.x, y: best.y });
-      usedKeys.add(cellKey(best.x,best.y));
+      usedKeys.add(cellKey(best.x, best.y));
     }
   }
   return placed;
 }
 
 // ─── Grid generation ──────────────────────────────────────────────────────────
-function makeGrid(gridSize, playerCount, bwMode, hasMaze) {
+function makeGrid(gridSize, playerCount, bwMode, hasMaze, hasColors) {
   const grid = {};
-  const colors = bwMode ? ["white","black"] : PLAYER_COLORS.slice(0, playerCount);
+  let colors;
+  if (!hasColors) colors = ["white"];
+  else if (bwMode) colors = ["white","black"];
+  else colors = PLAYER_COLORS.slice(0, playerCount);
   for (let y = 0; y < gridSize; y++) {
     for (let x = 0; x < gridSize; x++) {
       grid[cellKey(x,y)] = colors[Math.floor(Math.random()*colors.length)];
@@ -419,6 +431,7 @@ export default function ObryndelMiniGame({ onExit }) {
   const [modMaze,    setModMaze]    = useState(false);
   const [modDark,    setModDark]    = useState(false);
   const [modEvents,  setModEvents]  = useState(false);
+  const [modColors,  setModColors]  = useState(true); // colored tiles + swapping
   const [darkRadius, setDarkRadius] = useState(3);
   const [gridSize,   setGridSize]   = useState(10);
 
@@ -453,7 +466,7 @@ export default function ObryndelMiniGame({ onExit }) {
     stateRef.current = {
       curPlayer, positions, grid, inventory, atBase, dead, stunned,
       dropped, droppedPos, vanished, enemies, enemyActive, playerCount,
-      modBW, modVanish, modEnemy, modMaze, modDark, modEvents,
+      modBW, modVanish, modEnemy, modMaze, modDark, modEvents, modColors,
       darkRadius, gridSize, mazeWalls, objects, abilityCooldown,
       abilityStepsLeft, charChoices, extraMove, allGathered, kingdomGrid,
     };
@@ -515,11 +528,10 @@ export default function ObryndelMiniGame({ onExit }) {
       setMazeWalls(null);
     }
 
-    const g = makeGrid(gs, pc, modBW, modMaze);
+    const g = makeGrid(gs, pc, modBW, modMaze, modColors);
     // Force start area white
     const sc = getStartCells(gs);
     sc.forEach(c => { g[cellKey(c.x,c.y)] = "white"; });
-    setGrid(g);
 
     // Kingdom grid (always 10 wide)
     const kg = {};
@@ -531,6 +543,14 @@ export default function ObryndelMiniGame({ onExit }) {
     const ctr = getStartCenter(gs);
     const objs = placeObjects(gs, ctr.x, ctr.y, mWalls, pc);
     setObjects(objs);
+
+    // When colored tiles are active, object cells must be white (walkable by all)
+    // and must never be swappable
+    if (modColors) {
+      objs.forEach(o => { g[cellKey(o.x, o.y)] = "white"; });
+    }
+
+    setGrid(g);
     setVanished(new Set());
 
     const starts = getStartCells(gs).slice(0, pc);
@@ -797,11 +817,13 @@ export default function ObryndelMiniGame({ onExit }) {
       }
 
       const cellColor = s.grid[nk];
-      if (s.modBW) {
-        if (cellColor !== "white") { addLog(`${PLAYER_NAMES[cp]} cannot walk on black tiles!`); return; }
-      } else {
-        const myColor = PLAYER_COLORS[cp];
-        if (cellColor !== myColor && cellColor !== "white") { addLog(`${PLAYER_NAMES[cp]} can't step on ${cellColor}!`); return; }
+      if (s.modColors || s.modBW) {
+        if (s.modBW) {
+          if (cellColor !== "white") { addLog(`${PLAYER_NAMES[cp]} cannot walk on black tiles!`); return; }
+        } else if (s.modColors) {
+          const myColor = PLAYER_COLORS[cp];
+          if (cellColor !== myColor && cellColor !== "white") { addLog(`${PLAYER_NAMES[cp]} can't step on ${cellColor}!`); return; }
+        }
       }
 
       // Check if Gribberth can pass enemy (sprint)
@@ -943,9 +965,10 @@ export default function ObryndelMiniGame({ onExit }) {
   const handleCellClick = useCallback((x, y) => {
     const s = stateRef.current;
     if (phase!=="game"||eventCard) return;
+    if (!s.modColors) return; // swapping only available with colored tiles
     const key=cellKey(x,y);
     if (s.vanished.has(key)) return;
-    if (isStartCellFn(x,y,s.gridSize)||s.objects.some(o=>o.x===x&&o.y===y)) {
+    if (isStartCellFn(x,y,s.gridSize) || s.objects.some(o=>o.x===x&&o.y===y)) {
       addLog("Can't swap that tile."); return;
     }
     if (s.positions.some((p,i)=>!s.dead[i]&&p.x===x&&p.y===y)) {
@@ -1013,7 +1036,8 @@ export default function ObryndelMiniGame({ onExit }) {
           <div style={{borderTop:"1px solid rgba(213,169,62,.08)",paddingTop:16,marginBottom:18}}>
             <div style={{fontFamily:"'Cinzel',serif",fontSize:"0.65rem",letterSpacing:3,color:"rgba(180,155,90,.32)",textTransform:"uppercase",marginBottom:11}}>Modifiers</div>
             <div className="mods">
-              <ModToggle active={modMaze} onClick={()=>setModMaze(v=>!v)} icon="🏚️" label="Maze" desc="A labyrinth fills the board. Walls block movement and vision. Objects are placed 4–8 steps from the starting area." />
+              <ModToggle active={modColors} onClick={()=>setModColors(v=>!v)} icon="🎨" label="Colored Tiles" desc="The board is filled with colored tiles. Players may only walk on their own color or white tiles. Click tiles to swap colors and open new paths." />
+              <ModToggle active={modMaze} onClick={()=>setModMaze(v=>!v)} icon="🏚️" label="Maze" desc="A labyrinth fills the board. Walls block movement and vision. Objects are placed near the edges of the map." />
               <ModToggle active={modDark} onClick={()=>setModDark(v=>!v)} icon="🌑" label="Darkness" desc="Players can only see N steps ahead. Vision is blocked by maze walls. Enemy only visible when in your field of view." />
               <ModToggle active={modVanish} onClick={()=>setModVanish(v=>!v)} icon="💨" label="Vanishing Tiles" desc="Each relic collected causes tiles to crumble. Occupied tiles are always safe." />
               <ModToggle active={modEnemy} onClick={()=>setModEnemy(v=>!v)} icon="👁️" label="The Shadow" desc="An enemy spawns when the first relic is picked up. It hunts relic carriers. Allies can revive the fallen." />
@@ -1024,7 +1048,7 @@ export default function ObryndelMiniGame({ onExit }) {
 
           <button className="start-btn" disabled={!playerCount} onClick={beginCharSelect}>Choose Characters →</button>
           <div style={{marginTop:14,fontSize:"0.7rem",color:"rgba(180,155,90,.28)",lineHeight:1.8}}>
-            Collect your relic &amp; return to the centre altar.<br/>WASD to move · Click tiles to swap colors.
+            Collect your relic &amp; return to the centre altar.<br/>WASD to move{modColors ? " · Click tiles to swap colors" : ""}.
           </div>
         </div>
       </div>
@@ -1128,7 +1152,7 @@ export default function ObryndelMiniGame({ onExit }) {
           const wallW = !forKingdom && mazeWalls && mazeWalls.has(wallKey(x,y,-1,0));
 
           const isSwSel = swFirst&&swFirst.x===x&&swFirst.y===y;
-          const isSwAble = !forKingdom && !isStart && !isObj && !isGone
+          const isSwAble = modColors && !forKingdom && !isStart && !isObj && !isGone
             && !positions.some((p,i)=>!dead[i]&&p.x===x&&p.y===y)
             && !(enemyActive && enemies.some(e=>e.x===x&&e.y===y));
 
@@ -1293,10 +1317,10 @@ export default function ObryndelMiniGame({ onExit }) {
 
             {/* Legend */}
             <div className="legend">
-              {!modBW && PLAYER_COLORS.slice(0,playerCount).map(c=>(
+              {modColors && !modBW && PLAYER_COLORS.slice(0,playerCount).map(c=>(
                 <div className="leg-i" key={c}><div className="leg-d" style={{background:COLOR_HEX[c]}}/><span style={{textTransform:"capitalize"}}>{c}</span></div>
               ))}
-              {modBW && <>
+              {modColors && modBW && <>
                 <div className="leg-i"><div className="leg-d" style={{background:"#e8e2d0",border:"1px solid #888"}}/><span>Walkable</span></div>
                 <div className="leg-i"><div className="leg-d" style={{background:"#111"}}/><span>Blocked</span></div>
               </>}
@@ -1336,13 +1360,13 @@ export default function ObryndelMiniGame({ onExit }) {
 
               {!swFirst ? (
                 <>
-                  <div className="ph-lbl">WASD to move · Click tile to swap</div>
+                  <div className="ph-lbl">WASD to move{modColors ? " · Click tile to swap" : ""}</div>
                   <div style={{display:"flex",gap:9,alignItems:"flex-start",marginTop:5}}>
                     <div className="wasd-g" style={{marginTop:0,flexShrink:0}}>
                       <div/><div className="wk">W</div><div/>
                       <div className="wk">A</div><div className="wk">S</div><div className="wk">D</div>
                     </div>
-                    <div className="sw-hint">Click any open tile to start a color swap.</div>
+                    {modColors && <div className="sw-hint">Click any open tile to start a color swap.</div>}
                   </div>
                   {modEnemy&&inventory[cp]&&!dead[cp]&&(
                     <button className="drop-btn" onClick={handleDrop}>💧 Drop Relic — stop the Shadow</button>
@@ -1391,10 +1415,11 @@ export default function ObryndelMiniGame({ onExit }) {
             </div>
 
             {/* Active modifiers */}
-            {(modVanish||modEnemy||modBW||modMaze||modDark||modEvents) && (
+            {(modColors||modVanish||modEnemy||modBW||modMaze||modDark||modEvents) && (
               <div className="s-card">
                 <div className="s-hdr">Active Modifiers</div>
                 <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                  {modColors && <div style={{fontSize:"0.7rem",color:"rgba(213,160,50,.5)"}}>🎨 Colored Tiles + Swapping</div>}
                   {modMaze && <div style={{fontSize:"0.7rem",color:"rgba(200,160,80,.5)"}}>🏚️ Maze is active</div>}
                   {modDark && <div style={{fontSize:"0.7rem",color:"rgba(150,150,200,.5)"}}>🌑 Darkness — vision {darkRadius} steps</div>}
                   {modVanish && <div style={{fontSize:"0.7rem",color:"rgba(180,155,90,.48)"}}>💨 Vanishing Tiles ({vanished.size} gone)</div>}
