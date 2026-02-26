@@ -2323,4 +2323,3 @@ export default function ObryndelMiniGame({ onExit }) {
 
   return null;
 }
-
