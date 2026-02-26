@@ -341,11 +341,12 @@ function makeKingdomGrid(gridSize) {
 const fonts = `@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap');`;
 const css = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:#050304}
-.og{min-height:100vh;background:radial-gradient(ellipse 900px 500px at 50% 0%,rgba(140,80,20,.07),transparent),linear-gradient(180deg,#060404 0%,#0a0608 100%);font-family:'Crimson Pro',Georgia,serif;color:#EDE6CF;display:flex;flex-direction:column;align-items:center;padding:24px 16px 48px;user-select:none}
-h1.og-title{font-family:'Cinzel',serif;font-size:clamp(1.6rem,5vw,3rem);font-weight:900;color:#F6E6A8;letter-spacing:8px;text-transform:uppercase;text-shadow:0 0 40px rgba(220,180,70,.15);margin-bottom:4px}
-.og-sub{font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:4px;color:rgba(180,155,90,.45);text-transform:uppercase;margin-bottom:24px}
-.setup-card{background:linear-gradient(180deg,rgba(36,24,18,.9),rgba(6,4,3,.9));border:1px solid rgba(213,169,62,.12);border-radius:16px;padding:30px 38px;text-align:center;box-shadow:0 28px 100px rgba(0,0,0,.85);max-width:600px;width:100%}
+body{background:#050304;color:#EDE6CF}
+.og{position:relative;min-height:100vh;background:radial-gradient(1200px 520px at 50% -10%,rgba(218,166,69,.15),transparent),radial-gradient(900px 460px at 0% 100%,rgba(36,96,130,.13),transparent),linear-gradient(180deg,#050406 0%,#09060a 52%,#0d0607 100%);font-family:'Crimson Pro',Georgia,serif;color:#EDE6CF;display:flex;flex-direction:column;align-items:center;padding:24px 16px 48px;user-select:none;overflow:hidden}
+.og::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.01) 0,rgba(255,255,255,.01) 2px,transparent 2px,transparent 16px);pointer-events:none}
+h1.og-title{position:relative;font-family:'Cinzel',serif;font-size:clamp(1.6rem,5vw,3rem);font-weight:900;color:#F6E6A8;letter-spacing:8px;text-transform:uppercase;text-shadow:0 0 50px rgba(220,180,70,.22),0 10px 30px rgba(0,0,0,.6);margin-bottom:4px}
+.og-sub{position:relative;font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:4px;color:rgba(210,186,122,.55);text-transform:uppercase;margin-bottom:24px}
+.setup-card{position:relative;background:linear-gradient(180deg,rgba(38,24,18,.93),rgba(10,6,4,.95));border:1px solid rgba(213,169,62,.2);border-radius:18px;padding:30px 38px;text-align:center;box-shadow:0 32px 110px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.06);max-width:600px;width:100%}
 .setup-card h2{font-family:'Cinzel',serif;font-size:1.2rem;color:#D9B65A;margin-bottom:18px;letter-spacing:2px}
 .pc-opts{display:flex;gap:12px;justify-content:center;margin-bottom:24px}
 .pc-btn{width:68px;height:68px;border-radius:12px;border:1px solid rgba(213,169,62,.2);background:rgba(20,14,8,.7);color:#EFD88B;font-family:'Cinzel',serif;font-size:1.5rem;cursor:pointer;transition:all 140ms ease}
@@ -359,22 +360,22 @@ h1.og-title{font-family:'Cinzel',serif;font-size:clamp(1.6rem,5vw,3rem);font-wei
 .mod-row.on .mod-chk{background:rgba(90,58,20,.8);border-color:rgba(213,169,62,.7)}
 .mod-title{font-family:'Cinzel',serif;font-size:.8rem;color:#D9B65A;letter-spacing:.5px;margin-bottom:3px}
 .mod-desc{font-size:.7rem;color:rgba(180,155,90,.42);line-height:1.5}
-.start-btn{padding:12px 30px;font-family:'Cinzel',serif;font-size:1rem;letter-spacing:2px;background:linear-gradient(180deg,#5a3b1b,#2b1708);border:1px solid rgba(230,185,70,.22);border-radius:12px;color:#FFF8E6;cursor:pointer;transition:all 140ms ease;box-shadow:0 8px 30px rgba(0,0,0,.6)}
-.start-btn:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(0,0,0,.7)}
+.start-btn{padding:12px 30px;font-family:'Cinzel',serif;font-size:1rem;letter-spacing:2px;background:linear-gradient(180deg,#6a4420,#2b1708);border:1px solid rgba(230,185,70,.32);border-radius:12px;color:#FFF8E6;cursor:pointer;transition:all 140ms ease;box-shadow:0 12px 36px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.06)}
+.start-btn:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(0,0,0,.78),0 0 18px rgba(230,185,70,.14)}
 .start-btn:disabled{opacity:.3;cursor:not-allowed}
-.game-layout{display:flex;gap:18px;align-items:flex-start;width:100%;max-width:1200px;flex-wrap:wrap;justify-content:center}
-.grid-wrap{position:relative;flex-shrink:0}
+.game-layout{position:relative;display:grid;grid-template-columns:minmax(360px,1fr) minmax(250px,300px);gap:18px;align-items:flex-start;width:100%;max-width:1220px}
+.grid-wrap{position:relative;flex-shrink:0;padding:10px;border-radius:16px;background:linear-gradient(180deg,rgba(21,14,9,.82),rgba(7,4,3,.88));border:1px solid rgba(213,169,62,.18);box-shadow:0 22px 90px rgba(0,0,0,.82),inset 0 1px 0 rgba(255,255,255,.04)}
 .grid-container{display:flex;flex-direction:column;gap:0;align-items:center}
-.grid{display:grid;gap:0;background:rgba(0,0,0,.8);border:1px solid rgba(213,169,62,.12);padding:4px;box-shadow:0 20px 80px rgba(0,0,0,.8)}
+.grid{display:grid;gap:0;background:rgba(0,0,0,.8);border:1px solid rgba(213,169,62,.2);padding:4px;box-shadow:0 20px 80px rgba(0,0,0,.8)}
 .grid-wilderness{border-radius:10px 10px 0 0;border-bottom:none;padding-bottom:0}
 .grid-kingdom{border-radius:0 0 10px 10px;border-top:none;padding-top:0;background:rgba(30,18,8,.8)}
 .kingdom-grid-outer{background:rgba(30,18,8,.8) !important;border:none !important;box-shadow:none !important;border-radius:0 !important}
-.cell{position:relative;display:flex;align-items:center;justify-content:center;font-size:clamp(9px,1.5vw,15px);cursor:default;transition:transform 80ms ease,opacity 350ms ease;border:1px solid rgba(0,0,0,.3);overflow:hidden}
+.cell{position:relative;display:flex;align-items:center;justify-content:center;font-size:clamp(9px,1.5vw,15px);cursor:default;transition:transform 90ms ease,opacity 350ms ease,box-shadow 120ms ease;border:1px solid rgba(0,0,0,.3);overflow:hidden}
 .cell.gone{opacity:0;pointer-events:none}
 .cell.sw-able{cursor:pointer;outline:2px dashed rgba(255,255,255,.2);outline-offset:-3px}
 .cell.sw-able:hover{transform:scale(1.07);z-index:2}
 .cell.sw-sel{outline:2px solid rgba(255,220,80,.9);outline-offset:-2px;box-shadow:0 0 14px rgba(255,220,80,.4);transform:scale(1.09);z-index:3}
-.cell.start-cell{box-shadow:0 0 14px rgba(237,230,207,.4)}
+.cell.start-cell{box-shadow:inset 0 0 0 1px rgba(237,230,207,.35),0 0 16px rgba(237,230,207,.38)}
 .cell.kingdom-cell{border-color:rgba(213,169,62,.3) !important}
 .cell.dark-cell{background:#0a0806 !important;border-color:rgba(0,0,0,.8) !important}
 .cell.dark-edge{filter:brightness(0.45)}
@@ -382,9 +383,9 @@ h1.og-title{font-family:'Cinzel',serif;font-size:clamp(1.6rem,5vw,3rem);font-wei
 .cell-wall-right{border-right:2px solid rgba(85,85,85,.95) !important}
 .cell-wall-bottom{border-bottom:2px solid rgba(85,85,85,.95) !important}
 .cell-wall-left{border-left:2px solid rgba(85,85,85,.95) !important}
-.sidebar{display:flex;flex-direction:column;gap:9px;min-width:200px;max-width:262px;flex:1}
-.s-card{background:linear-gradient(180deg,rgba(36,24,18,.9),rgba(6,4,3,.9));border:1px solid rgba(213,169,62,.15);border-radius:13px;padding:15px 17px;box-shadow:0 12px 50px rgba(0,0,0,.7)}
-.s-hdr{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:3px;color:rgba(180,155,90,.4);text-transform:uppercase;margin-bottom:7px}
+.sidebar{display:flex;flex-direction:column;gap:10px;min-width:220px;max-width:300px;flex:1}
+.s-card{background:linear-gradient(180deg,rgba(34,23,18,.93),rgba(8,5,4,.93));border:1px solid rgba(213,169,62,.2);border-radius:13px;padding:15px 17px;box-shadow:0 12px 52px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,255,255,.04)}
+.s-hdr{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:3px;color:rgba(208,183,122,.55);text-transform:uppercase;margin-bottom:8px}
 .p-ind{display:flex;align-items:center;gap:9px;margin-bottom:11px;flex-wrap:wrap}
 .p-dot{width:13px;height:13px;border-radius:50%;flex-shrink:0}
 .p-nm{font-family:'Cinzel',serif;font-size:1rem;color:#EFD88B;letter-spacing:1px}
@@ -393,17 +394,17 @@ h1.og-title{font-family:'Cinzel',serif;font-size:clamp(1.6rem,5vw,3rem);font-wei
 .wk{width:29px;height:29px;background:rgba(30,20,10,.8);border:1px solid rgba(213,169,62,.2);border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:.7rem;color:rgba(240,215,140,.6)}
 .sw-hint{font-size:.72rem;color:rgba(180,155,90,.5);font-style:italic;line-height:1.5;margin-top:5px}
 .p-list{display:flex;flex-direction:column;gap:6px}
-.p-row{display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:9px;background:rgba(10,7,5,.5);border:1px solid rgba(255,255,255,.04);font-size:.8rem;transition:all 140ms ease}
-.p-row.cur{background:rgba(50,33,10,.7);border-color:rgba(213,169,62,.22)}
+.p-row{display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:10px;background:rgba(10,7,5,.56);border:1px solid rgba(255,255,255,.05);font-size:.8rem;transition:all 140ms ease}
+.p-row.cur{background:rgba(64,40,15,.74);border-color:rgba(213,169,62,.34);box-shadow:0 0 0 1px rgba(213,169,62,.12)}
 .p-row.done{opacity:.4}
 .p-row.ded{opacity:.32;border-color:rgba(200,50,50,.18);background:rgba(40,5,5,.5)}
-.p-ri{font-size:.95rem}
+.p-ri{font-size:.95rem;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
 .p-rn{font-family:'Cinzel',serif;font-size:.76rem}
 .p-rs{font-size:.66rem;color:rgba(180,155,90,.42);margin-top:1px}
-.legend{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:7px}
-.leg-i{display:flex;align-items:center;gap:5px;font-size:.66rem;color:rgba(180,155,90,.55)}
+.legend{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;padding:8px 10px;border-radius:10px;background:rgba(8,5,4,.55);border:1px solid rgba(213,169,62,.12)}
+.leg-i{display:flex;align-items:center;gap:5px;font-size:.66rem;color:rgba(195,168,106,.7)}
 .leg-d{width:9px;height:9px;border-radius:2px}
-.log-box{background:rgba(6,4,3,.7);border:1px solid rgba(213,169,62,.08);border-radius:9px;padding:9px 11px;max-height:110px;overflow-y:auto;font-size:.7rem;color:rgba(180,155,90,.6);line-height:1.6;font-style:italic}
+.log-box{background:rgba(6,4,3,.78);border:1px solid rgba(213,169,62,.12);border-radius:9px;padding:9px 11px;max-height:130px;overflow-y:auto;font-size:.72rem;color:rgba(196,168,104,.74);line-height:1.6;font-style:italic}
 .drop-btn{width:100%;padding:8px;margin-top:7px;border-radius:8px;border:1px solid rgba(220,60,60,.28);background:rgba(80,10,10,.6);color:rgba(255,150,150,.8);font-family:'Cinzel',serif;font-size:.72rem;cursor:pointer;transition:all 140ms ease;letter-spacing:.4px}
 .drop-btn:hover{background:rgba(120,20,20,.8)}
 .ability-btn{width:100%;padding:8px;margin-top:5px;border-radius:8px;border:1px solid rgba(100,200,255,.28);background:rgba(10,30,60,.6);color:rgba(150,210,255,.9);font-family:'Cinzel',serif;font-size:.72rem;cursor:pointer;transition:all 140ms ease;letter-spacing:.4px}
@@ -445,6 +446,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 .maze-wall-s{border-bottom:2px solid rgba(85,85,85,.95) !important}
 .maze-wall-w{border-left:2px solid rgba(85,85,85,.95) !important}
 .stun-badge{background:rgba(255,220,0,.15);border:1px solid rgba(255,220,0,.4);border-radius:5px;padding:1px 6px;font-size:.6rem;color:rgba(255,220,0,.8);margin-left:4px}
+.turn-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(20,16,12,.75);border:1px solid rgba(213,169,62,.45);box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 10px rgba(213,169,62,.2);font-size:1rem}
+.board-piece{width:82%;height:82%;max-width:28px;max-height:28px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.22),rgba(0,0,0,.06));border:1px solid rgba(237,230,207,.28);box-shadow:0 0 0 1px rgba(0,0,0,.45),0 3px 7px rgba(0,0,0,.65);border-radius:50%;font-size:1em;line-height:1}
+.board-piece.current{box-shadow:0 0 0 1px rgba(213,169,62,.45),0 0 12px rgba(213,169,62,.45),0 3px 7px rgba(0,0,0,.7)}
+.board-piece.dead{opacity:.35;filter:grayscale(1)}
+.board-piece.mini{width:14px;height:14px;font-size:.56em}
+@media (max-width: 1020px){
+  .game-layout{grid-template-columns:1fr;max-width:760px}
+  .sidebar{max-width:none}
+}
 `;
 
 function ModToggle({ active, icon, label, desc, onClick }) {
@@ -1409,9 +1419,18 @@ export default function ObryndelMiniGame({ onExit }) {
   if (phase==="game"||phase==="victory") {
     const cp = curPlayer;
     const cpColor = PLAYER_COLORS[cp];
-    const cpChar = CHARACTERS.find(c=>c.id===charChoices[cp]);
+    const playerChars = Array.from({ length: playerCount }, (_, i) =>
+      CHARACTERS.find(c => c.id === charChoices[i]) || null
+    );
+    const cpChar = playerChars[cp];
     const gs = gridSize;
     const cellPx = Math.max(20, Math.min(44, Math.floor(560/gs)));
+
+    const getPlayerToken = (playerIndex) => {
+      const char = playerChars[playerIndex];
+      if (char) return char.emoji;
+      return PLAYER_NAMES[playerIndex].charAt(0);
+    };
 
     const objMapXY = {};
     objects.forEach(o => { objMapXY[cellKey(o.x,o.y)] = o; });
@@ -1557,10 +1576,10 @@ export default function ObryndelMiniGame({ onExit }) {
                     :{inset:0,display:"flex",alignItems:"center",justifyContent:"center"}),
                   display:"flex",alignItems:"center",justifyContent:"center",
                   zIndex:10,
-                  opacity:dead[pi]?0.25:1,
-                  filter:dead[pi]?"grayscale(1)":"drop-shadow(0 1px 4px rgba(0,0,0,.9))",
                 }}>
-                  {cpChar&&pi===cp?cpChar.emoji:PLAYER_EMOJIS[pi]}
+                  <div className={`board-piece${pi===cp?" current":""}${dead[pi]?" dead":""}${playersHere.length>1?" mini":""}`}>
+                    {getPlayerToken(pi)}
+                  </div>
                 </div>
               ))}
             </div>
@@ -1623,9 +1642,10 @@ export default function ObryndelMiniGame({ onExit }) {
                     :{inset:0,display:"flex",alignItems:"center",justifyContent:"center"}),
                   display:"flex",alignItems:"center",justifyContent:"center",
                   zIndex:10,
-                  filter:"drop-shadow(0 1px 4px rgba(0,0,0,.9))",
                 }}>
-                  {cpChar&&pi===cp?cpChar.emoji:PLAYER_EMOJIS[pi]}
+                  <div className={`board-piece${pi===cp?" current":""}${dead[pi]?" dead":""}${playersHere.length>1?" mini":""}`}>
+                    {getPlayerToken(pi)}
+                  </div>
                 </div>
               ))}
             </div>
@@ -1678,7 +1698,7 @@ export default function ObryndelMiniGame({ onExit }) {
 
         {allGathered && !modChallengeRooms && (
           <div className="all-gathered-banner" style={{width:"100%",maxWidth:700,marginBottom:8}}>
-            ? You've gathered all the artifacts to summon the power of the Void!<br/>
+            You've gathered all the artifacts to summon the power of the Void!<br/>
             The magic barrier has been shattered! Enter the Kingdom of Obryndel to claim victory!
           </div>
         )}
@@ -1731,6 +1751,7 @@ export default function ObryndelMiniGame({ onExit }) {
                 </div>
               )}
               <div className="p-ind">
+                <div className="turn-avatar">{getPlayerToken(cp)}</div>
                 <div className="p-dot" style={{background:COLOR_HEX[cpColor],boxShadow:`0 0 8px ${COLOR_HEX[cpColor]}`}}/>
                 <div className="p-nm">{cpChar?cpChar.name:PLAYER_NAMES[cp]}</div>
                 {inventory[cp]&&<span style={{fontSize:"0.82rem"}} title="Carrying relic">{"\u26A1"}</span>}
@@ -1784,7 +1805,7 @@ export default function ObryndelMiniGame({ onExit }) {
                   const char = CHARACTERS.find(c=>c.id===charChoices[i]);
                   return (
                     <div key={i} className={`p-row${i===cp?" cur":""}${isDone?" done":""}${isDead?" ded":""}`}>
-                      <div className="p-ri">{isDead?"💀":char?char.emoji:PLAYER_EMOJIS[i]}</div>
+                      <div className="p-ri">{isDead?"💀":char?char.emoji:PLAYER_NAMES[i].charAt(0)}</div>
                       <div style={{flex:1}}>
                         <div className="p-rn" style={{color:COLOR_HEX[PLAYER_COLORS[i]]}}>{char?char.name:PLAYER_NAMES[i]}</div>
                         <div className="p-rs">
