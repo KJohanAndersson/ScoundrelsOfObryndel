@@ -502,34 +502,82 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 .board-piece.current{filter:drop-shadow(0 0 10px var(--piece-glow-strong))}
 .board-piece.dead{opacity:.35;filter:grayscale(1)}
 .board-piece.mini{width:15px;height:15px}
-.sprite-token{position:relative;width:100%;height:100%;transform-origin:50% 68%;filter:drop-shadow(0 1px 1px rgba(0,0,0,.55))}
-.sprite-token.moving .sprite-legs{animation:spriteWalk 180ms steps(2,end) infinite}
-.sprite-token.moving .sprite-head,.sprite-token.moving .sprite-torso{animation:spriteHeadBob 180ms ease-in-out infinite}
+.sprite-token{position:relative;width:100%;height:100%;transform-origin:50% 76%;image-rendering:pixelated;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
 .sprite-token.mini{transform:scale(.8)}
-.sprite-shadow{position:absolute;left:3px;right:3px;bottom:1px;height:4px;border-radius:50%;background:rgba(0,0,0,.33)}
-.sprite-legs{position:absolute;left:7px;bottom:4px;width:10px;height:6px;border-radius:3px;background:#2d2016}
-.sprite-torso{position:absolute;left:5px;bottom:7px;width:14px;height:9px;border-radius:4px;background:#6f8f5e}
-.sprite-head{position:absolute;left:6px;bottom:14px;width:12px;height:9px;border-radius:4px;background:#f2d6a9}
-.sprite-face{position:absolute;left:9px;bottom:16px;width:6px;height:3px;border-radius:2px;background:rgba(30,20,10,.75)}
-.sprite-gear{position:absolute;left:4px;bottom:10px;width:16px;height:2px;border-radius:2px;background:rgba(255,255,255,.3)}
-.sprite-token.gribberth .sprite-head{background:#9fdd79}
-.sprite-token.gribberth .sprite-torso{background:#5aa645}
-.sprite-token.gribberth .sprite-gear{background:#e8f6cc}
-.sprite-token.craglasha .sprite-head{background:#c5804c}
-.sprite-token.craglasha .sprite-torso{background:#8e4f2c}
-.sprite-token.craglasha .sprite-gear{background:#f1bf84}
-.sprite-token.craglasha .sprite-face{height:4px}
-.sprite-token.brontarox .sprite-head{background:#a3adc9}
-.sprite-token.brontarox .sprite-torso{background:#6f7698}
-.sprite-token.brontarox .sprite-face{left:10px;width:4px;height:4px;border-radius:50%}
-.sprite-token.brontarox .sprite-gear{background:#d5daf4}
-.sprite-token.rithea .sprite-head{background:#dcb8df}
-.sprite-token.rithea .sprite-torso{background:#9b4ea7}
-.sprite-token.rithea .sprite-gear{background:#f0d1ff;transform:rotate(-18deg)}
+.sprite-pixel{position:absolute;display:block;border-radius:1px;image-rendering:pixelated}
+.sprite-shadow{position:absolute;left:4px;right:4px;bottom:1px;height:4px;border-radius:50%;background:rgba(0,0,0,.36)}
+.sprite-leg{width:4px;height:7px;bottom:2px;background:#2c2018;transform-origin:50% 8%}
+.sprite-leg-left{left:7px}
+.sprite-leg-right{left:13px}
+.sprite-body{left:5px;top:10px;width:14px;height:8px;background:#6f8f5e;box-shadow:inset 0 -2px 0 rgba(0,0,0,.22)}
+.sprite-arm{width:4px;height:7px;top:10px;background:#4b3a2b;transform-origin:50% 12%}
+.sprite-arm-left{left:3px}
+.sprite-arm-right{left:17px}
+.sprite-head{left:7px;top:3px;width:10px;height:8px;background:#f0d2a3}
+.sprite-face{left:9px;top:5px;width:6px;height:4px;background:rgba(22,16,11,.48)}
+.sprite-eye{width:1px;height:1px;top:6px;background:#f4f7ef}
+.sprite-eye-left{left:10px}
+.sprite-eye-right{left:13px}
+.sprite-feature-a,.sprite-feature-b{display:none}
+.sprite-feature-a{left:4px;top:4px;width:3px;height:4px}
+.sprite-feature-b{left:17px;top:4px;width:3px;height:4px}
+.sprite-gear{left:16px;top:9px;width:3px;height:8px;background:rgba(235,235,235,.6);transform-origin:35% 20%}
+.sprite-gear::after{content:'';position:absolute;left:-1px;top:-2px;width:5px;height:3px;background:inherit;opacity:.92}
+.sprite-token.moving .sprite-leg-left{animation:spriteLegLeft 190ms steps(2,end) infinite}
+.sprite-token.moving .sprite-leg-right{animation:spriteLegRight 190ms steps(2,end) infinite}
+.sprite-token.moving .sprite-arm-left{animation:spriteArmLeft 190ms steps(2,end) infinite}
+.sprite-token.moving .sprite-arm-right{animation:spriteArmRight 190ms steps(2,end) infinite}
+.sprite-token.moving .sprite-head,.sprite-token.moving .sprite-body{animation:spriteCoreBob 190ms steps(2,end) infinite}
 .sprite-token.facing-left{transform:scaleX(-1)}
 .sprite-token.mini.facing-left{transform:scale(-.8,.8)}
-.sprite-token.facing-up .sprite-shadow{transform:scale(.9,.8)}
+.sprite-token.facing-up .sprite-shadow{transform:scale(.9,.75)}
+.sprite-token.facing-up .sprite-face,.sprite-token.facing-up .sprite-eye{opacity:0}
+.sprite-token.facing-up .sprite-body{box-shadow:inset 0 2px 0 rgba(255,255,255,.14),inset 0 -2px 0 rgba(0,0,0,.2)}
 .sprite-token.facing-down .sprite-shadow{transform:scale(1,.95)}
+.sprite-token.action-jump{animation:spriteActionJump 430ms cubic-bezier(.25,.9,.35,1)}
+.sprite-token.action-jump .sprite-shadow{animation:spriteJumpShadow 430ms ease-out}
+.sprite-token.action-punch .sprite-arm-right{animation:spriteActionPunch 330ms steps(3,end)}
+.sprite-token.action-punch .sprite-body{animation:spriteActionLunge 330ms ease-out}
+.sprite-token.action-throw .sprite-arm-right{animation:spriteActionThrow 460ms ease-out}
+.sprite-token.action-throw .sprite-gear{animation:spriteActionThrowGear 460ms ease-out}
+.sprite-token.action-cast .sprite-arm-right{animation:spriteActionCastArm 520ms ease-out}
+.sprite-token.action-cast .sprite-gear{animation:spriteActionCastWand 520ms ease-out}
+.sprite-token.gribberth .sprite-head{background:#8fd666}
+.sprite-token.gribberth .sprite-body{background:#5aa645}
+.sprite-token.gribberth .sprite-arm{background:#6cb353}
+.sprite-token.gribberth .sprite-feature-a,.sprite-token.gribberth .sprite-feature-b{display:block;background:#8fd666}
+.sprite-token.gribberth .sprite-feature-a{left:5px;top:5px}
+.sprite-token.gribberth .sprite-feature-b{left:16px;top:5px}
+.sprite-token.gribberth .sprite-gear{left:15px;top:9px;width:2px;height:9px;background:#e7f4d2}
+.sprite-token.gribberth .sprite-gear::after{left:-2px;top:-1px;width:6px;height:2px}
+.sprite-token.craglasha .sprite-head{background:#b97944;left:6px;top:3px;width:11px;height:8px}
+.sprite-token.craglasha .sprite-body{background:#8d4e2c;left:4px;top:9px;width:16px;height:9px}
+.sprite-token.craglasha .sprite-arm{background:#a4633a;width:5px}
+.sprite-token.craglasha .sprite-arm-right{left:18px}
+.sprite-token.craglasha .sprite-face{background:rgba(30,18,10,.6);height:5px}
+.sprite-token.craglasha .sprite-feature-a,.sprite-token.craglasha .sprite-feature-b{display:block;background:#efd7b4;width:2px;height:2px;top:9px}
+.sprite-token.craglasha .sprite-feature-a{left:9px}
+.sprite-token.craglasha .sprite-feature-b{left:14px}
+.sprite-token.craglasha .sprite-gear{left:17px;top:10px;width:3px;height:7px;background:#d5a06a}
+.sprite-token.craglasha .sprite-gear::after{display:none}
+.sprite-token.brontarox .sprite-head{background:#a0a9c5;left:6px;top:2px;width:12px;height:9px}
+.sprite-token.brontarox .sprite-body{background:#6b7393;left:4px;top:9px;width:16px;height:9px}
+.sprite-token.brontarox .sprite-arm{background:#7f89aa;width:5px}
+.sprite-token.brontarox .sprite-eye-left{display:none}
+.sprite-token.brontarox .sprite-eye-right{left:11px;top:6px;width:2px;height:2px;background:#f6faff}
+.sprite-token.brontarox .sprite-feature-a,.sprite-token.brontarox .sprite-feature-b{display:block;background:#2f3754;height:2px;top:4px}
+.sprite-token.brontarox .sprite-feature-a{left:7px;width:4px}
+.sprite-token.brontarox .sprite-feature-b{left:13px;width:4px}
+.sprite-token.brontarox .sprite-gear{left:16px;top:8px;width:4px;height:10px;background:#d7dcf2}
+.sprite-token.brontarox .sprite-gear::after{left:-2px;top:-3px;width:8px;height:4px;background:#8e96b4}
+.sprite-token.rithea .sprite-head{background:#dcb8df;left:7px;top:4px}
+.sprite-token.rithea .sprite-body{background:#8f49a2;left:5px;top:10px;width:14px;height:9px}
+.sprite-token.rithea .sprite-arm{background:#a064b0}
+.sprite-token.rithea .sprite-feature-a,.sprite-token.rithea .sprite-feature-b{display:block;background:#6c2f7a}
+.sprite-token.rithea .sprite-feature-a{left:6px;top:0px;width:12px;height:3px}
+.sprite-token.rithea .sprite-feature-b{left:9px;top:-3px;width:6px;height:4px}
+.sprite-token.rithea .sprite-gear{left:18px;top:7px;width:2px;height:11px;background:#f0d3ff}
+.sprite-token.rithea .sprite-gear::after{left:-2px;top:-2px;width:6px;height:3px;background:#b779c7}
 .wall-break-mark{position:absolute;inset:6px;border-radius:4px;border:1px solid rgba(0,0,0,.55);background:repeating-linear-gradient(135deg,rgba(210,170,130,.45) 0 2px,rgba(110,70,45,.55) 2px 5px)}
 .button-pad-mark{position:absolute;left:8px;top:8px;width:calc(100% - 16px);height:calc(100% - 16px);border-radius:4px;border:1px solid rgba(40,50,64,.9);background:linear-gradient(180deg,rgba(160,185,212,.92),rgba(92,122,150,.92))}
 .ability-fx-layer{z-index:45}
