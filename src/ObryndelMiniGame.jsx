@@ -400,11 +400,81 @@ h1.og-title{font-family:'Cinzel',serif;font-size:clamp(1.6rem,5vw,3rem);font-wei
 .start-btn{padding:12px 30px;font-family:'Cinzel',serif;font-size:1rem;letter-spacing:2px;background:linear-gradient(180deg,#6a4420,#2b1708);border:1px solid rgba(230,185,70,.32);border-radius:12px;color:#FFF8E6;cursor:pointer;transition:all 140ms ease;box-shadow:0 12px 36px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.06)}
 .start-btn:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(0,0,0,.78),0 0 18px rgba(230,185,70,.14)}
 .start-btn:disabled{opacity:.3;cursor:not-allowed}
+<<<<<<< HEAD
+.game-layout{position:relative;display:grid;grid-template-columns:minmax(360px,1fr) minmax(250px,300px);gap:18px;align-items:flex-start;width:100%;max-width:1220px}
+.grid-wrap{position:relative;flex-shrink:0;padding:10px;border-radius:16px;background:linear-gradient(180deg,rgba(21,14,9,.82),rgba(7,4,3,.88));border:1px solid rgba(213,169,62,.18);box-shadow:0 22px 90px rgba(0,0,0,.82),inset 0 1px 0 rgba(255,255,255,.04)}
+.grid-wrap::before{content:'';position:absolute;inset:0;border-radius:16px;pointer-events:none;background:linear-gradient(180deg,rgba(255,220,170,.06),transparent 24%,transparent 70%,rgba(0,0,0,.3))}
+.grid-wrap::after{content:'';position:absolute;inset:0;border-radius:16px;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),inset 0 0 65px rgba(0,0,0,.45)}
+.grid-container{display:flex;flex-direction:column;gap:0;align-items:center}
+.iso-board{position:relative;transform:none;transform-style:flat}
+.iso-board.wilderness-board{filter:drop-shadow(0 14px 18px rgba(0,0,0,.55))}
+.iso-board.kingdom-board{filter:drop-shadow(0 12px 15px rgba(0,0,0,.5))}
+.grid{display:grid;gap:0;background:linear-gradient(180deg,rgba(12,9,7,.92),rgba(5,4,3,.94));border:1px solid rgba(213,169,62,.24);padding:4px;box-shadow:0 14px 46px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,255,255,.04)}
+.grid-wilderness{border-radius:10px 10px 0 0;border-bottom:none;padding-bottom:0;background:
+  radial-gradient(circle at 15% 20%,rgba(182,220,120,.16),transparent 45%),
+  radial-gradient(circle at 82% 78%,rgba(60,120,72,.14),transparent 48%),
+  repeating-linear-gradient(0deg,rgba(255,255,255,.03) 0 1px,transparent 1px 8px),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.02) 0 1px,transparent 1px 8px),
+  linear-gradient(180deg,#2f4428,#243620)}
+.grid-kingdom{border-radius:0 0 10px 10px;border-top:none;padding-top:0;background:
+  radial-gradient(circle at 30% 20%,rgba(190,155,105,.16),transparent 42%),
+  repeating-linear-gradient(0deg,rgba(255,255,255,.03) 0 1px,transparent 1px 8px),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 1px,transparent 1px 8px),
+  linear-gradient(180deg,#4b3b2a,#33271b)}
+.kingdom-grid-outer{background:transparent !important;border:none !important;box-shadow:none !important;border-radius:0 !important}
+.actor-layer{position:absolute;top:4px;left:4px;pointer-events:none;z-index:40}
+.actor-node{position:absolute;transform:translate(-50%,-58%);transition:left 210ms cubic-bezier(.24,.86,.28,1),top 210ms cubic-bezier(.24,.86,.28,1),transform 220ms ease;will-change:left,top,transform}
+.actor-node.current{transform:translate(-50%,-62%)}
+.actor-node.mini{transform:translate(-50%,-52%)}
+.actor-node.dead{transform:translate(-50%,-46%)}
+.challenge-object-layer{z-index:30}
+.challenge-obj{transform:translate(-50%,-54%);display:flex;flex-direction:column;align-items:center;gap:2px}
+.challenge-obj-token{width:20px;height:20px;display:flex;align-items:center;justify-content:center;background:rgba(18,22,26,.92);border:1px solid rgba(213,169,62,.35);box-shadow:0 1px 0 rgba(255,255,255,.12),0 0 0 1px rgba(0,0,0,.45),0 6px 12px rgba(0,0,0,.45);transition:transform 220ms ease, box-shadow 220ms ease, background 220ms ease}
+.challenge-obj-token.button{border-radius:5px}
+.challenge-obj-token.ball{border-radius:50%}
+.challenge-obj-core{width:65%;height:65%;display:block;border-radius:inherit}
+.challenge-obj-token.button .challenge-obj-core{border-radius:4px;background:linear-gradient(180deg,#8d9aa6,#5f6a74);border:1px solid rgba(20,22,24,.8)}
+.challenge-obj-token.ball .challenge-obj-core{border-radius:50%;background:radial-gradient(circle at 32% 30%,#ffffff,#b7d8ff 58%,#5f8eb3 100%);border:1px solid rgba(40,70,96,.9)}
+.challenge-obj-label{font-size:.5rem;line-height:1;padding:1px 3px;border-radius:3px;background:rgba(12,14,16,.8);border:1px solid rgba(255,255,255,.12);color:rgba(235,235,225,.78);letter-spacing:.3px;text-transform:uppercase}
+.challenge-obj-token.active{background:rgba(20,48,24,.9);border-color:rgba(110,255,150,.68);box-shadow:0 1px 0 rgba(255,255,255,.12),0 0 0 1px rgba(0,0,0,.45),0 0 16px rgba(90,255,130,.48)}
+.challenge-obj-token.flash{animation:buttonFlash 420ms ease-out}
+.cell{position:relative;display:flex;align-items:center;justify-content:center;font-size:clamp(9px,1.5vw,15px);cursor:default;transition:transform 90ms ease,opacity 350ms ease,box-shadow 120ms ease;border:1px solid rgba(18,25,18,.45);overflow:hidden;image-rendering:pixelated}
+.cell::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.24;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 1px,transparent 1px 8px),repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 1px,transparent 1px 8px)}
+.cell::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.32;background:linear-gradient(180deg,rgba(255,255,255,.15),transparent 42%,rgba(0,0,0,.22) 100%)}
+.cell.gone{opacity:0;pointer-events:none}
+.cell.sw-able{cursor:pointer;outline:2px dashed rgba(255,255,255,.2);outline-offset:-3px}
+.cell.sw-able:hover{transform:scale(1.07);z-index:2}
+.cell.sw-sel{outline:2px solid rgba(255,220,80,.9);outline-offset:-2px;box-shadow:0 0 14px rgba(255,220,80,.4);transform:scale(1.09);z-index:3}
+.cell.start-cell{box-shadow:inset 0 0 0 1px rgba(237,230,207,.35),0 0 16px rgba(237,230,207,.38)}
+.cell.kingdom-cell{border-color:rgba(213,169,62,.3) !important}
+.cell.dark-cell{background:#0a0806 !important;border-color:rgba(0,0,0,.8) !important}
+.cell.dark-edge{filter:brightness(0.45)}
+.cell.dark-cell::before,.cell.dark-cell::after,.cell.gone::before,.cell.gone::after{display:none}
+.tile-red::after{opacity:.44;background:linear-gradient(180deg,rgba(255,185,165,.2),transparent 48%),repeating-linear-gradient(90deg,rgba(120,20,20,.09) 0 2px,transparent 2px 8px)}
+.tile-blue::after{opacity:.44;background:linear-gradient(180deg,rgba(190,220,255,.2),transparent 48%),repeating-linear-gradient(90deg,rgba(20,40,120,.09) 0 2px,transparent 2px 8px)}
+.tile-yellow::after{opacity:.44;background:linear-gradient(180deg,rgba(255,238,185,.2),transparent 48%),repeating-linear-gradient(90deg,rgba(120,96,20,.09) 0 2px,transparent 2px 8px)}
+.tile-green::after{opacity:.44;background:linear-gradient(180deg,rgba(200,255,205,.2),transparent 48%),repeating-linear-gradient(90deg,rgba(16,84,38,.09) 0 2px,transparent 2px 8px)}
+.tile-white::after{opacity:.3;background:linear-gradient(180deg,rgba(245,235,215,.24),transparent 52%),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 2px,transparent 2px 8px)}
+.tile-black::after{opacity:.2;background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 42%),repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 2px,transparent 2px 8px)}
+.tile-kingdom::after{opacity:.35;background:linear-gradient(165deg,rgba(235,195,135,.16),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.04) 0 2px,transparent 2px 8px)}
+.kingdom-locked::after{opacity:.2;background:repeating-linear-gradient(45deg,rgba(210,120,255,.08) 0 2px,transparent 2px 8px)}
+.tile-hazard-spike::after{opacity:.55;background:linear-gradient(180deg,rgba(240,160,130,.32),transparent 48%),repeating-linear-gradient(45deg,rgba(255,215,190,.12) 0 2px,transparent 2px 8px)}
+.tile-hazard-gap::after{opacity:.16;background:radial-gradient(circle at 50% 55%,rgba(0,0,0,.85),rgba(8,8,8,.95))}
+.tile-start-sigil::before{opacity:.35;background-image:radial-gradient(circle at 50% 50%,rgba(255,255,255,.26) 0 15%,transparent 35%),repeating-conic-gradient(from 0deg,rgba(255,255,255,.08) 0deg 10deg,transparent 10deg 20deg)}
+.cell.ab-target{outline:2px solid rgba(255,80,80,.95);outline-offset:-2px;box-shadow:inset 0 0 0 2px rgba(255,70,70,.35),0 0 10px rgba(255,70,70,.35);animation:targetPulse .9s ease-in-out infinite}
+.cell-wall-top{border-top:2px solid rgba(85,85,85,.95) !important}
+.cell-wall-right{border-right:2px solid rgba(85,85,85,.95) !important}
+.cell-wall-bottom{border-bottom:2px solid rgba(85,85,85,.95) !important}
+.cell-wall-left{border-left:2px solid rgba(85,85,85,.95) !important}
+.sidebar{display:flex;flex-direction:column;gap:10px;min-width:220px;max-width:300px;flex:1}
+.s-card{background:linear-gradient(180deg,rgba(34,23,18,.93),rgba(8,5,4,.93));border:1px solid rgba(213,169,62,.2);border-radius:13px;padding:15px 17px;box-shadow:0 12px 52px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,255,255,.04)}
+=======
 .game-layout{display:grid;grid-template-columns:1fr minmax(240px,280px);gap:18px;align-items:flex-start;width:100%;max-width:1240px}
 .canvas-wrap{position:relative;border-radius:18px;background:linear-gradient(180deg,rgba(6,4,3,.9),rgba(3,2,2,.95));border:1px solid rgba(213,169,62,.18);box-shadow:0 22px 90px rgba(0,0,0,.85);overflow:hidden}
 .canvas-wrap canvas{display:block}
 .sidebar{display:flex;flex-direction:column;gap:10px;min-width:220px;max-width:280px;flex:1}
 .s-card{background:linear-gradient(180deg,rgba(34,23,18,.95),rgba(8,5,4,.95));border:1px solid rgba(213,169,62,.2);border-radius:13px;padding:15px 17px;box-shadow:0 12px 52px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,255,255,.04)}
+>>>>>>> ff5c05840ee988f1e169b819458740d742d90e00
 .s-hdr{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:3px;color:rgba(208,183,122,.55);text-transform:uppercase;margin-bottom:8px}
 .p-ind{display:flex;align-items:center;gap:9px;margin-bottom:11px;flex-wrap:wrap}
 .p-dot{width:13px;height:13px;border-radius:50%;flex-shrink:0}
@@ -444,6 +514,67 @@ input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;backgroun
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#D9B65A;cursor:pointer}
 .banner{background:linear-gradient(180deg,rgba(80,30,120,.9),rgba(30,10,50,.9));border:1px solid rgba(180,80,220,.4);border-radius:12px;padding:10px 16px;text-align:center;font-family:'Cinzel',serif;font-size:.78rem;color:#e080ff;letter-spacing:1px;margin-bottom:8px;animation:popIn .5s ease}
 .stun-badge{background:rgba(255,220,0,.15);border:1px solid rgba(255,220,0,.4);border-radius:5px;padding:1px 6px;font-size:.6rem;color:rgba(255,220,0,.8);margin-left:4px}
+<<<<<<< HEAD
+.turn-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(20,16,12,.75);border:1px solid rgba(213,169,62,.45);box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 10px rgba(213,169,62,.2);font-size:1rem}
+.board-piece{--piece-glow:rgba(213,169,62,.3);--piece-glow-strong:rgba(213,169,62,.55);--piece-stroke:rgba(213,169,62,.4);width:24px;height:24px;display:flex;align-items:center;justify-content:center;position:relative;animation:pieceEnter .22s cubic-bezier(.2,.9,.2,1)}
+.board-piece.current{filter:drop-shadow(0 0 10px var(--piece-glow-strong))}
+.board-piece.dead{opacity:.35;filter:grayscale(1)}
+.board-piece.mini{width:15px;height:15px}
+.sprite-token{position:relative;width:100%;height:100%;transform-origin:50% 68%;filter:drop-shadow(0 1px 1px rgba(0,0,0,.55))}
+.sprite-token.moving .sprite-legs{animation:spriteWalk 180ms steps(2,end) infinite}
+.sprite-token.moving .sprite-head,.sprite-token.moving .sprite-torso{animation:spriteHeadBob 180ms ease-in-out infinite}
+.sprite-token.mini{transform:scale(.8)}
+.sprite-shadow{position:absolute;left:3px;right:3px;bottom:1px;height:4px;border-radius:50%;background:rgba(0,0,0,.33)}
+.sprite-legs{position:absolute;left:7px;bottom:4px;width:10px;height:6px;border-radius:3px;background:#2d2016}
+.sprite-torso{position:absolute;left:5px;bottom:7px;width:14px;height:9px;border-radius:4px;background:#6f8f5e}
+.sprite-head{position:absolute;left:6px;bottom:14px;width:12px;height:9px;border-radius:4px;background:#f2d6a9}
+.sprite-face{position:absolute;left:9px;bottom:16px;width:6px;height:3px;border-radius:2px;background:rgba(30,20,10,.75)}
+.sprite-gear{position:absolute;left:4px;bottom:10px;width:16px;height:2px;border-radius:2px;background:rgba(255,255,255,.3)}
+.sprite-token.gribberth .sprite-head{background:#9fdd79}
+.sprite-token.gribberth .sprite-torso{background:#5aa645}
+.sprite-token.gribberth .sprite-gear{background:#e8f6cc}
+.sprite-token.craglasha .sprite-head{background:#c5804c}
+.sprite-token.craglasha .sprite-torso{background:#8e4f2c}
+.sprite-token.craglasha .sprite-gear{background:#f1bf84}
+.sprite-token.craglasha .sprite-face{height:4px}
+.sprite-token.brontarox .sprite-head{background:#a3adc9}
+.sprite-token.brontarox .sprite-torso{background:#6f7698}
+.sprite-token.brontarox .sprite-face{left:10px;width:4px;height:4px;border-radius:50%}
+.sprite-token.brontarox .sprite-gear{background:#d5daf4}
+.sprite-token.rithea .sprite-head{background:#dcb8df}
+.sprite-token.rithea .sprite-torso{background:#9b4ea7}
+.sprite-token.rithea .sprite-gear{background:#f0d1ff;transform:rotate(-18deg)}
+.sprite-token.facing-left{transform:scaleX(-1)}
+.sprite-token.mini.facing-left{transform:scale(-.8,.8)}
+.sprite-token.facing-up .sprite-shadow{transform:scale(.9,.8)}
+.sprite-token.facing-down .sprite-shadow{transform:scale(1,.95)}
+.wall-break-mark{position:absolute;inset:6px;border-radius:4px;border:1px solid rgba(0,0,0,.55);background:repeating-linear-gradient(135deg,rgba(210,170,130,.45) 0 2px,rgba(110,70,45,.55) 2px 5px)}
+.button-pad-mark{position:absolute;left:8px;top:8px;width:calc(100% - 16px);height:calc(100% - 16px);border-radius:4px;border:1px solid rgba(40,50,64,.9);background:linear-gradient(180deg,rgba(160,185,212,.92),rgba(92,122,150,.92))}
+.ability-fx-layer{z-index:45}
+.fx-line{position:absolute;height:4px;transform-origin:0 50%;border-radius:999px;opacity:.9;animation:fxLineFade .45s ease-out forwards}
+.fx-line-jump{background:linear-gradient(90deg,rgba(130,255,180,.95),rgba(130,255,180,.05))}
+.fx-line-throw{background:linear-gradient(90deg,rgba(245,210,130,.95),rgba(245,210,130,.08))}
+.fx-line-pull{background:linear-gradient(90deg,rgba(205,155,255,.95),rgba(205,155,255,.08))}
+.fx-line-throw.success{background:linear-gradient(90deg,rgba(120,255,150,.95),rgba(120,255,150,.08))}
+.fx-impact{position:absolute;width:14px;height:14px;transform:translate(-50%,-50%);border-radius:50%;animation:fxImpact .45s ease-out forwards}
+.fx-impact-jump{border:2px solid rgba(130,255,180,.9);box-shadow:0 0 10px rgba(130,255,180,.65)}
+.fx-impact-smash{border:2px solid rgba(255,170,120,.9);box-shadow:0 0 10px rgba(255,170,120,.65)}
+.fx-impact-throw{border:2px solid rgba(255,205,120,.9);box-shadow:0 0 10px rgba(255,205,120,.65)}
+.fx-impact-pull{border:2px solid rgba(210,160,255,.9);box-shadow:0 0 10px rgba(210,160,255,.65)}
+.fx-impact-throw.success{border-color:rgba(120,255,150,.95);box-shadow:0 0 12px rgba(120,255,150,.7)}
+@media (max-width: 1020px){
+  .game-layout{grid-template-columns:1fr;max-width:760px}
+  .sidebar{max-width:none}
+  .iso-board.wilderness-board,.iso-board.kingdom-board{transform:none;filter:none}
+}
+@keyframes pieceEnter{0%{transform:translateY(6px) scale(.6);opacity:0}100%{transform:translateY(0) scale(1);opacity:1}}
+@keyframes pieceFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.8px)}}
+@keyframes piecePulse{0%,100%{filter:drop-shadow(0 0 0 transparent)}50%{filter:drop-shadow(0 0 8px var(--piece-glow-strong))}}
+@keyframes spriteWalk{0%{transform:translateY(0)}50%{transform:translateY(-1px)}100%{transform:translateY(0)}}
+@keyframes spriteHeadBob{0%{transform:translateY(0)}50%{transform:translateY(.6px)}100%{transform:translateY(0)}}
+@keyframes fxLineFade{0%{opacity:1}100%{opacity:0}}
+@keyframes fxImpact{0%{transform:translate(-50%,-50%) scale(.3);opacity:.95}100%{transform:translate(-50%,-50%) scale(1.4);opacity:0}}
+=======
 .eby{animation:pulse .75s ease infinite}
 .victory-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:100;animation:fadeIn .4s ease}
 .victory-card{background:linear-gradient(180deg,rgba(50,30,10,.97),rgba(6,4,3,.97));border:1px solid rgba(213,169,62,.3);border-radius:20px;padding:42px 50px;text-align:center;box-shadow:0 40px 120px rgba(0,0,0,.95);animation:popIn .4s cubic-bezier(.22,1,.36,1);max-width:420px}
@@ -453,6 +584,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 .event-card{background:linear-gradient(180deg,rgba(60,10,60,.97),rgba(6,4,3,.97));border:1px solid rgba(180,80,220,.4);border-radius:18px;padding:32px 40px;text-align:center;box-shadow:0 30px 100px rgba(0,0,0,.95);max-width:360px;animation:popIn .4s cubic-bezier(.22,1,.36,1)}
 .char-icon-3d{font-size:2.2rem;margin-bottom:6px;height:56px;display:flex;align-items:center;justify-content:center}
 @media(max-width:980px){.game-layout{grid-template-columns:1fr;max-width:700px}.sidebar{max-width:none}}
+>>>>>>> ff5c05840ee988f1e169b819458740d742d90e00
 `;
 
 function ModToggle({active,icon,label,desc,onClick}){
@@ -865,6 +997,56 @@ export default function ObryndelMiniGame({onExit}){
   const [darkRadius,setDarkRadius]=useState(3);
   const [gridSize,setGridSize]=useState(10);
 
+<<<<<<< HEAD
+  // Game state
+  const [grid,        setGrid]        = useState({});
+  const [mazeWalls,   setMazeWalls]   = useState(null);
+  const [objects,     setObjects]     = useState([]);
+  const [vanished,    setVanished]    = useState(new Set());
+  const [discoveredCells, setDiscoveredCells] = useState(new Set());
+  const [positions,   setPositions]   = useState([]);
+  const [inKingdom,   setInKingdom]   = useState([]);
+  const [kPositions,  setKPositions]  = useState([]);
+  const [curPlayer,   setCurPlayer]   = useState(0);
+  const [swFirst,     setSwFirst]     = useState(null);
+  const [inventory,   setInventory]   = useState([]);
+  const [dropped,     setDropped]     = useState([]);
+  const [droppedPos,  setDroppedPos]  = useState([]);
+  const [atBase,      setAtBase]      = useState([]);
+  const [dead,        setDead]        = useState([]);
+  const [stunned,     setStunned]     = useState([]);
+  const [enemies,     setEnemies]     = useState([]);
+  const [enemyActive, setEnemyActive] = useState(false);
+  const [abilityCooldown, setAbilityCooldown] = useState([]);
+  const [abilityStepsLeft,setAbilityStepsLeft]= useState(0);
+  const [log,         setLog]         = useState([]);
+  const [eventCard,   setEventCard]   = useState(null);
+  const [allGathered, setAllGathered] = useState(false);
+  const [extraMove,   setExtraMove]   = useState(false);
+  const [kingdomGrid, setKingdomGrid] = useState({});
+  const [challengeState, setChallengeState] = useState(null);
+  const [challengeAbilityMode, setChallengeAbilityMode] = useState(false);
+  const [challengeAbilityTargets, setChallengeAbilityTargets] = useState(new Set());
+  const [challengeAbilityMeta, setChallengeAbilityMeta] = useState({});
+  const [playerFacing, setPlayerFacing] = useState([]);
+  const [movingPlayers, setMovingPlayers] = useState(new Set());
+  const [abilityFx, setAbilityFx] = useState([]);
+
+  const stateRef = useRef({});
+  const moveTimersRef = useRef({});
+  const fxTimersRef = useRef([]);
+  
+  // Update ref for access in callbacks
+  useEffect(() => {
+    stateRef.current = {
+      curPlayer, positions, inKingdom, kPositions, grid, inventory, atBase, dead, stunned,
+      dropped, droppedPos, vanished, discoveredCells, enemies, enemyActive, playerCount,
+      modBW, modVanish, modEnemy, modMaze, modExplore, modEvents, modColors, modChallengeRooms,
+      darkRadius, gridSize, mazeWalls, objects, abilityCooldown,
+      abilityStepsLeft, charChoices, extraMove, allGathered, kingdomGrid,
+      challengeState, challengeAbilityMode, challengeAbilityTargets, challengeAbilityMeta,
+      playerFacing, movingPlayers, abilityFx,
+=======
   const [grid,setGrid]=useState({});
   const [mazeWalls,setMazeWalls]=useState(null);
   const [objects,setObjects]=useState([]);
@@ -903,6 +1085,7 @@ export default function ObryndelMiniGame({onExit}){
       darkRadius,gridSize,mazeWalls,objects,abilityCooldown,abilityStepsLeft,
       charChoices,extraMove,allGathered,challengeState,challengeAbilityMode,
       challengeAbilityTargets,challengeAbilityMeta,
+>>>>>>> ff5c05840ee988f1e169b819458740d742d90e00
     };
   });
 
@@ -913,11 +1096,78 @@ export default function ObryndelMiniGame({onExit}){
 
   const addLog=useCallback((msg)=>{setLog(prev=>[msg,...prev].slice(0,30));},[]);
 
+<<<<<<< HEAD
+  useEffect(() => {
+    return () => {
+      Object.values(moveTimersRef.current).forEach((timerId) => clearTimeout(timerId));
+      fxTimersRef.current.forEach((timerId) => clearTimeout(timerId));
+    };
+  }, []);
+
+  const noteMovement = useCallback((playerIndex, dx, dy) => {
+    const facing =
+      Math.abs(dx) > Math.abs(dy)
+        ? (dx > 0 ? "right" : "left")
+        : (dy > 0 ? "down" : "up");
+
+    setPlayerFacing(prev => {
+      const next = [...prev];
+      next[playerIndex] = facing;
+      return next;
+    });
+
+    setMovingPlayers(prev => {
+      const next = new Set(prev);
+      next.add(playerIndex);
+      return next;
+    });
+
+    if (moveTimersRef.current[playerIndex]) {
+      clearTimeout(moveTimersRef.current[playerIndex]);
+    }
+    moveTimersRef.current[playerIndex] = setTimeout(() => {
+      setMovingPlayers(prev => {
+        const next = new Set(prev);
+        next.delete(playerIndex);
+        return next;
+      });
+    }, 210);
+  }, []);
+
+  const spawnAbilityFx = useCallback((fx) => {
+    const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const duration = fx.duration ?? 520;
+    setAbilityFx(prev => [...prev, { id, ...fx }]);
+    const timer = setTimeout(() => {
+      setAbilityFx(prev => prev.filter(entry => entry.id !== id));
+    }, duration);
+    fxTimersRef.current.push(timer);
+  }, []);
+
+  const clearVisualTimers = useCallback(() => {
+    Object.values(moveTimersRef.current).forEach((timerId) => clearTimeout(timerId));
+    moveTimersRef.current = {};
+    fxTimersRef.current.forEach((timerId) => clearTimeout(timerId));
+    fxTimersRef.current = [];
+  }, []);
+
+  // ─── FIX: Calculate visibility safely with useMemo ───────────────────────
+  const visibleCells = useMemo(() => {
+    if (!modExplore) return null;
+    if (inKingdom[curPlayer]) return null;
+    
+    const pos = positions[curPlayer];
+    if (!pos) return null;
+    
+    return bfsVisibleCells(pos, darkRadius, mazeWalls, vanished, gridSize);
+  }, [modExplore, curPlayer, positions, inKingdom, darkRadius, mazeWalls, vanished, gridSize]);
+=======
   const visibleCells=useMemo(()=>{
     if(!modExplore||inKingdom[curPlayer]) return null;
     const pos=positions[curPlayer];if(!pos) return null;
     return bfsVisible(pos,darkRadius,mazeWalls,vanished,gridSize);
   },[modExplore,curPlayer,positions,inKingdom,darkRadius,mazeWalls,vanished,gridSize]);
+>>>>>>> ff5c05840ee988f1e169b819458740d742d90e00
 
   useEffect(()=>{
     if(!visibleCells) return;
@@ -953,6 +1203,120 @@ export default function ObryndelMiniGame({onExit}){
       setChallengeAbilityMode(false);setChallengeAbilityTargets(new Set());setChallengeAbilityMeta({});
       setPhase("game");addLog("Co-op Ability Challenge begins!");return;
     }
+<<<<<<< HEAD
+  };
+
+  // ── Start game ────────────────────────────────────────────────────────────
+  const startGame = (chars) => {
+    const pc = playerCount;
+    const gs = modChallengeRooms ? 10 : gridSize;
+    clearVisualTimers();
+    if (modChallengeRooms) setGridSize(10);
+
+    if (modChallengeRooms) {
+      const challenge = buildChallengeRoom(chars, pc);
+      setGrid(challenge.grid);
+      setMazeWalls(null);
+      setObjects([
+        { id: "challenge-ball", emoji: "⚪", label: "Round Ball", x: challenge.ball.x, y: challenge.ball.y, pullable: true },
+        { id: "challenge-button", emoji: "🔘", label: "Stone Button", x: challenge.button.x, y: challenge.button.y, pullable: false },
+      ]);
+      setKingdomGrid({});
+      setChallengeState(challenge);
+      setVanished(new Set());
+      setDiscoveredCells(new Set());
+      setPositions(challenge.startCells.map(p => ({ ...p })));
+      setInKingdom(Array(pc).fill(false));
+      setKPositions(Array(pc).fill(null));
+      setInventory(Array(pc).fill(false));
+      setDropped(Array(pc).fill(false));
+      setDroppedPos(Array(pc).fill(null));
+      setAtBase(Array(pc).fill(false));
+      setDead(Array(pc).fill(false));
+      setStunned(Array(pc).fill(0));
+      setEnemies([]);
+      setEnemyActive(false);
+      setAbilityCooldown(Array(pc).fill(0));
+      setAbilityStepsLeft(0);
+      setCurPlayer(0);
+      setSwFirst(null);
+      setLog([]);
+      setEventCard(null);
+      setAllGathered(false);
+      setExtraMove(false);
+      setChallengeAbilityMode(false);
+      setChallengeAbilityTargets(new Set());
+      setChallengeAbilityMeta({});
+      setPlayerFacing(Array(pc).fill("down"));
+      setMovingPlayers(new Set());
+      setAbilityFx([]);
+      setPhase("game");
+      addLog(`Challenge begins with ${pc} scoundrel${pc>1?"s":""}!`);
+      addLog("Co-op Ability Challenge: no turns, select any character and solve the puzzle.");
+      challenge.instructions.forEach(line => addLog(`• ${line}`));
+      return;
+    }
+
+    let mWalls = null;
+    if (modMaze) {
+      mWalls = generateMaze(gs, gs);
+      const startCells = getStartCells(gs);
+      for (const sc of startCells) {
+        for (const [dx,dy] of [[0,-1],[1,0],[0,1],[-1,0]]) {
+          const wk = wallKey(sc.x,sc.y,dx,dy);
+          mWalls.delete(wk);
+        }
+      }
+      setMazeWalls(mWalls);
+    } else {
+      setMazeWalls(null);
+    }
+
+    const g = makeGrid(gs, pc, modBW, modMaze, modColors);
+    const sc = getStartCells(gs);
+    sc.forEach(c => { g[cellKey(c.x,c.y)] = "white"; });
+
+    const ctr = getStartCenter(gs);
+    const objs = placeObjects(gs, ctr.x, ctr.y, mWalls, pc);
+    setObjects(objs);
+
+    if (modColors) {
+      objs.forEach(o => { g[cellKey(o.x, o.y)] = "white"; });
+    }
+
+    setGrid(g);
+    setKingdomGrid(makeKingdomGrid(gs));
+    setVanished(new Set());
+    setDiscoveredCells(new Set());
+
+    const starts = getStartCells(gs).slice(0, pc);
+    setPositions(starts.map(p => ({...p})));
+    setInKingdom(Array(pc).fill(false));
+    setKPositions(Array(pc).fill(null));
+    setInventory(Array(pc).fill(false));
+    setDropped(Array(pc).fill(false));
+    setDroppedPos(Array(pc).fill(null));
+    setAtBase(Array(pc).fill(false));
+    setDead(Array(pc).fill(false));
+    setStunned(Array(pc).fill(0));
+    setEnemies([]);
+    setEnemyActive(false);
+    setAbilityCooldown(Array(pc).fill(0));
+    setAbilityStepsLeft(0);
+    setCurPlayer(0);
+    setSwFirst(null);
+    setLog([]);
+    setEventCard(null);
+    setAllGathered(false);
+    setExtraMove(false);
+    setChallengeState(null);
+    setChallengeAbilityMode(false);
+    setChallengeAbilityTargets(new Set());
+    setChallengeAbilityMeta({});
+    setPlayerFacing(Array(pc).fill("down"));
+    setMovingPlayers(new Set());
+    setAbilityFx([]);
+=======
     let mWalls=null;
     if(modMaze){mWalls=generateMaze(gs,gs);const sc=getStartCells(gs);for(const s of sc)for(const[dx,dy]of[[0,-1],[1,0],[0,1],[-1,0]])mWalls.delete(wallKey(s.x,s.y,dx,dy));setMazeWalls(mWalls);}
     else setMazeWalls(null);
@@ -968,6 +1332,7 @@ export default function ObryndelMiniGame({onExit}){
     setEnemies([]);setEnemyActive(false);setAbilityCooldown(Array(pc).fill(0));setAbilityStepsLeft(0);
     setCurPlayer(0);setSwFirst(null);setLog([]);setEventCard(null);setAllGathered(false);setExtraMove(false);
     setChallengeState(null);setChallengeAbilityMode(false);setChallengeAbilityTargets(new Set());setChallengeAbilityMeta({});
+>>>>>>> ff5c05840ee988f1e169b819458740d742d90e00
     setPhase("game");
     addLog(`Quest begins with ${pc} scoundrel${pc>1?"s":""}!`);
     addLog("🏰 Bring all relics to the altar!");
@@ -1010,6 +1375,136 @@ export default function ObryndelMiniGame({onExit}){
     if(Object.values(ns.completed||{}).every(Boolean)){setAllGathered(true);addLog("All objectives solved!");setTimeout(()=>setPhase("victory"),320);}
   },[addLog]);
 
+<<<<<<< HEAD
+    if (charId === "gribberth") {
+      [1, 2].forEach((distance) => {
+        dirs.forEach(([dx, dy]) => {
+          const tx = pos.x + dx * distance;
+          const ty = pos.y + dy * distance;
+          if (!inBounds(tx, ty)) return;
+          if (isChallengeBlockedCell(tx, ty, cs)) return;
+          if (occupiedByOthers.has(cellKey(tx, ty))) return;
+          addTarget(tx, ty, { type: "jump", distance, from: { x: pos.x, y: pos.y } });
+        });
+      });
+    } else if (charId === "craglasha") {
+      dirs.forEach(([dx, dy]) => {
+        const tx = pos.x + dx;
+        const ty = pos.y + dy;
+        if (!inBounds(tx, ty)) return;
+        addTarget(tx, ty, { type: "breakWall" });
+      });
+    } else if (charId === "brontarox") {
+      dirs.forEach(([dx, dy]) => {
+        for (let distance = 1; distance <= 4; distance++) {
+          const tx = pos.x + dx * distance;
+          const ty = pos.y + dy * distance;
+          if (!inBounds(tx, ty)) continue;
+          addTarget(tx, ty, { type: "throw", distance });
+        }
+      });
+    } else if (charId === "rithea") {
+      dirs.forEach(([dx, dy]) => {
+        for (let step = 1; step < snapshot.gridSize; step++) {
+          const tx = pos.x + dx * step;
+          const ty = pos.y + dy * step;
+          if (!inBounds(tx, ty)) break;
+          if (isChallengeBlockedCell(tx, ty, cs)) break;
+          if (occupiedByOthers.has(cellKey(tx, ty))) break;
+          addTarget(tx, ty, { type: "pull" });
+          if (snapshot.objects.some(o => o.x === tx && o.y === ty)) break;
+        }
+      });
+    }
+
+    return { targets, meta };
+  }, [isChallengeBlockedCell]);
+
+  const openChallengeAbilitySelection = useCallback(() => {
+    const result = computeChallengeAbilityTargets(stateRef.current);
+    setChallengeAbilityTargets(result.targets);
+    setChallengeAbilityMeta(result.meta);
+    setChallengeAbilityMode(true);
+    if (result.targets.size === 0) addLog("No valid targets for that ability right now.");
+  }, [computeChallengeAbilityTargets, addLog]);
+
+  const maybeFinishChallenge = useCallback((nextState) => {
+    if (!nextState) return;
+    const done = Object.values(nextState.completed || {}).every(Boolean);
+    if (!done) return;
+    setAllGathered(true);
+    addLog("All challenge objectives solved!");
+    setTimeout(() => setPhase("victory"), 320);
+  }, [addLog, clearChallengeAbilitySelection, openChallengeAbilitySelection]);
+
+  const executeChallengeAbilityAt = useCallback((x, y) => {
+    const s = stateRef.current;
+    if (!s.modChallengeRooms || !s.challengeState || !s.challengeAbilityMode) return;
+    const key = cellKey(x, y);
+    const targetMeta = s.challengeAbilityMeta[key];
+    if (!targetMeta) return;
+
+    const cp = s.curPlayer;
+    const cpPos = s.positions[cp];
+    const cpChar = CHARACTERS.find(c => c.id === s.charChoices[cp]);
+    let nextCs = { ...s.challengeState, completed: { ...s.challengeState.completed } };
+    let used = false;
+
+    if (targetMeta.type === "jump") {
+      if (!cpPos) return;
+      setPositions(prev => prev.map((p, i) => i === cp ? { x, y } : p));
+      noteMovement(cp, x - cpPos.x, y - cpPos.y);
+      spawnAbilityFx({ type: "jump", from: { x: cpPos.x, y: cpPos.y }, to: { x, y }, duration: 460 });
+      const jumpedTwo = Math.abs(cpPos.x - x) + Math.abs(cpPos.y - y) === 2;
+      if (jumpedTwo && nextCs.gap) {
+        const midX = cpPos.x + Math.sign(x - cpPos.x);
+        const midY = cpPos.y + Math.sign(y - cpPos.y);
+        if (midX === nextCs.gap.x && midY === nextCs.gap.y) {
+          nextCs.completed.goblin = true;
+        }
+      }
+      addLog(`${cpChar?.emoji || "👺"} ${cpChar?.name || PLAYER_NAMES[cp]} jumps ${targetMeta.distance || 1} tile${(targetMeta.distance || 1) > 1 ? "s" : ""}.`);
+      used = true;
+    }
+
+    if (targetMeta.type === "breakWall") {
+      spawnAbilityFx({ type: "smash", to: { x, y }, duration: 430 });
+      if (nextCs.crackedWall && !nextCs.crackedWall.broken && nextCs.crackedWall.x === x && nextCs.crackedWall.y === y) {
+        nextCs.crackedWall = { ...nextCs.crackedWall, broken: true };
+        setGrid(prev => ({ ...prev, [cellKey(nextCs.crackedWall.x, nextCs.crackedWall.y)]: "white" }));
+        nextCs.completed.orc = true;
+        addLog(`${cpChar?.emoji || "👹"} ${cpChar?.name || PLAYER_NAMES[cp]} smashes the cracked wall.`);
+      } else {
+        addLog(`${cpChar?.emoji || "👹"} ${cpChar?.name || PLAYER_NAMES[cp]} punches the ground. Only cracked walls break.`);
+      }
+      used = true;
+    }
+
+    if (targetMeta.type === "throw") {
+      if (cpPos) {
+        spawnAbilityFx({
+          type: "throw",
+          from: { x: cpPos.x, y: cpPos.y },
+          to: { x, y },
+          success: !!(nextCs.button && nextCs.button.x === x && nextCs.button.y === y),
+          duration: 480,
+        });
+      }
+      if (nextCs.button && nextCs.button.x === x && nextCs.button.y === y) {
+        nextCs.button = { ...nextCs.button, activated: true, flash: true };
+        nextCs.completed.cyclops = true;
+        addLog(`${cpChar?.emoji || "🌀"} ${cpChar?.name || PLAYER_NAMES[cp]} activates the button with a boulder throw!`);
+        setTimeout(() => {
+          setChallengeState(prev => {
+            if (!prev) return prev;
+            return { ...prev, button: { ...prev.button, flash: false } };
+          });
+        }, 420);
+      } else {
+        addLog(`${cpChar?.emoji || "🌀"} ${cpChar?.name || PLAYER_NAMES[cp]} hurls a boulder, but only the button reacts.`);
+      }
+      used = true;
+=======
   const triggerAnim=(anim)=>{ if(Board3D.triggerAnim) Board3D.triggerAnim(anim); };
 
   const executeChallengeAbilityAt=useCallback((x,y)=>{
@@ -1053,10 +1548,109 @@ export default function ObryndelMiniGame({onExit}){
         } else addLog("No room.");
       } else addLog(`${cpChar?.name} beams — only the ball reacts.`);
       clearChallengeAbility();return;
+>>>>>>> ff5c05840ee988f1e169b819458740d742d90e00
     }
     clearChallengeAbility();setChallengeState(nextCs);maybeFinishChallenge(nextCs);
   },[addLog,clearChallengeAbility,isChallengeBlocked,maybeFinishChallenge]);
 
+<<<<<<< HEAD
+    if (targetMeta.type === "pull") {
+      if (!cpPos) return;
+      spawnAbilityFx({ type: "pull", from: { x: cpPos.x, y: cpPos.y }, to: { x, y }, duration: 520 });
+      const ballObj = s.objects.find(o => o.id === "challenge-ball");
+      if (ballObj && ballObj.x === x && ballObj.y === y) {
+        const dirs = [[0,-1],[1,0],[0,1],[-1,0]];
+        let destination = null;
+        for (const [dx, dy] of dirs) {
+          const tx = cpPos.x + dx;
+          const ty = cpPos.y + dy;
+          if (tx < 0 || tx >= s.gridSize || ty < 0 || ty >= s.gridSize) continue;
+          if (isChallengeBlockedCell(tx, ty, s.challengeState)) continue;
+          if (s.positions.some((p, i) => i !== cp && p.x === tx && p.y === ty && !s.dead[i])) continue;
+          if (s.objects.some(o => o.id !== "challenge-ball" && o.x === tx && o.y === ty)) continue;
+          destination = { x: tx, y: ty };
+          break;
+        }
+        if (!destination) {
+          addLog("No free adjacent tile to pull the ball into.");
+        } else {
+          setObjects(prev => prev.map(o => o.id === "challenge-ball" ? { ...o, x: destination.x, y: destination.y } : o));
+          nextCs.ball = { x: destination.x, y: destination.y };
+          nextCs.completed.witch = true;
+          addLog(`${cpChar?.emoji || "🧙"} ${cpChar?.name || PLAYER_NAMES[cp]} pulls the round ball closer.`);
+        }
+      } else {
+        addLog(`${cpChar?.emoji || "🧙"} ${cpChar?.name || PLAYER_NAMES[cp]} casts pull, but only the round ball is affected.`);
+      }
+      used = true;
+    }
+
+    if (!used) return;
+    setChallengeState(nextCs);
+    clearChallengeAbilitySelection();
+    maybeFinishChallenge(nextCs);
+  }, [addLog, clearChallengeAbilitySelection, isChallengeBlockedCell, maybeFinishChallenge, noteMovement, spawnAbilityFx]);
+
+  const triggerEventCard = useCallback(() => {
+    const card = EVENT_CARDS[Math.floor(Math.random()*EVENT_CARDS.length)];
+    setEventCard(card);
+  }, []);
+
+  const resolveEvent = useCallback(() => {
+    const s = stateRef.current;
+    const card = eventCard;
+    const cp = s.curPlayer;
+    setEventCard(null);
+
+    if (card.id === "teleport") {
+      let nx,ny;
+      for (let i=0;i<200;i++) {
+        nx = Math.floor(Math.random()*s.gridSize);
+        ny = Math.floor(Math.random()*s.gridSize);
+        const k = cellKey(nx,ny);
+        if (!s.vanished.has(k) && !s.positions.some((p,pi)=>p.x===nx&&p.y===ny&&pi!==cp)) break;
+      }
+      const np = [...s.positions]; np[cp]={x:nx,y:ny};
+      setPositions(np);
+      addLog(`🌀 ${PLAYER_NAMES[cp]} was teleported!`);
+      advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
+    } else if (card.id === "stun") {
+      const ns = [...s.stunned]; ns[cp] = 1;
+      setStunned(ns);
+      addLog(`💫 ${PLAYER_NAMES[cp]} is stunned next turn!`);
+      advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
+    } else if (card.id === "motivation") {
+      setExtraMove(true);
+      addLog(`\u26A1 ${PLAYER_NAMES[cp]} gets an extra move!`);
+    }
+  }, [eventCard, addLog]);
+
+  const advanceTurnState = (cp, deadArr, stunnedArr, pc) => {
+    if (stateRef.current.modChallengeRooms) return;
+    let next = (cp+1) % pc;
+    let guard = 0;
+    while ((deadArr[next]) && guard < pc) { next=(next+1)%pc; guard++; }
+    const ns2 = [...stunnedArr];
+    if (ns2[next] > 0) {
+      addLog(`💫 ${PLAYER_NAMES[next]} is stunned and loses their turn!`);
+      ns2[next]--;
+      setStunned(ns2);
+      let skip = (next+1)%pc; guard=0;
+      while (deadArr[skip] && guard<pc) { skip=(skip+1)%pc; guard++; }
+      setCurPlayer(skip);
+      addLog(`— ${PLAYER_NAMES[skip]}'s turn —`);
+    } else {
+      setCurPlayer(next);
+      addLog(`— ${PLAYER_NAMES[next]}'s turn —`);
+    }
+    setAbilityCooldown(prev => {
+      const n=[...prev]; if(n[next]>0) n[next]--; return n;
+    });
+
+    if (stateRef.current.enemyActive) {
+      moveEnemies(next);
+    }
+=======
   const triggerEvent=useCallback(()=>setEventCard(EVENT_CARDS[Math.floor(Math.random()*EVENT_CARDS.length)]),[]);
 
   const advanceTurn=(cp,deadArr,stunnedArr,pc)=>{
@@ -1067,6 +1661,7 @@ export default function ObryndelMiniGame({onExit}){
     else{setCurPlayer(next);addLog(`— ${PLAYER_NAMES[next]}'s turn —`);}
     setAbilityCooldown(prev=>{const n=[...prev];if(n[next]>0)n[next]--;return n;});
     if(stateRef.current.enemyActive)moveEnemies(next);
+>>>>>>> ff5c05840ee988f1e169b819458740d742d90e00
   };
 
   const moveEnemies=useCallback((nextPlayer)=>{
@@ -1104,6 +1699,98 @@ export default function ObryndelMiniGame({onExit}){
     if(used){const nc=[...s.abilityCooldown];nc[cp]=char.abilityCooldown;setAbilityCooldown(nc);if(charId!=="gribberth"){setSwFirst(null);advanceTurn(cp,s.dead,s.stunned,s.playerCount);}}
   },[addLog,clearChallengeAbility,openChallengeAbility]);
 
+<<<<<<< HEAD
+      const s = stateRef.current;
+      const cp = s.curPlayer;
+      const gs = s.gridSize;
+
+      if (s.dead[cp]) { addLog(`${PLAYER_NAMES[cp]} is dead!`); return; }
+
+      if (s.modChallengeRooms) {
+        if (isSpace) {
+          if (s.challengeAbilityMode) clearChallengeAbilitySelection();
+          else openChallengeAbilitySelection();
+          return;
+        }
+        if (!dir) return;
+        if (!s.challengeState) return;
+        if (s.challengeAbilityMode) {
+          addLog("Select a red target tile, or press SPACE to cancel ability targeting.");
+          return;
+        }
+        const cs = s.challengeState;
+        const cur = s.positions[cp];
+        const nx = cur.x + dir[0], ny = cur.y + dir[1];
+        if (nx < 0 || nx >= gs || ny < 0 || ny >= gs) { addLog("Wall."); return; }
+        if (isChallengeBlockedCell(nx, ny, cs)) { addLog("An obstacle blocks that tile."); return; }
+        if (s.positions.some((p, i) => i !== cp && p.x === nx && p.y === ny && !s.dead[i])) {
+          addLog("Another character is standing there.");
+          return;
+        }
+        setPositions(prev => prev.map((p, i) => i === cp ? { x: nx, y: ny } : p));
+        noteMovement(cp, dir[0], dir[1]);
+        setSwFirst(null);
+        addLog(`${CHARACTERS.find(c => c.id === s.charChoices[cp])?.name || PLAYER_NAMES[cp]} moves.`);
+        return;
+      }
+
+      if (!dir) return;
+
+      const isInKingdom = s.inKingdom[cp];
+
+      if (isInKingdom) {
+        const kpos = s.kPositions[cp];
+        const nx = kpos.x + dir[0], ny = kpos.y + dir[1];
+        if (nx<0||nx>=gs||ny<0||ny>=KINGDOM_ROWS) {
+          if (ny < 0) {
+            const wX = kpos.x, wY = gs-1;
+            const newInK = [...s.inKingdom]; newInK[cp] = false;
+            const newKP = [...s.kPositions]; newKP[cp] = null;
+            const newPos = [...s.positions]; newPos[cp] = {x: wX, y: wY};
+            setInKingdom(newInK); setKPositions(newKP); setPositions(newPos);
+            noteMovement(cp, 0, -1);
+            addLog(`${PLAYER_NAMES[cp]} returned to the wilderness.`);
+            advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
+          } else {
+            addLog("Out of bounds!");
+          }
+          return;
+        }
+        const newKP = [...s.kPositions]; newKP[cp] = {x:nx,y:ny};
+        setKPositions(newKP);
+        noteMovement(cp, dir[0], dir[1]);
+        addLog(`${PLAYER_NAMES[cp]} moves through Obryndel.`);
+
+        if (ny >= 2) {
+          setPhase("victory"); return;
+        }
+
+        if (s.abilityStepsLeft > 1) { setAbilityStepsLeft(s.abilityStepsLeft-1); return; }
+        else if (s.abilityStepsLeft === 1) { setAbilityStepsLeft(0); }
+        if (s.extraMove) { setExtraMove(false); return; }
+        advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
+        return;
+      }
+
+      const cur = s.positions[cp];
+      const nx = cur.x + dir[0], ny = cur.y + dir[1];
+
+      if (ny >= gs) {
+        if (!s.allGathered) {
+          addLog("⚔️ A magical barrier seals the Kingdom of Obryndel! Bring all relics to the altar first."); return;
+        }
+        const kx = Math.max(0, Math.min(gs-1, cur.x));
+        const newInK = [...s.inKingdom]; newInK[cp] = true;
+        const newKP = [...s.kPositions]; newKP[cp] = {x:kx, y:0};
+        setInKingdom(newInK); setKPositions(newKP);
+        noteMovement(cp, 0, 1);
+        addLog(`${PLAYER_NAMES[cp]} enters the Kingdom of Obryndel! \u26A1`);
+        if (s.abilityStepsLeft > 1) { setAbilityStepsLeft(s.abilityStepsLeft-1); return; }
+        else if (s.abilityStepsLeft === 1) { setAbilityStepsLeft(0); }
+        if (s.extraMove) { setExtraMove(false); return; }
+        advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
+        return;
+=======
   // WASD
   useEffect(()=>{
     if(phase!=="game"||eventCard) return;
@@ -1142,6 +1829,7 @@ export default function ObryndelMiniGame({onExit}){
         if(s.abilityStepsLeft>1){setAbilityStepsLeft(s.abilityStepsLeft-1);return;}else if(s.abilityStepsLeft===1)setAbilityStepsLeft(0);
         if(s.extraMove){setExtraMove(false);return;}
         advanceTurn(cp,s.dead,s.stunned,s.playerCount);return;
+>>>>>>> ff5c05840ee988f1e169b819458740d742d90e00
       }
       if(nx<0||nx>=gs||ny<0){addLog("Out of bounds!");return;}
       const nk2=cellKey(nx,ny);
@@ -1162,6 +1850,120 @@ export default function ObryndelMiniGame({onExit}){
 
       if(s.modEnemy)ndead.forEach((d,i)=>{if(d&&i!==cp&&s.positions[i].x===nx&&s.positions[i].y===ny){ndead[i]=false;msg+=` Revived ${PLAYER_NAMES[i]}!`;}});
 
+<<<<<<< HEAD
+      let newPositions = s.positions.map((p,i)=>i===cp?{x:nx,y:ny}:p);
+      let newInventory = [...s.inventory];
+      let newDropped = [...s.dropped];
+      let newDroppedPos = [...s.droppedPos];
+      let newAtBase = [...s.atBase];
+      let newDead = [...s.dead];
+      let newGrid = s.grid;
+      let newVanished = s.vanished;
+      let newObjects = s.objects;
+      let newEnemyActive = s.enemyActive;
+      let msg = `${PLAYER_NAMES[cp]} moved.`;
+
+      if (s.modEnemy) {
+        newDead.forEach((isDead, i) => {
+          if (isDead && i!==cp && s.positions[i].x===nx && s.positions[i].y===ny) {
+            newDead[i]=false; msg+=` 💫 Revived ${PLAYER_NAMES[i]}!`;
+          }
+        });
+      }
+
+      const objIdx = newObjects.findIndex(o=>o.x===nx&&o.y===ny&&!newInventory[cp]);
+      if (objIdx>=0) {
+        const obj = newObjects[objIdx];
+        const myColor = PLAYER_COLORS[cp];
+        if (obj.id===myColor) {
+          newInventory[cp]=true;
+          msg+=` Picked up ${obj.label}! 🎉`;
+
+          if (!newEnemyActive && s.modEnemy) {
+            newEnemyActive = true;
+            const cx = Math.floor(gs/2);
+            setEnemies([{x: cx, y: gs-1, fleeing:0, stunned:0}]);
+            setEnemyActive(true);
+            addLog("👁️ A Shadow emerges from the Kingdom gates — it hunts those who carry relics!");
+          }
+
+          if (s.modVanish) {
+            const totalCarried = newInventory.filter(Boolean).length;
+            const count = totalCarried * 2;
+            const candidates=[];
+            for (let y2=0;y2<gs;y2++) for(let x2=0;x2<gs;x2++) {
+              const k=cellKey(x2,y2);
+              if (isStartCellFn(x2,y2,gs)||newObjects.some(o=>o.x===x2&&o.y===y2)||newVanished.has(k)) continue;
+              if (newPositions.some((p,i)=>!newDead[i]&&p.x===x2&&p.y===y2)) continue;
+              candidates.push(k);
+            }
+            const toVanish = candidates.sort(()=>Math.random()-.5).slice(0,count);
+            newVanished = new Set([...newVanished,...toVanish]);
+            const vg={...newGrid}; toVanish.forEach(k=>{vg[k]="empty";}); newGrid=vg;
+            if (toVanish.length) msg+=` ${toVanish.length} tile${toVanish.length>1?"s":""} crumble away…`;
+          }
+        }
+      }
+
+      if (s.modEnemy && newDropped[cp] && !newInventory[cp]) {
+        const dp = newDroppedPos[cp];
+        if (dp&&dp.x===nx&&dp.y===ny) {
+          newInventory[cp]=true; newDropped[cp]=false; newDroppedPos[cp]=null;
+          msg+=` Reclaimed your shard! 🎉`;
+        }
+      }
+
+      if (isStartCellFn(nx,ny,gs) && newInventory[cp] && !newAtBase[cp]) {
+        newAtBase[cp]=true;
+        newInventory[cp]=false;
+        msg+=` ${PLAYER_NAMES[cp]} delivered their relic to the altar! ✨`;
+        const myColor = PLAYER_COLORS[cp];
+        const sc = getStartCells(gs);
+        const startPos = sc[cp % sc.length];
+        newObjects = newObjects.map(o => o.id===myColor ? {...o, x:startPos.x, y:startPos.y} : o);
+        const totalDone = newAtBase.filter(Boolean).length;
+        if (totalDone >= s.playerCount && !s.allGathered) {
+          setAllGathered(true);
+          addLog("\u26A1 You've gathered all the artifacts to summon the power of the Void! The magic barrier has been shattered! Enter the Kingdom of Obryndel!");
+        }
+      }
+
+      setPositions(newPositions);
+      noteMovement(cp, dir[0], dir[1]);
+      setInventory(newInventory);
+      setDropped(newDropped);
+      setDroppedPos(newDroppedPos);
+      setAtBase(newAtBase);
+      setDead(newDead);
+      setGrid(newGrid);
+      setVanished(newVanished);
+      setObjects(newObjects);
+      setSwFirst(null);
+      addLog(msg);
+
+      if (s.abilityStepsLeft > 1) {
+        setAbilityStepsLeft(s.abilityStepsLeft-1);
+        return;
+      } else if (s.abilityStepsLeft === 1) {
+        setAbilityStepsLeft(0);
+      }
+
+      if (s.extraMove) {
+        setExtraMove(false);
+        return;
+      }
+
+      if (s.modEvents) {
+        triggerEventCard();
+        return;
+      }
+
+      advanceTurnState(cp, newDead, s.stunned, s.playerCount);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [phase, eventCard, addLog, triggerEventCard, moveEnemies, clearChallengeAbilitySelection, openChallengeAbilitySelection, isChallengeBlockedCell, noteMovement]);
+=======
       const oi=nobj.findIndex(o=>o.x===nx&&o.y===ny&&!ninv[cp]);
       if(oi>=0){const o=nobj[oi];if(o.id===PLAYER_COLORS[cp]){ninv[cp]=true;msg+=` Picked up ${o.label}!`;
         if(!nea&&s.modEnemy){nea=true;const cx=Math.floor(gs/2);setEnemies([{x:cx,y:gs-1,fleeing:0,stunned:0}]);setEnemyActive(true);addLog("👁️ A Shadow emerges!");}
@@ -1180,6 +1982,7 @@ export default function ObryndelMiniGame({onExit}){
     window.addEventListener("keydown",handler);
     return()=>window.removeEventListener("keydown",handler);
   },[phase,eventCard,addLog,triggerEvent,moveEnemies,clearChallengeAbility,openChallengeAbility,isChallengeBlocked]);
+>>>>>>> ff5c05840ee988f1e169b819458740d742d90e00
 
   const resolveEvent=useCallback(()=>{
     const s=stateRef.current;const card=eventCard;const cp=s.curPlayer;setEventCard(null);
@@ -1285,7 +2088,357 @@ export default function ObryndelMiniGame({onExit}){
     const challengeObjectiveText={goblin:"Jump over the gap",orc:"Break the cracked wall",cyclops:"Activate the button",witch:"Pull the round ball"};
     const objectiveForActive=cpChar?challengeObjectiveByChar[cpChar.id]:null;
 
+<<<<<<< HEAD
+    const getPlayerToken = (playerIndex) => {
+      const char = playerChars[playerIndex];
+      if (char) return char.emoji;
+      return PLAYER_NAMES[playerIndex].charAt(0);
+    };
+
+    const renderCharacterModel = (playerIndex, mini = false) => {
+      const char = playerChars[playerIndex];
+      const dir = playerFacing[playerIndex] || "down";
+      const moving = movingPlayers.has(playerIndex);
+      return (
+        <div className={`sprite-token ${char?.id || "default"} facing-${dir}${moving ? " moving" : ""}${mini ? " mini" : ""}`}>
+          <span className="sprite-shadow" />
+          <span className="sprite-legs" />
+          <span className="sprite-torso" />
+          <span className="sprite-head" />
+          <span className="sprite-face" />
+          <span className="sprite-gear" />
+        </div>
+      );
+    };
+
+    const renderPlayerLayer = (boardType) => {
+      const inK = boardType === "kingdom";
+      const rows = inK ? KINGDOM_ROWS : gs;
+      const groupOffsets = [
+        { x: 0, y: 0 },
+        { x: -0.2, y: -0.15 },
+        { x: 0.2, y: -0.15 },
+        { x: -0.2, y: 0.15 },
+        { x: 0.2, y: 0.15 },
+      ];
+
+      const boardPlayers = [];
+      for (let i = 0; i < playerCount; i++) {
+        if (inK ? !inKingdom[i] : inKingdom[i]) continue;
+        const pos = inK ? kPositions[i] : positions[i];
+        if (!pos) continue;
+        if (pos.x < 0 || pos.x >= gs || pos.y < 0 || pos.y >= rows) continue;
+        boardPlayers.push({ i, x: pos.x, y: pos.y });
+      }
+
+      const grouped = {};
+      boardPlayers.forEach(p => {
+        const k = cellKey(p.x, p.y);
+        if (!grouped[k]) grouped[k] = [];
+        grouped[k].push(p.i);
+      });
+
+      return (
+        <div
+          className={`actor-layer ${inK ? "kingdom-layer" : "wilderness-layer"}`}
+          style={{ width: gs * cellPx, height: rows * cellPx }}
+        >
+          {boardPlayers.map(p => {
+            const g = grouped[cellKey(p.x, p.y)] || [p.i];
+            const gIdx = Math.max(0, g.indexOf(p.i));
+            const offset = g.length > 1 ? groupOffsets[gIdx % groupOffsets.length] : groupOffsets[0];
+            const left = (p.x + 0.5 + offset.x) * cellPx;
+            const top = (p.y + 0.5 + offset.y) * cellPx;
+            const mini = g.length > 1;
+
+            return (
+              <div
+                key={`${boardType}-actor-${p.i}`}
+                className={`actor-node${p.i===cp?" current":""}${dead[p.i]?" dead":""}${mini?" mini":""}`}
+                style={{ left, top }}
+              >
+                <div className={`board-piece${p.i===cp?" current":""}${dead[p.i]?" dead":""}${mini?" mini":""}`} style={{
+                  "--piece-glow": hexToRgba(playerChars[p.i]?.color || COLOR_HEX[PLAYER_COLORS[p.i]], 0.32),
+                  "--piece-glow-strong": hexToRgba(playerChars[p.i]?.color || COLOR_HEX[PLAYER_COLORS[p.i]], 0.58),
+                  "--piece-stroke": hexToRgba(playerChars[p.i]?.color || COLOR_HEX[PLAYER_COLORS[p.i]], 0.62),
+                }}>
+                  {renderCharacterModel(p.i, mini)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    };
+
+    const renderChallengeObjectLayer = () => {
+      if (!modChallengeRooms || !challengeState) return null;
+      return (
+        <div className="actor-layer challenge-object-layer" style={{ width: gs * cellPx, height: gs * cellPx }}>
+          {objects.map((obj) => (
+            <div
+              key={obj.id}
+              className="actor-node challenge-obj"
+              style={{ left: (obj.x + 0.5) * cellPx, top: (obj.y + 0.5) * cellPx }}
+            >
+              <div className={`challenge-obj-token ${obj.id === "challenge-ball" ? "ball" : "button"}${obj.id === "challenge-button" && challengeState.button?.activated ? " active" : ""}${obj.id === "challenge-button" && challengeState.button?.flash ? " flash" : ""}`}>
+                <span className="challenge-obj-core" />
+              </div>
+              <div className="challenge-obj-label">{obj.id === "challenge-ball" ? "Orb" : "Switch"}</div>
+            </div>
+          ))}
+        </div>
+      );
+    };
+
+    const renderAbilityFxLayer = () => {
+      if (!modChallengeRooms || abilityFx.length === 0) return null;
+
+      const lineStyle = (from, to) => {
+        const fromX = (from.x + 0.5) * cellPx;
+        const fromY = (from.y + 0.5) * cellPx;
+        const dx = (to.x - from.x) * cellPx;
+        const dy = (to.y - from.y) * cellPx;
+        const length = Math.hypot(dx, dy);
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        return {
+          left: fromX,
+          top: fromY,
+          width: length,
+          transform: `translateY(-50%) rotate(${angle}deg)`,
+        };
+      };
+
+      return (
+        <div className="actor-layer ability-fx-layer" style={{ width: gs * cellPx, height: gs * cellPx }}>
+          {abilityFx.map((fx) => {
+            if (fx.type === "smash") {
+              return (
+                <div
+                  key={fx.id}
+                  className="fx-impact fx-impact-smash"
+                  style={{ left: (fx.to.x + 0.5) * cellPx, top: (fx.to.y + 0.5) * cellPx }}
+                />
+              );
+            }
+
+            if ((fx.type === "jump" || fx.type === "throw" || fx.type === "pull") && fx.from && fx.to) {
+              return (
+                <div key={fx.id}>
+                  <div className={`fx-line fx-line-${fx.type}${fx.success ? " success" : ""}`} style={lineStyle(fx.from, fx.to)} />
+                  <div
+                    className={`fx-impact fx-impact-${fx.type}${fx.success ? " success" : ""}`}
+                    style={{ left: (fx.to.x + 0.5) * cellPx, top: (fx.to.y + 0.5) * cellPx }}
+                  />
+                </div>
+              );
+            }
+
+            return null;
+          })}
+        </div>
+      );
+    };
+
+    const objMapXY = {};
+    objects.forEach(o => { objMapXY[cellKey(o.x,o.y)] = o; });
+
+    const renderWilderness = () => {
+      return Array.from({length:gs},(_,y)=>
+        Array.from({length:gs},(_,x)=>{
+          const key = cellKey(x,y);
+          const challenge = modChallengeRooms ? challengeState : null;
+          const isGapCell = !!(challenge && challenge.gap && challenge.gap.x === x && challenge.gap.y === y);
+          const isCrackedWallCell = !!(challenge && challenge.crackedWall && !challenge.crackedWall.broken && challenge.crackedWall.x === x && challenge.crackedWall.y === y);
+          const isButtonCell = !!(challenge && challenge.button && challenge.button.x === x && challenge.button.y === y);
+          const isAbilityTarget = !!(modChallengeRooms && challengeAbilityMode && challengeAbilityTargets.has(key));
+          const color = grid[key]||"empty";
+          const isGone = vanished.has(key);
+          const isStart = modChallengeRooms
+            ? (challenge ? challenge.startCells.some(p=>p.x===x&&p.y===y) : false)
+            : isStartCellFn(x,y,gs);
+          const isObj = !!objMapXY[key];
+          const obj = objMapXY[key];
+
+          let isDark = false, isEdge = false, isDiscovered = false;
+          if (modExplore && !inKingdom[cp]) {
+            const inView = visibleCells && visibleCells.has(key);
+            const playerHere = positions.some((p,i)=>!inKingdom[i]&&p.x===x&&p.y===y);
+            isDiscovered = discoveredCells.has(key);
+            
+            isDark = !inView && !playerHere && !isDiscovered;
+            
+            if (inView && visibleCells) {
+              const d = bfsDist(positions[cp],{x,y},mazeWalls,vanished,gs);
+              if (d===darkRadius) isEdge=true;
+            }
+          }
+
+          const playersHere = positions.map((p,i)=>!inKingdom[i]&&p.x===x&&p.y===y?i:-1).filter(i=>i>=0);
+          const enemiesHere = enemyActive ? enemies.filter(e=>e.x===x&&e.y===y) : [];
+          const challengeEnemiesHere = [];
+          const enemyVisible = (
+            (enemiesHere && enemiesHere.length>0) || challengeEnemiesHere.length>0
+          ) && (!modExplore || !visibleCells || visibleCells.has(key));
+          const droppedHere = dropped.map((d,i)=>{
+            const dp=droppedPos[i]; return d&&dp&&dp.x===x&&dp.y===y?i:-1;
+          }).filter(i=>i>=0);
+
+          const wallN = mazeWalls && mazeWalls.has(wallKey(x,y,0,-1));
+          const wallE = mazeWalls && mazeWalls.has(wallKey(x,y,1,0));
+          const wallS = mazeWalls && mazeWalls.has(wallKey(x,y,0,1));
+          const wallW = mazeWalls && mazeWalls.has(wallKey(x,y,-1,0));
+
+          const isSwSel = swFirst&&swFirst.x===x&&swFirst.y===y;
+          const isSwAble = modColors && !isStart && !isObj && !isGone
+            && !positions.some((p,i)=>!dead[i]&&!inKingdom[i]&&p.x===x&&p.y===y)
+            && !(enemyActive && enemies.some(e=>e.x===x&&e.y===y));
+
+          const wallClasses = [
+            wallN?"maze-wall-n":"", wallE?"maze-wall-e":"",
+            wallS?"maze-wall-s":"", wallW?"maze-wall-w":""
+          ].filter(Boolean).join(" ");
+
+          const isBottomRow = y === gs-1;
+          const cx2 = Math.floor(gs/2);
+          const isEntranceCell = isBottomRow && (x===cx2-1||x===cx2);
+
+          return (
+            <div
+              key={key}
+              className={[
+                "cell",
+                isGone?"gone":"",
+                isStart?"start-cell":"",
+                isStart?"tile-start-sigil":"",
+                isSwAble&&!isDark?"sw-able":"",
+                isSwSel?"sw-sel":"",
+                isDark?"dark-cell":"",
+                isEdge&&!isDark?"dark-edge":"",
+                !isDark&&!isGone?`tile-${color}`:"",
+                modChallengeRooms && isGapCell ? "tile-hazard-gap" : "",
+                modChallengeRooms && isCrackedWallCell ? "tile-hazard-spike" : "",
+                isAbilityTarget ? "ab-target" : "",
+                wallClasses,
+              ].join(" ")}
+              style={{
+                width:cellPx, height:cellPx,
+                background: isDark ? "#080604"
+                  : isGone ? "transparent"
+                  : modChallengeRooms && isCrackedWallCell ? "rgba(56,44,36,0.95)"
+                  : modChallengeRooms && isGapCell ? "radial-gradient(circle at 50% 50%,rgba(0,0,0,.98),rgba(18,10,8,.92))"
+                  : color==="black" ? COLOR_BG.black
+                  : COLOR_BG[color]||COLOR_BG.empty,
+                borderColor: modChallengeRooms && (isCrackedWallCell || isGapCell) ? "rgba(20,20,20,.9)"
+                  : isStart?"rgba(237,230,207,.4)"
+                  : isEntranceCell&&allGathered?"rgba(213,169,62,.6)"
+                  : isObj?"rgba(237,230,207,.2)"
+                  : color==="black"?"rgba(255,255,255,.03)"
+                  : `${COLOR_HEX[color]||"#1a1510"}22`,
+                borderBottom: isEntranceCell ? "none" : "2px solid rgba(85,85,85,.95)",
+                boxShadow: isStart ? "0 0 14px rgba(237,230,207,.4)"
+                  : isEntranceCell&&allGathered ? "0 0 12px rgba(213,169,62,.4)"
+                  : undefined,
+                filter: (isDiscovered&&(!visibleCells||!visibleCells.has(key))) ? "brightness(0.38) saturate(0.4)" : undefined,
+                fontSize: cellPx<28?"8px":cellPx<36?"10px":"13px",
+              }}
+              onClick={()=>handleCellClick(x,y)}
+            >
+              {!modChallengeRooms && isObj && obj && !isGone && !isDark && (
+                <span className="obj-token" style={{opacity: inventory[PLAYER_COLORS.indexOf(obj.id)] ? 0.12 : 0.9, filter:"drop-shadow(0 1px 3px rgba(0,0,0,.8))"}}>
+                  {obj.emoji}
+                </span>
+              )}
+              {modChallengeRooms && isCrackedWallCell && (
+                <span className="wall-break-mark" />
+              )}
+              {modChallengeRooms && isButtonCell && (
+                <span className="button-pad-mark" />
+              )}
+              {modChallengeRooms && isButtonCell && challenge?.button?.flash && (
+                <span style={{position:"absolute",inset:0,display:"block",background:"rgba(90,255,120,0.55)",animation:"buttonFlash 420ms ease-out"}} />
+              )}
+              {isStart && playersHere.length===0 && !enemyVisible && (
+                <span style={{fontSize:"0.7em",opacity:.28}}>✦</span>
+              )}
+              {isEntranceCell && allGathered && playersHere.length===0 && (
+                <span style={{fontSize:"0.7em",opacity:.6,filter:"drop-shadow(0 0 4px rgba(213,169,62,.8))"}}>↓</span>
+              )}
+              {!isDark && droppedHere.map(di=>(
+                <span key={di} style={{position:"absolute",top:1,right:1,fontSize:"0.65em",opacity:.8,zIndex:8}}>
+                  {OBJECT_DEFS[di].emoji}
+                </span>
+              ))}
+              {enemyVisible && enemiesHere.map((en,ei)=>(
+                <div key={ei} className="eby enemy-token" style={{position:"absolute",inset:0,fontSize:"1em",zIndex:20,filter:`drop-shadow(0 0 6px rgba(200,20,20,.95))${en.stunned>0?" grayscale(1)":""}`}}>
+                  👁️
+                </div>
+              ))}
+              {modChallengeRooms && challengeEnemiesHere.map((en,ei)=>( 
+                <div key={`ce-${ei}`} className="eby enemy-token" style={{position:"absolute",inset:0,fontSize:"1em",zIndex:20,filter:(en.fleeing>0||en.returnIn>0)?"grayscale(1) drop-shadow(0 0 6px rgba(200,20,20,.95))":"drop-shadow(0 0 6px rgba(200,20,20,.95))"}}>
+                  👁️
+                </div>
+              ))}
+            </div>
+          );
+        })
+      );
+    };
+
+    const renderKingdom = () => {
+      const locked = !allGathered;
+      const cx = Math.floor(gs/2);
+      return Array.from({length:KINGDOM_ROWS},(_,ky)=>
+        Array.from({length:gs},(_,kx)=>{
+          const key = cellKey(kx,ky);
+          const isCastle = kx===cx && ky===Math.floor(KINGDOM_ROWS/2);
+          const isEntrance = ky===0 && (kx===cx-1||kx===cx);
+          const isTopRow = ky===0;
+          const isWall = isTopRow && !isEntrance;
+
+          return (
+            <div
+              key={key}
+              className={`cell kingdom-cell tile-kingdom${locked ? " kingdom-locked" : ""}`}
+              style={{
+                width:cellPx, height:cellPx,
+                background: locked
+                  ? isEntrance?"rgba(60,10,80,0.6)"
+                    : isTopRow?"rgba(80,20,100,0.9)":"rgba(50,10,70,0.85)"
+                  : isEntrance?"rgba(237,220,160,0.45)":"rgba(190,165,100,0.18)",
+                borderColor: locked?"rgba(180,80,220,0.35)":"rgba(213,169,62,0.28)",
+                borderTop: isEntrance ? "none" : undefined,
+                borderTopWidth: isWall ? "2px" : undefined,
+                borderTopColor: isWall ? (locked?"rgba(180,80,220,0.8)":"rgba(213,169,62,0.7)") : undefined,
+                boxShadow: isEntrance&&!locked
+                  ? "inset 0 6px 12px rgba(213,169,62,.15)"
+                  : locked&&isTopRow&&!isEntrance?"inset 0 0 10px rgba(180,80,220,0.4)":undefined,
+                fontSize: cellPx<28?"8px":cellPx<36?"10px":"13px",
+                cursor:"default",
+              }}
+            >
+              {locked && !isEntrance && (
+                <div style={{position:"absolute",inset:0,background:"repeating-linear-gradient(45deg,rgba(180,80,220,0.08) 0px,rgba(180,80,220,0.08) 2px,transparent 2px,transparent 8px)",pointerEvents:"none",zIndex:1}}/>
+              )}
+              {locked && isEntrance && kx===cx && (
+                <span style={{position:"absolute",fontSize:"1.1em",opacity:.85,zIndex:2,filter:"drop-shadow(0 0 8px rgba(180,80,220,1))"}}>🔒</span>
+              )}
+              {!locked && isEntrance && (
+                <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(237,210,120,.2),transparent)",pointerEvents:"none",zIndex:1}}/>
+              )}
+              {isCastle && !locked && (
+                <span style={{position:"absolute",fontSize:"1.3em",opacity:.9,zIndex:2,filter:"drop-shadow(0 0 8px rgba(213,169,62,1))"}}>🏰</span>
+              )}
+            </div>
+          );
+        })
+      );
+    };
+
+    return (
+=======
     return(
+>>>>>>> ff5c05840ee988f1e169b819458740d742d90e00
       <div className="og">
         <h1 className="og-title" style={{fontSize:"clamp(1.1rem,3.5vw,1.8rem)",marginBottom:2}}>Obryndel</h1>
         <div className="og-sub" style={{marginBottom:12}}>The Shard Cooperative</div>
@@ -1306,8 +2459,28 @@ export default function ObryndelMiniGame({onExit}){
             <div className="victory-card">
               <div style={{fontSize:"2.8rem",marginBottom:10}}>⚡</div>
               <div className="v-title">Victory!</div>
+<<<<<<< HEAD
+              <div className="v-text">
+                {modChallengeRooms ? (
+                  <>
+                    All four co-op objectives are complete.<br/>
+                    The room's trial is solved!
+                  </>
+                ) : (
+                  <>
+                    All shards forged at the altar.<br/>
+                    The Scoundrels of Obryndel have triumphed!<br/><br/>
+                    <em>Baron Thobrick's power crumbles...</em>
+                  </>
+                )}
+              </div>
+              <button className="start-btn" onClick={()=>{clearVisualTimers();setAbilityFx([]);setMovingPlayers(new Set());setPhase("setup");setPlayerCount(null);if(onExit)onExit();}}>
+                Play Again
+              </button>
+=======
               <div className="v-text">{modChallengeRooms?"All four objectives solved!":"All shards forged. Obryndel is free!"}</div>
               <button className="start-btn" onClick={()=>{setPhase("setup");setPlayerCount(null);onExit?.();}}>Play Again</button>
+>>>>>>> ff5c05840ee988f1e169b819458740d742d90e00
             </div>
           </div>
         )}
@@ -1319,6 +2492,53 @@ export default function ObryndelMiniGame({onExit}){
         )}
 
         <div className="game-layout">
+<<<<<<< HEAD
+          <div className="grid-wrap">
+            <div className="grid-container">
+              <div className="iso-board wilderness-board">
+                <div className="grid grid-wilderness" style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(${gs},${cellPx}px)`}}>
+                  {renderWilderness()}
+                </div>
+                {renderChallengeObjectLayer()}
+                {renderAbilityFxLayer()}
+                {renderPlayerLayer("wilderness")}
+              </div>
+
+              {!modChallengeRooms && (
+              <>
+              <div style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"3px 0",zIndex:5,position:"relative"}}>
+                <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(213,169,62,.4),transparent)"}}/>
+                <div style={{fontFamily:"'Cinzel',serif",fontSize:".6rem",letterSpacing:"3px",color:"rgba(213,169,62,.55)",textTransform:"uppercase",whiteSpace:"nowrap"}}>
+                  {allGathered ? "\u26A1 Kingdom of Obryndel" : "\u{1F512} Kingdom of Obryndel"}
+                </div>
+                <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(213,169,62,.4),transparent)"}}/>
+              </div>
+
+              <div className="iso-board kingdom-board">
+                <div className="grid grid-kingdom kingdom-grid-outer" style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(${KINGDOM_ROWS},${cellPx}px)`}}>
+                  {renderKingdom()}
+                </div>
+                {renderPlayerLayer("kingdom")}
+              </div>
+              </>
+              )}
+            </div>
+
+            <div className="legend">
+              {modColors && !modBW && PLAYER_COLORS.slice(0,playerCount).map(c=>(
+                <div className="leg-i" key={c}><div className="leg-d" style={{background:COLOR_HEX[c]}}/><span style={{textTransform:"capitalize"}}>{c}</span></div>
+              ))}
+              {modColors && modBW && <>
+                <div className="leg-i"><div className="leg-d" style={{background:"#e8e2d0",border:"1px solid #888"}}/><span>Walkable</span></div>
+                <div className="leg-i"><div className="leg-d" style={{background:"#111"}}/><span>Blocked</span></div>
+              </>}
+              <div className="leg-i"><div className="leg-d" style={{background:"rgba(237,230,207,.65)",border:"1px solid rgba(237,230,207,.3)"}}/><span>Safe</span></div>
+              {modEnemy && enemyActive && <div className="leg-i"><span style={{fontSize:"0.9em"}}>👁️</span><span>The Shadow</span></div>}
+              {modVanish && <div className="leg-i"><span style={{fontSize:"0.9em"}}>💨</span><span>{vanished.size} gone</span></div>}
+              {modExplore && <div className="leg-i"><span style={{fontSize:"0.9em"}}>🌑</span><span>Vision: {darkRadius}</span></div>}
+            </div>
+          </div>
+=======
           <Board3D
             grid={grid} mazeWalls={mazeWalls} gridSize={gs}
             objects={objects} vanished={vanished}
@@ -1335,6 +2555,7 @@ export default function ObryndelMiniGame({onExit}){
             challengeAbilityMode={challengeAbilityMode}
             onCellClick={handleCellClick}
           />
+>>>>>>> ff5c05840ee988f1e169b819458740d742d90e00
 
           <div className="sidebar">
             <div className="s-card">
@@ -1431,7 +2652,14 @@ export default function ObryndelMiniGame({onExit}){
               <div className="log-box">{log.map((l,i)=><div key={i}>{l}</div>)}</div>
             </div>
 
+<<<<<<< HEAD
+            <button className="start-btn" style={{fontSize:"0.76rem",padding:"8px 16px",opacity:.42}}
+              onClick={()=>{clearVisualTimers();setAbilityFx([]);setMovingPlayers(new Set());setPhase("setup");setPlayerCount(null);if(onExit)onExit();}}>
+              ← Main Menu
+            </button>
+=======
             <button className="start-btn" style={{fontSize:".76rem",padding:"8px 16px",opacity:.4}} onClick={()=>{setPhase("setup");setPlayerCount(null);onExit?.();}}>← Main Menu</button>
+>>>>>>> ff5c05840ee988f1e169b819458740d742d90e00
           </div>
         </div>
       </div>
