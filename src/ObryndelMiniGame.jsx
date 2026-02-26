@@ -287,9 +287,9 @@ function buildChallengeRoom(chars, playerCount) {
     "Press SPACE to target an ability. Red outlined tiles are valid targets.",
     "Press SPACE again to cancel targeting.",
     "Goblin: jump one or two tiles in a cardinal direction.",
-    "Orc: can target any tile; only cracked walls are affected.",
+    "Orc: target one adjacent tile (up, down, left, right); only cracked walls are affected.",
     "Cyclops: throw one to four tiles in a cardinal direction; only the button reacts.",
-    "Witch: can target any tile; only the round ball is affected.",
+    "Witch: target in straight lines (up, down, left, right) until an obstacle blocks line of sight.",
   ];
 
   return {
@@ -822,11 +822,12 @@ export default function ObryndelMiniGame({ onExit }) {
         });
       });
     } else if (charId === "craglasha") {
-      for (let y = 0; y < snapshot.gridSize; y++) {
-        for (let x = 0; x < snapshot.gridSize; x++) {
-          addTarget(x, y, { type: "breakWall" });
-        }
-      }
+      dirs.forEach(([dx, dy]) => {
+        const tx = pos.x + dx;
+        const ty = pos.y + dy;
+        if (!inBounds(tx, ty)) return;
+        addTarget(tx, ty, { type: "breakWall" });
+      });
     } else if (charId === "brontarox") {
       dirs.forEach(([dx, dy]) => {
         for (let distance = 1; distance <= 4; distance++) {
@@ -837,11 +838,16 @@ export default function ObryndelMiniGame({ onExit }) {
         }
       });
     } else if (charId === "rithea") {
-      for (let y = 0; y < snapshot.gridSize; y++) {
-        for (let x = 0; x < snapshot.gridSize; x++) {
-          addTarget(x, y, { type: "pull" });
+      dirs.forEach(([dx, dy]) => {
+        for (let step = 1; step < snapshot.gridSize; step++) {
+          const tx = pos.x + dx * step;
+          const ty = pos.y + dy * step;
+          if (!inBounds(tx, ty)) break;
+          if (isChallengeBlockedCell(tx, ty, cs)) break;
+          addTarget(tx, ty, { type: "pull" });
+          if (snapshot.objects.some(o => o.x === tx && o.y === ty)) break;
         }
-      }
+      });
     }
 
     return { targets, meta };
@@ -1553,9 +1559,9 @@ export default function ObryndelMiniGame({ onExit }) {
     const cpChar = playerChars[cp];
     const challengeAbilityText = {
       gribberth: "Jump 1 or 2 tiles in a cardinal direction.",
-      craglasha: "Target any tile; only cracked walls are affected.",
+      craglasha: "Target one adjacent tile (up, down, left, right); only cracked walls are affected.",
       brontarox: "Throw 1 to 4 tiles in cardinal directions; only the button reacts.",
-      rithea: "Target any tile; only the round ball is affected.",
+      rithea: "Target in straight lines until an obstacle blocks line of sight; only the round ball is affected.",
     };
     const challengeObjectiveByChar = {
       gribberth: "goblin",
