@@ -374,28 +374,36 @@ h1.og-title{position:relative;font-family:'Cinzel',serif;font-size:clamp(1.6rem,
 .iso-board.kingdom-board{filter:drop-shadow(0 12px 15px rgba(0,0,0,.5))}
 .grid{display:grid;gap:0;background:linear-gradient(180deg,rgba(12,9,7,.92),rgba(5,4,3,.94));border:1px solid rgba(213,169,62,.24);padding:4px;box-shadow:0 14px 46px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,255,255,.04)}
 .grid-wilderness{border-radius:10px 10px 0 0;border-bottom:none;padding-bottom:0;background:
-  radial-gradient(circle at 20% 18%,rgba(150,115,72,.14),transparent 42%),
-  radial-gradient(circle at 78% 72%,rgba(70,100,88,.12),transparent 45%),
-  repeating-linear-gradient(45deg,rgba(255,255,255,.03) 0 2px,transparent 2px 8px),
-  linear-gradient(180deg,#231b14,#15100c)}
+  radial-gradient(circle at 15% 20%,rgba(182,220,120,.16),transparent 45%),
+  radial-gradient(circle at 82% 78%,rgba(60,120,72,.14),transparent 48%),
+  repeating-linear-gradient(0deg,rgba(255,255,255,.03) 0 1px,transparent 1px 8px),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.02) 0 1px,transparent 1px 8px),
+  linear-gradient(180deg,#2f4428,#243620)}
 .grid-kingdom{border-radius:0 0 10px 10px;border-top:none;padding-top:0;background:
-  radial-gradient(circle at 30% 20%,rgba(190,155,105,.14),transparent 42%),
-  repeating-linear-gradient(45deg,rgba(255,255,255,.03) 0 2px,transparent 2px 7px),
-  linear-gradient(180deg,#322213,#1e150d)}
+  radial-gradient(circle at 30% 20%,rgba(190,155,105,.16),transparent 42%),
+  repeating-linear-gradient(0deg,rgba(255,255,255,.03) 0 1px,transparent 1px 8px),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 1px,transparent 1px 8px),
+  linear-gradient(180deg,#4b3b2a,#33271b)}
 .kingdom-grid-outer{background:transparent !important;border:none !important;box-shadow:none !important;border-radius:0 !important}
 .actor-layer{position:absolute;top:4px;left:4px;pointer-events:none;z-index:40}
-.actor-node{position:absolute;transform:translate(-50%,-58%);transition:left 260ms cubic-bezier(.2,.9,.2,1),top 260ms cubic-bezier(.2,.9,.2,1),transform 220ms ease;will-change:left,top,transform}
+.actor-node{position:absolute;transform:translate(-50%,-58%);transition:left 210ms cubic-bezier(.24,.86,.28,1),top 210ms cubic-bezier(.24,.86,.28,1),transform 220ms ease;will-change:left,top,transform}
 .actor-node.current{transform:translate(-50%,-62%)}
 .actor-node.mini{transform:translate(-50%,-52%)}
 .actor-node.dead{transform:translate(-50%,-46%)}
 .challenge-object-layer{z-index:30}
-.challenge-obj{transform:translate(-50%,-54%)}
-.challenge-obj-token{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(25,20,16,.75);border:1px solid rgba(213,169,62,.38);box-shadow:0 0 0 1px rgba(0,0,0,.45),0 0 8px rgba(0,0,0,.4);font-size:.86rem;transition:transform 220ms ease, box-shadow 220ms ease, background 220ms ease}
-.challenge-obj-token.active{background:rgba(20,48,24,.82);border-color:rgba(110,255,150,.68);box-shadow:0 0 0 1px rgba(0,0,0,.45),0 0 12px rgba(90,255,130,.48)}
+.challenge-obj{transform:translate(-50%,-54%);display:flex;flex-direction:column;align-items:center;gap:2px}
+.challenge-obj-token{width:20px;height:20px;display:flex;align-items:center;justify-content:center;background:rgba(18,22,26,.92);border:1px solid rgba(213,169,62,.35);box-shadow:0 1px 0 rgba(255,255,255,.12),0 0 0 1px rgba(0,0,0,.45),0 6px 12px rgba(0,0,0,.45);transition:transform 220ms ease, box-shadow 220ms ease, background 220ms ease}
+.challenge-obj-token.button{border-radius:5px}
+.challenge-obj-token.ball{border-radius:50%}
+.challenge-obj-core{width:65%;height:65%;display:block;border-radius:inherit}
+.challenge-obj-token.button .challenge-obj-core{border-radius:4px;background:linear-gradient(180deg,#8d9aa6,#5f6a74);border:1px solid rgba(20,22,24,.8)}
+.challenge-obj-token.ball .challenge-obj-core{border-radius:50%;background:radial-gradient(circle at 32% 30%,#ffffff,#b7d8ff 58%,#5f8eb3 100%);border:1px solid rgba(40,70,96,.9)}
+.challenge-obj-label{font-size:.5rem;line-height:1;padding:1px 3px;border-radius:3px;background:rgba(12,14,16,.8);border:1px solid rgba(255,255,255,.12);color:rgba(235,235,225,.78);letter-spacing:.3px;text-transform:uppercase}
+.challenge-obj-token.active{background:rgba(20,48,24,.9);border-color:rgba(110,255,150,.68);box-shadow:0 1px 0 rgba(255,255,255,.12),0 0 0 1px rgba(0,0,0,.45),0 0 16px rgba(90,255,130,.48)}
 .challenge-obj-token.flash{animation:buttonFlash 420ms ease-out}
-.cell{position:relative;display:flex;align-items:center;justify-content:center;font-size:clamp(9px,1.5vw,15px);cursor:default;transition:transform 90ms ease,opacity 350ms ease,box-shadow 120ms ease;border:1px solid rgba(0,0,0,.3);overflow:hidden}
-.cell::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.2;background-image:radial-gradient(circle at 22% 28%,rgba(255,255,255,.18) 0 1px,transparent 2px),radial-gradient(circle at 74% 64%,rgba(0,0,0,.24) 0 1px,transparent 2px),repeating-linear-gradient(35deg,rgba(255,255,255,.03) 0 1px,transparent 1px 6px)}
-.cell::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.28;background:linear-gradient(160deg,rgba(255,255,255,.1),transparent 40%,rgba(0,0,0,.22) 100%)}
+.cell{position:relative;display:flex;align-items:center;justify-content:center;font-size:clamp(9px,1.5vw,15px);cursor:default;transition:transform 90ms ease,opacity 350ms ease,box-shadow 120ms ease;border:1px solid rgba(18,25,18,.45);overflow:hidden;image-rendering:pixelated}
+.cell::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.24;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 1px,transparent 1px 8px),repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 1px,transparent 1px 8px)}
+.cell::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.32;background:linear-gradient(180deg,rgba(255,255,255,.15),transparent 42%,rgba(0,0,0,.22) 100%)}
 .cell.gone{opacity:0;pointer-events:none}
 .cell.sw-able{cursor:pointer;outline:2px dashed rgba(255,255,255,.2);outline-offset:-3px}
 .cell.sw-able:hover{transform:scale(1.07);z-index:2}
@@ -405,16 +413,16 @@ h1.og-title{position:relative;font-family:'Cinzel',serif;font-size:clamp(1.6rem,
 .cell.dark-cell{background:#0a0806 !important;border-color:rgba(0,0,0,.8) !important}
 .cell.dark-edge{filter:brightness(0.45)}
 .cell.dark-cell::before,.cell.dark-cell::after,.cell.gone::before,.cell.gone::after{display:none}
-.tile-red::after{opacity:.38;background:linear-gradient(165deg,rgba(230,130,110,.16),transparent 46%),repeating-linear-gradient(35deg,rgba(255,255,255,.04) 0 2px,transparent 2px 7px)}
-.tile-blue::after{opacity:.38;background:linear-gradient(165deg,rgba(118,158,210,.18),transparent 46%),repeating-linear-gradient(35deg,rgba(255,255,255,.04) 0 2px,transparent 2px 7px)}
-.tile-yellow::after{opacity:.38;background:linear-gradient(165deg,rgba(215,185,118,.16),transparent 46%),repeating-linear-gradient(35deg,rgba(255,255,255,.04) 0 2px,transparent 2px 7px)}
-.tile-green::after{opacity:.38;background:linear-gradient(165deg,rgba(110,170,125,.16),transparent 46%),repeating-linear-gradient(35deg,rgba(255,255,255,.04) 0 2px,transparent 2px 7px)}
-.tile-white::after{opacity:.28;background:linear-gradient(165deg,rgba(245,235,215,.2),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.05) 0 2px,transparent 2px 8px)}
-.tile-black::after{opacity:.16;background:linear-gradient(165deg,rgba(255,255,255,.07),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.03) 0 2px,transparent 2px 8px)}
+.tile-red::after{opacity:.44;background:linear-gradient(180deg,rgba(255,185,165,.2),transparent 48%),repeating-linear-gradient(90deg,rgba(120,20,20,.09) 0 2px,transparent 2px 8px)}
+.tile-blue::after{opacity:.44;background:linear-gradient(180deg,rgba(190,220,255,.2),transparent 48%),repeating-linear-gradient(90deg,rgba(20,40,120,.09) 0 2px,transparent 2px 8px)}
+.tile-yellow::after{opacity:.44;background:linear-gradient(180deg,rgba(255,238,185,.2),transparent 48%),repeating-linear-gradient(90deg,rgba(120,96,20,.09) 0 2px,transparent 2px 8px)}
+.tile-green::after{opacity:.44;background:linear-gradient(180deg,rgba(200,255,205,.2),transparent 48%),repeating-linear-gradient(90deg,rgba(16,84,38,.09) 0 2px,transparent 2px 8px)}
+.tile-white::after{opacity:.3;background:linear-gradient(180deg,rgba(245,235,215,.24),transparent 52%),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 2px,transparent 2px 8px)}
+.tile-black::after{opacity:.2;background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 42%),repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 2px,transparent 2px 8px)}
 .tile-kingdom::after{opacity:.35;background:linear-gradient(165deg,rgba(235,195,135,.16),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.04) 0 2px,transparent 2px 8px)}
 .kingdom-locked::after{opacity:.2;background:repeating-linear-gradient(45deg,rgba(210,120,255,.08) 0 2px,transparent 2px 8px)}
-.tile-hazard-spike::after{opacity:.5;background:linear-gradient(165deg,rgba(255,170,170,.25),transparent 45%),repeating-linear-gradient(45deg,rgba(255,200,200,.08) 0 2px,transparent 2px 6px)}
-.tile-hazard-gap::after{opacity:.08;background:repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0 2px,transparent 2px 9px)}
+.tile-hazard-spike::after{opacity:.55;background:linear-gradient(180deg,rgba(240,160,130,.32),transparent 48%),repeating-linear-gradient(45deg,rgba(255,215,190,.12) 0 2px,transparent 2px 8px)}
+.tile-hazard-gap::after{opacity:.16;background:radial-gradient(circle at 50% 55%,rgba(0,0,0,.85),rgba(8,8,8,.95))}
 .tile-start-sigil::before{opacity:.35;background-image:radial-gradient(circle at 50% 50%,rgba(255,255,255,.26) 0 15%,transparent 35%),repeating-conic-gradient(from 0deg,rgba(255,255,255,.08) 0deg 10deg,transparent 10deg 20deg)}
 .cell.ab-target{outline:2px solid rgba(255,80,80,.95);outline-offset:-2px;box-shadow:inset 0 0 0 2px rgba(255,70,70,.35),0 0 10px rgba(255,70,70,.35);animation:targetPulse .9s ease-in-out infinite}
 .cell-wall-top{border-top:2px solid rgba(85,85,85,.95) !important}
@@ -490,10 +498,52 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 .maze-wall-w{border-left:2px solid rgba(85,85,85,.95) !important}
 .stun-badge{background:rgba(255,220,0,.15);border:1px solid rgba(255,220,0,.4);border-radius:5px;padding:1px 6px;font-size:.6rem;color:rgba(255,220,0,.8);margin-left:4px}
 .turn-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(20,16,12,.75);border:1px solid rgba(213,169,62,.45);box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 10px rgba(213,169,62,.2);font-size:1rem}
-.board-piece{--piece-glow:rgba(213,169,62,.3);--piece-glow-strong:rgba(213,169,62,.55);--piece-stroke:rgba(213,169,62,.4);width:82%;height:82%;max-width:28px;max-height:28px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.24),rgba(0,0,0,.05));border:1px solid rgba(237,230,207,.32);box-shadow:0 0 0 1px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.6),0 0 12px var(--piece-glow);border-radius:50%;font-size:1em;line-height:1;transform-origin:center 75%;animation:pieceFloat 2.3s ease-in-out infinite,pieceEnter .25s cubic-bezier(.2,.9,.2,1)}
-.board-piece.current{box-shadow:0 0 0 1px var(--piece-stroke),0 0 14px var(--piece-glow-strong),0 3px 8px rgba(0,0,0,.72);animation:pieceFloat 1.6s ease-in-out infinite,piecePulse 1.8s ease-in-out infinite,pieceEnter .25s cubic-bezier(.2,.9,.2,1)}
-.board-piece.dead{opacity:.35;filter:grayscale(1);animation:none}
-.board-piece.mini{width:14px;height:14px;font-size:.56em;animation:pieceEnter .2s ease-out}
+.board-piece{--piece-glow:rgba(213,169,62,.3);--piece-glow-strong:rgba(213,169,62,.55);--piece-stroke:rgba(213,169,62,.4);width:24px;height:24px;display:flex;align-items:center;justify-content:center;position:relative;animation:pieceEnter .22s cubic-bezier(.2,.9,.2,1)}
+.board-piece.current{filter:drop-shadow(0 0 10px var(--piece-glow-strong))}
+.board-piece.dead{opacity:.35;filter:grayscale(1)}
+.board-piece.mini{width:15px;height:15px}
+.sprite-token{position:relative;width:100%;height:100%;transform-origin:50% 68%;filter:drop-shadow(0 1px 1px rgba(0,0,0,.55))}
+.sprite-token.moving .sprite-legs{animation:spriteWalk 180ms steps(2,end) infinite}
+.sprite-token.moving .sprite-head,.sprite-token.moving .sprite-torso{animation:spriteHeadBob 180ms ease-in-out infinite}
+.sprite-token.mini{transform:scale(.8)}
+.sprite-shadow{position:absolute;left:3px;right:3px;bottom:1px;height:4px;border-radius:50%;background:rgba(0,0,0,.33)}
+.sprite-legs{position:absolute;left:7px;bottom:4px;width:10px;height:6px;border-radius:3px;background:#2d2016}
+.sprite-torso{position:absolute;left:5px;bottom:7px;width:14px;height:9px;border-radius:4px;background:#6f8f5e}
+.sprite-head{position:absolute;left:6px;bottom:14px;width:12px;height:9px;border-radius:4px;background:#f2d6a9}
+.sprite-face{position:absolute;left:9px;bottom:16px;width:6px;height:3px;border-radius:2px;background:rgba(30,20,10,.75)}
+.sprite-gear{position:absolute;left:4px;bottom:10px;width:16px;height:2px;border-radius:2px;background:rgba(255,255,255,.3)}
+.sprite-token.gribberth .sprite-head{background:#9fdd79}
+.sprite-token.gribberth .sprite-torso{background:#5aa645}
+.sprite-token.gribberth .sprite-gear{background:#e8f6cc}
+.sprite-token.craglasha .sprite-head{background:#c5804c}
+.sprite-token.craglasha .sprite-torso{background:#8e4f2c}
+.sprite-token.craglasha .sprite-gear{background:#f1bf84}
+.sprite-token.craglasha .sprite-face{height:4px}
+.sprite-token.brontarox .sprite-head{background:#a3adc9}
+.sprite-token.brontarox .sprite-torso{background:#6f7698}
+.sprite-token.brontarox .sprite-face{left:10px;width:4px;height:4px;border-radius:50%}
+.sprite-token.brontarox .sprite-gear{background:#d5daf4}
+.sprite-token.rithea .sprite-head{background:#dcb8df}
+.sprite-token.rithea .sprite-torso{background:#9b4ea7}
+.sprite-token.rithea .sprite-gear{background:#f0d1ff;transform:rotate(-18deg)}
+.sprite-token.facing-left{transform:scaleX(-1)}
+.sprite-token.mini.facing-left{transform:scale(-.8,.8)}
+.sprite-token.facing-up .sprite-shadow{transform:scale(.9,.8)}
+.sprite-token.facing-down .sprite-shadow{transform:scale(1,.95)}
+.wall-break-mark{position:absolute;inset:6px;border-radius:4px;border:1px solid rgba(0,0,0,.55);background:repeating-linear-gradient(135deg,rgba(210,170,130,.45) 0 2px,rgba(110,70,45,.55) 2px 5px)}
+.button-pad-mark{position:absolute;left:8px;top:8px;width:calc(100% - 16px);height:calc(100% - 16px);border-radius:4px;border:1px solid rgba(40,50,64,.9);background:linear-gradient(180deg,rgba(160,185,212,.92),rgba(92,122,150,.92))}
+.ability-fx-layer{z-index:45}
+.fx-line{position:absolute;height:4px;transform-origin:0 50%;border-radius:999px;opacity:.9;animation:fxLineFade .45s ease-out forwards}
+.fx-line-jump{background:linear-gradient(90deg,rgba(130,255,180,.95),rgba(130,255,180,.05))}
+.fx-line-throw{background:linear-gradient(90deg,rgba(245,210,130,.95),rgba(245,210,130,.08))}
+.fx-line-pull{background:linear-gradient(90deg,rgba(205,155,255,.95),rgba(205,155,255,.08))}
+.fx-line-throw.success{background:linear-gradient(90deg,rgba(120,255,150,.95),rgba(120,255,150,.08))}
+.fx-impact{position:absolute;width:14px;height:14px;transform:translate(-50%,-50%);border-radius:50%;animation:fxImpact .45s ease-out forwards}
+.fx-impact-jump{border:2px solid rgba(130,255,180,.9);box-shadow:0 0 10px rgba(130,255,180,.65)}
+.fx-impact-smash{border:2px solid rgba(255,170,120,.9);box-shadow:0 0 10px rgba(255,170,120,.65)}
+.fx-impact-throw{border:2px solid rgba(255,205,120,.9);box-shadow:0 0 10px rgba(255,205,120,.65)}
+.fx-impact-pull{border:2px solid rgba(210,160,255,.9);box-shadow:0 0 10px rgba(210,160,255,.65)}
+.fx-impact-throw.success{border-color:rgba(120,255,150,.95);box-shadow:0 0 12px rgba(120,255,150,.7)}
 @media (max-width: 1020px){
   .game-layout{grid-template-columns:1fr;max-width:760px}
   .sidebar{max-width:none}
@@ -502,6 +552,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 @keyframes pieceEnter{0%{transform:translateY(6px) scale(.6);opacity:0}100%{transform:translateY(0) scale(1);opacity:1}}
 @keyframes pieceFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.8px)}}
 @keyframes piecePulse{0%,100%{filter:drop-shadow(0 0 0 transparent)}50%{filter:drop-shadow(0 0 8px var(--piece-glow-strong))}}
+@keyframes spriteWalk{0%{transform:translateY(0)}50%{transform:translateY(-1px)}100%{transform:translateY(0)}}
+@keyframes spriteHeadBob{0%{transform:translateY(0)}50%{transform:translateY(.6px)}100%{transform:translateY(0)}}
+@keyframes fxLineFade{0%{opacity:1}100%{opacity:0}}
+@keyframes fxImpact{0%{transform:translate(-50%,-50%) scale(.3);opacity:.95}100%{transform:translate(-50%,-50%) scale(1.4);opacity:0}}
 `;
 
 function ModToggle({ active, icon, label, desc, onClick }) {
@@ -582,8 +636,13 @@ export default function ObryndelMiniGame({ onExit }) {
   const [challengeAbilityMode, setChallengeAbilityMode] = useState(false);
   const [challengeAbilityTargets, setChallengeAbilityTargets] = useState(new Set());
   const [challengeAbilityMeta, setChallengeAbilityMeta] = useState({});
+  const [playerFacing, setPlayerFacing] = useState([]);
+  const [movingPlayers, setMovingPlayers] = useState(new Set());
+  const [abilityFx, setAbilityFx] = useState([]);
 
   const stateRef = useRef({});
+  const moveTimersRef = useRef({});
+  const fxTimersRef = useRef([]);
   
   // Update ref for access in callbacks
   useEffect(() => {
@@ -594,6 +653,7 @@ export default function ObryndelMiniGame({ onExit }) {
       darkRadius, gridSize, mazeWalls, objects, abilityCooldown,
       abilityStepsLeft, charChoices, extraMove, allGathered, kingdomGrid,
       challengeState, challengeAbilityMode, challengeAbilityTargets, challengeAbilityMeta,
+      playerFacing, movingPlayers, abilityFx,
     };
   });
 
@@ -606,6 +666,60 @@ export default function ObryndelMiniGame({ onExit }) {
 
   const addLog = useCallback((msg) => {
     setLog(prev => [msg, ...prev].slice(0, 30));
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      Object.values(moveTimersRef.current).forEach((timerId) => clearTimeout(timerId));
+      fxTimersRef.current.forEach((timerId) => clearTimeout(timerId));
+    };
+  }, []);
+
+  const noteMovement = useCallback((playerIndex, dx, dy) => {
+    const facing =
+      Math.abs(dx) > Math.abs(dy)
+        ? (dx > 0 ? "right" : "left")
+        : (dy > 0 ? "down" : "up");
+
+    setPlayerFacing(prev => {
+      const next = [...prev];
+      next[playerIndex] = facing;
+      return next;
+    });
+
+    setMovingPlayers(prev => {
+      const next = new Set(prev);
+      next.add(playerIndex);
+      return next;
+    });
+
+    if (moveTimersRef.current[playerIndex]) {
+      clearTimeout(moveTimersRef.current[playerIndex]);
+    }
+    moveTimersRef.current[playerIndex] = setTimeout(() => {
+      setMovingPlayers(prev => {
+        const next = new Set(prev);
+        next.delete(playerIndex);
+        return next;
+      });
+    }, 210);
+  }, []);
+
+  const spawnAbilityFx = useCallback((fx) => {
+    const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const duration = fx.duration ?? 520;
+    setAbilityFx(prev => [...prev, { id, ...fx }]);
+    const timer = setTimeout(() => {
+      setAbilityFx(prev => prev.filter(entry => entry.id !== id));
+    }, duration);
+    fxTimersRef.current.push(timer);
+  }, []);
+
+  const clearVisualTimers = useCallback(() => {
+    Object.values(moveTimersRef.current).forEach((timerId) => clearTimeout(timerId));
+    moveTimersRef.current = {};
+    fxTimersRef.current.forEach((timerId) => clearTimeout(timerId));
+    fxTimersRef.current = [];
   }, []);
 
   // ─── FIX: Calculate visibility safely with useMemo ───────────────────────
@@ -665,6 +779,7 @@ export default function ObryndelMiniGame({ onExit }) {
   const startGame = (chars) => {
     const pc = playerCount;
     const gs = modChallengeRooms ? 10 : gridSize;
+    clearVisualTimers();
     if (modChallengeRooms) setGridSize(10);
 
     if (modChallengeRooms) {
@@ -701,6 +816,9 @@ export default function ObryndelMiniGame({ onExit }) {
       setChallengeAbilityMode(false);
       setChallengeAbilityTargets(new Set());
       setChallengeAbilityMeta({});
+      setPlayerFacing(Array(pc).fill("down"));
+      setMovingPlayers(new Set());
+      setAbilityFx([]);
       setPhase("game");
       addLog(`Challenge begins with ${pc} scoundrel${pc>1?"s":""}!`);
       addLog("Co-op Ability Challenge: no turns, select any character and solve the puzzle.");
@@ -764,6 +882,9 @@ export default function ObryndelMiniGame({ onExit }) {
     setChallengeAbilityMode(false);
     setChallengeAbilityTargets(new Set());
     setChallengeAbilityMeta({});
+    setPlayerFacing(Array(pc).fill("down"));
+    setMovingPlayers(new Set());
+    setAbilityFx([]);
     setPhase("game");
     addLog(`Quest begins with ${pc} scoundrel${pc>1?"s":""}!`);
     addLog("🏰 Bring all relics to the altar to shatter the barrier sealing Obryndel!");
@@ -844,6 +965,7 @@ export default function ObryndelMiniGame({ onExit }) {
           const ty = pos.y + dy * step;
           if (!inBounds(tx, ty)) break;
           if (isChallengeBlockedCell(tx, ty, cs)) break;
+          if (occupiedByOthers.has(cellKey(tx, ty))) break;
           addTarget(tx, ty, { type: "pull" });
           if (snapshot.objects.some(o => o.x === tx && o.y === ty)) break;
         }
@@ -886,6 +1008,8 @@ export default function ObryndelMiniGame({ onExit }) {
     if (targetMeta.type === "jump") {
       if (!cpPos) return;
       setPositions(prev => prev.map((p, i) => i === cp ? { x, y } : p));
+      noteMovement(cp, x - cpPos.x, y - cpPos.y);
+      spawnAbilityFx({ type: "jump", from: { x: cpPos.x, y: cpPos.y }, to: { x, y }, duration: 460 });
       const jumpedTwo = Math.abs(cpPos.x - x) + Math.abs(cpPos.y - y) === 2;
       if (jumpedTwo && nextCs.gap) {
         const midX = cpPos.x + Math.sign(x - cpPos.x);
@@ -899,6 +1023,7 @@ export default function ObryndelMiniGame({ onExit }) {
     }
 
     if (targetMeta.type === "breakWall") {
+      spawnAbilityFx({ type: "smash", to: { x, y }, duration: 430 });
       if (nextCs.crackedWall && !nextCs.crackedWall.broken && nextCs.crackedWall.x === x && nextCs.crackedWall.y === y) {
         nextCs.crackedWall = { ...nextCs.crackedWall, broken: true };
         setGrid(prev => ({ ...prev, [cellKey(nextCs.crackedWall.x, nextCs.crackedWall.y)]: "white" }));
@@ -911,6 +1036,15 @@ export default function ObryndelMiniGame({ onExit }) {
     }
 
     if (targetMeta.type === "throw") {
+      if (cpPos) {
+        spawnAbilityFx({
+          type: "throw",
+          from: { x: cpPos.x, y: cpPos.y },
+          to: { x, y },
+          success: !!(nextCs.button && nextCs.button.x === x && nextCs.button.y === y),
+          duration: 480,
+        });
+      }
       if (nextCs.button && nextCs.button.x === x && nextCs.button.y === y) {
         nextCs.button = { ...nextCs.button, activated: true, flash: true };
         nextCs.completed.cyclops = true;
@@ -929,6 +1063,7 @@ export default function ObryndelMiniGame({ onExit }) {
 
     if (targetMeta.type === "pull") {
       if (!cpPos) return;
+      spawnAbilityFx({ type: "pull", from: { x: cpPos.x, y: cpPos.y }, to: { x, y }, duration: 520 });
       const ballObj = s.objects.find(o => o.id === "challenge-ball");
       if (ballObj && ballObj.x === x && ballObj.y === y) {
         const dirs = [[0,-1],[1,0],[0,1],[-1,0]];
@@ -961,7 +1096,7 @@ export default function ObryndelMiniGame({ onExit }) {
     setChallengeState(nextCs);
     clearChallengeAbilitySelection();
     maybeFinishChallenge(nextCs);
-  }, [addLog, clearChallengeAbilitySelection, isChallengeBlockedCell, maybeFinishChallenge]);
+  }, [addLog, clearChallengeAbilitySelection, isChallengeBlockedCell, maybeFinishChallenge, noteMovement, spawnAbilityFx]);
 
   const triggerEventCard = useCallback(() => {
     const card = EVENT_CARDS[Math.floor(Math.random()*EVENT_CARDS.length)];
@@ -1187,6 +1322,7 @@ export default function ObryndelMiniGame({ onExit }) {
           return;
         }
         setPositions(prev => prev.map((p, i) => i === cp ? { x: nx, y: ny } : p));
+        noteMovement(cp, dir[0], dir[1]);
         setSwFirst(null);
         addLog(`${CHARACTERS.find(c => c.id === s.charChoices[cp])?.name || PLAYER_NAMES[cp]} moves.`);
         return;
@@ -1206,6 +1342,7 @@ export default function ObryndelMiniGame({ onExit }) {
             const newKP = [...s.kPositions]; newKP[cp] = null;
             const newPos = [...s.positions]; newPos[cp] = {x: wX, y: wY};
             setInKingdom(newInK); setKPositions(newKP); setPositions(newPos);
+            noteMovement(cp, 0, -1);
             addLog(`${PLAYER_NAMES[cp]} returned to the wilderness.`);
             advanceTurnState(cp, s.dead, s.stunned, s.playerCount);
           } else {
@@ -1215,6 +1352,7 @@ export default function ObryndelMiniGame({ onExit }) {
         }
         const newKP = [...s.kPositions]; newKP[cp] = {x:nx,y:ny};
         setKPositions(newKP);
+        noteMovement(cp, dir[0], dir[1]);
         addLog(`${PLAYER_NAMES[cp]} moves through Obryndel.`);
 
         if (ny >= 2) {
@@ -1239,6 +1377,7 @@ export default function ObryndelMiniGame({ onExit }) {
         const newInK = [...s.inKingdom]; newInK[cp] = true;
         const newKP = [...s.kPositions]; newKP[cp] = {x:kx, y:0};
         setInKingdom(newInK); setKPositions(newKP);
+        noteMovement(cp, 0, 1);
         addLog(`${PLAYER_NAMES[cp]} enters the Kingdom of Obryndel! \u26A1`);
         if (s.abilityStepsLeft > 1) { setAbilityStepsLeft(s.abilityStepsLeft-1); return; }
         else if (s.abilityStepsLeft === 1) { setAbilityStepsLeft(0); }
@@ -1348,6 +1487,7 @@ export default function ObryndelMiniGame({ onExit }) {
       }
 
       setPositions(newPositions);
+      noteMovement(cp, dir[0], dir[1]);
       setInventory(newInventory);
       setDropped(newDropped);
       setDroppedPos(newDroppedPos);
@@ -1380,7 +1520,7 @@ export default function ObryndelMiniGame({ onExit }) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [phase, eventCard, addLog, triggerEventCard, moveEnemies, clearChallengeAbilitySelection, openChallengeAbilitySelection, isChallengeBlockedCell]);
+  }, [phase, eventCard, addLog, triggerEventCard, moveEnemies, clearChallengeAbilitySelection, openChallengeAbilitySelection, isChallengeBlockedCell, noteMovement]);
 
   // ── Cell click (swap) ─────────────────────────────────────────────────────
   const handleCellClick = useCallback((x, y) => {
@@ -1585,6 +1725,22 @@ export default function ObryndelMiniGame({ onExit }) {
       return PLAYER_NAMES[playerIndex].charAt(0);
     };
 
+    const renderCharacterModel = (playerIndex, mini = false) => {
+      const char = playerChars[playerIndex];
+      const dir = playerFacing[playerIndex] || "down";
+      const moving = movingPlayers.has(playerIndex);
+      return (
+        <div className={`sprite-token ${char?.id || "default"} facing-${dir}${moving ? " moving" : ""}${mini ? " mini" : ""}`}>
+          <span className="sprite-shadow" />
+          <span className="sprite-legs" />
+          <span className="sprite-torso" />
+          <span className="sprite-head" />
+          <span className="sprite-face" />
+          <span className="sprite-gear" />
+        </div>
+      );
+    };
+
     const renderPlayerLayer = (boardType) => {
       const inK = boardType === "kingdom";
       const rows = inK ? KINGDOM_ROWS : gs;
@@ -1636,7 +1792,7 @@ export default function ObryndelMiniGame({ onExit }) {
                   "--piece-glow-strong": hexToRgba(playerChars[p.i]?.color || COLOR_HEX[PLAYER_COLORS[p.i]], 0.58),
                   "--piece-stroke": hexToRgba(playerChars[p.i]?.color || COLOR_HEX[PLAYER_COLORS[p.i]], 0.62),
                 }}>
-                  {getPlayerToken(p.i)}
+                  {renderCharacterModel(p.i, mini)}
                 </div>
               </div>
             );
@@ -1655,11 +1811,61 @@ export default function ObryndelMiniGame({ onExit }) {
               className="actor-node challenge-obj"
               style={{ left: (obj.x + 0.5) * cellPx, top: (obj.y + 0.5) * cellPx }}
             >
-              <div className={`challenge-obj-token${obj.id === "challenge-button" && challengeState.button?.activated ? " active" : ""}${obj.id === "challenge-button" && challengeState.button?.flash ? " flash" : ""}`}>
-                {obj.emoji}
+              <div className={`challenge-obj-token ${obj.id === "challenge-ball" ? "ball" : "button"}${obj.id === "challenge-button" && challengeState.button?.activated ? " active" : ""}${obj.id === "challenge-button" && challengeState.button?.flash ? " flash" : ""}`}>
+                <span className="challenge-obj-core" />
               </div>
+              <div className="challenge-obj-label">{obj.id === "challenge-ball" ? "Orb" : "Switch"}</div>
             </div>
           ))}
+        </div>
+      );
+    };
+
+    const renderAbilityFxLayer = () => {
+      if (!modChallengeRooms || abilityFx.length === 0) return null;
+
+      const lineStyle = (from, to) => {
+        const fromX = (from.x + 0.5) * cellPx;
+        const fromY = (from.y + 0.5) * cellPx;
+        const dx = (to.x - from.x) * cellPx;
+        const dy = (to.y - from.y) * cellPx;
+        const length = Math.hypot(dx, dy);
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        return {
+          left: fromX,
+          top: fromY,
+          width: length,
+          transform: `translateY(-50%) rotate(${angle}deg)`,
+        };
+      };
+
+      return (
+        <div className="actor-layer ability-fx-layer" style={{ width: gs * cellPx, height: gs * cellPx }}>
+          {abilityFx.map((fx) => {
+            if (fx.type === "smash") {
+              return (
+                <div
+                  key={fx.id}
+                  className="fx-impact fx-impact-smash"
+                  style={{ left: (fx.to.x + 0.5) * cellPx, top: (fx.to.y + 0.5) * cellPx }}
+                />
+              );
+            }
+
+            if ((fx.type === "jump" || fx.type === "throw" || fx.type === "pull") && fx.from && fx.to) {
+              return (
+                <div key={fx.id}>
+                  <div className={`fx-line fx-line-${fx.type}${fx.success ? " success" : ""}`} style={lineStyle(fx.from, fx.to)} />
+                  <div
+                    className={`fx-impact fx-impact-${fx.type}${fx.success ? " success" : ""}`}
+                    style={{ left: (fx.to.x + 0.5) * cellPx, top: (fx.to.y + 0.5) * cellPx }}
+                  />
+                </div>
+              );
+            }
+
+            return null;
+          })}
         </div>
       );
     };
@@ -1774,10 +1980,10 @@ export default function ObryndelMiniGame({ onExit }) {
                 </span>
               )}
               {modChallengeRooms && isCrackedWallCell && (
-                <span style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.86em",opacity:.9}}>🪨</span>
+                <span className="wall-break-mark" />
               )}
               {modChallengeRooms && isButtonCell && (
-                <span style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.8em",opacity:.95}}>🔘</span>
+                <span className="button-pad-mark" />
               )}
               {modChallengeRooms && isButtonCell && challenge?.button?.flash && (
                 <span style={{position:"absolute",inset:0,display:"block",background:"rgba(90,255,120,0.55)",animation:"buttonFlash 420ms ease-out"}} />
@@ -1894,7 +2100,7 @@ export default function ObryndelMiniGame({ onExit }) {
                   </>
                 )}
               </div>
-              <button className="start-btn" onClick={()=>{setPhase("setup");setPlayerCount(null);if(onExit)onExit();}}>
+              <button className="start-btn" onClick={()=>{clearVisualTimers();setAbilityFx([]);setMovingPlayers(new Set());setPhase("setup");setPlayerCount(null);if(onExit)onExit();}}>
                 Play Again
               </button>
             </div>
@@ -1916,6 +2122,7 @@ export default function ObryndelMiniGame({ onExit }) {
                   {renderWilderness()}
                 </div>
                 {renderChallengeObjectLayer()}
+                {renderAbilityFxLayer()}
                 {renderPlayerLayer("wilderness")}
               </div>
 
@@ -2105,7 +2312,7 @@ export default function ObryndelMiniGame({ onExit }) {
             </div>
 
             <button className="start-btn" style={{fontSize:"0.76rem",padding:"8px 16px",opacity:.42}}
-              onClick={()=>{setPhase("setup");setPlayerCount(null);if(onExit)onExit();}}>
+              onClick={()=>{clearVisualTimers();setAbilityFx([]);setMovingPlayers(new Set());setPhase("setup");setPlayerCount(null);if(onExit)onExit();}}>
               ← Main Menu
             </button>
           </div>
