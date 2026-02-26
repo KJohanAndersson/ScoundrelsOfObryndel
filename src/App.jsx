@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import jsQR from 'jsqr';
-import PatternTest from './PatternTest';
 import ObryndelMiniGame from './ObryndelMiniGame';
 
 // Boss sprites
@@ -704,7 +703,6 @@ export default function App() {
             <button style={testButtonStyle} onClick={launchTestCharacterScan}>🎴 Scan Characters</button>
             <button style={testButtonStyle} onClick={launchTestEventScan}>🗺️ Scan Event Cards</button>
             <button style={testButtonStyle} onClick={launchTestBoss}>💀 Boss Fight</button>
-            <button style={testButtonStyle} onClick={() => { abortNarration(); setScreen('patternTest'); }}>🔷 Pattern Test</button>
           </div>
         </div>
       </div>
@@ -1021,11 +1019,6 @@ export default function App() {
       </div>
     );
   }
-
-  // ─── Pattern test ──────────────────────────────────────────────────────────
-  if (screen === 'patternTest') return <PatternTest onExit={resetGame} />;
-
-  return null;
 }
 
 // ─── No-QR mode badge ─────────────────────────────────────────────────────────
