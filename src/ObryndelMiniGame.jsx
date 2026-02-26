@@ -381,10 +381,18 @@ h1.og-title{position:relative;font-family:'Cinzel',serif;font-size:clamp(1.6rem,
 .grid-wrap::before{content:'';position:absolute;inset:0;border-radius:16px;pointer-events:none;background:linear-gradient(180deg,rgba(255,220,170,.06),transparent 24%,transparent 70%,rgba(0,0,0,.3))}
 .grid-wrap::after{content:'';position:absolute;inset:0;border-radius:16px;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),inset 0 0 65px rgba(0,0,0,.45)}
 .grid-container{display:flex;flex-direction:column;gap:0;align-items:center}
+.iso-board{position:relative;transform-style:preserve-3d}
+.iso-board.wilderness-board{transform:perspective(1280px) rotateX(56deg) rotateZ(-8deg) scale(0.98);transform-origin:center center;filter:drop-shadow(0 26px 22px rgba(0,0,0,.62))}
+.iso-board.kingdom-board{transform:perspective(1280px) rotateX(56deg) rotateZ(-8deg) scale(0.96);transform-origin:center center;filter:drop-shadow(0 20px 18px rgba(0,0,0,.54))}
 .grid{display:grid;gap:0;background:rgba(0,0,0,.8);border:1px solid rgba(213,169,62,.2);padding:4px;box-shadow:0 20px 80px rgba(0,0,0,.8)}
 .grid-wilderness{border-radius:10px 10px 0 0;border-bottom:none;padding-bottom:0}
 .grid-kingdom{border-radius:0 0 10px 10px;border-top:none;padding-top:0;background:rgba(30,18,8,.8)}
 .kingdom-grid-outer{background:rgba(30,18,8,.8) !important;border:none !important;box-shadow:none !important;border-radius:0 !important}
+.actor-layer{position:absolute;top:4px;left:4px;pointer-events:none;z-index:40}
+.actor-node{position:absolute;transform:translate(-50%,-58%);transition:left 260ms cubic-bezier(.2,.9,.2,1),top 260ms cubic-bezier(.2,.9,.2,1),transform 220ms ease;will-change:left,top,transform}
+.actor-node.current{transform:translate(-50%,-62%)}
+.actor-node.mini{transform:translate(-50%,-52%)}
+.actor-node.dead{transform:translate(-50%,-46%)}
 .cell{position:relative;display:flex;align-items:center;justify-content:center;font-size:clamp(9px,1.5vw,15px);cursor:default;transition:transform 90ms ease,opacity 350ms ease,box-shadow 120ms ease;border:1px solid rgba(0,0,0,.3);overflow:hidden}
 .cell::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.24;background-image:radial-gradient(circle at 18% 22%,rgba(255,255,255,.25) 0 1px,transparent 2px),radial-gradient(circle at 72% 36%,rgba(0,0,0,.28) 0 1px,transparent 2px),radial-gradient(circle at 40% 78%,rgba(255,255,255,.16) 0 1px,transparent 2px)}
 .cell::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.3;mix-blend-mode:screen;background:linear-gradient(145deg,rgba(255,255,255,.16),transparent 36%,rgba(0,0,0,.2) 85%)}
@@ -486,6 +494,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 @media (max-width: 1020px){
   .game-layout{grid-template-columns:1fr;max-width:760px}
   .sidebar{max-width:none}
+  .iso-board.wilderness-board,.iso-board.kingdom-board{transform:none;filter:none}
 }
 @keyframes pieceEnter{0%{transform:translateY(6px) scale(.6);opacity:0}100%{transform:translateY(0) scale(1);opacity:1}}
 @keyframes pieceFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.8px)}}
@@ -1467,6 +1476,66 @@ export default function ObryndelMiniGame({ onExit }) {
       return PLAYER_NAMES[playerIndex].charAt(0);
     };
 
+    const renderPlayerLayer = (boardType) => {
+      const inK = boardType === "kingdom";
+      const rows = inK ? KINGDOM_ROWS : gs;
+      const groupOffsets = [
+        { x: 0, y: 0 },
+        { x: -0.2, y: -0.15 },
+        { x: 0.2, y: -0.15 },
+        { x: -0.2, y: 0.15 },
+        { x: 0.2, y: 0.15 },
+      ];
+
+      const boardPlayers = [];
+      for (let i = 0; i < playerCount; i++) {
+        if (inK ? !inKingdom[i] : inKingdom[i]) continue;
+        const pos = inK ? kPositions[i] : positions[i];
+        if (!pos) continue;
+        if (pos.x < 0 || pos.x >= gs || pos.y < 0 || pos.y >= rows) continue;
+        boardPlayers.push({ i, x: pos.x, y: pos.y });
+      }
+
+      const grouped = {};
+      boardPlayers.forEach(p => {
+        const k = cellKey(p.x, p.y);
+        if (!grouped[k]) grouped[k] = [];
+        grouped[k].push(p.i);
+      });
+
+      return (
+        <div
+          className={`actor-layer ${inK ? "kingdom-layer" : "wilderness-layer"}`}
+          style={{ width: gs * cellPx, height: rows * cellPx }}
+        >
+          {boardPlayers.map(p => {
+            const g = grouped[cellKey(p.x, p.y)] || [p.i];
+            const gIdx = Math.max(0, g.indexOf(p.i));
+            const offset = g.length > 1 ? groupOffsets[gIdx % groupOffsets.length] : groupOffsets[0];
+            const left = (p.x + 0.5 + offset.x) * cellPx;
+            const top = (p.y + 0.5 + offset.y) * cellPx;
+            const mini = g.length > 1;
+
+            return (
+              <div
+                key={`${boardType}-actor-${p.i}`}
+                className={`actor-node${p.i===cp?" current":""}${dead[p.i]?" dead":""}${mini?" mini":""}`}
+                style={{ left, top }}
+              >
+                <div className={`board-piece${p.i===cp?" current":""}${dead[p.i]?" dead":""}${mini?" mini":""}`} style={{
+                  "--piece-glow": hexToRgba(playerChars[p.i]?.color || COLOR_HEX[PLAYER_COLORS[p.i]], 0.32),
+                  "--piece-glow-strong": hexToRgba(playerChars[p.i]?.color || COLOR_HEX[PLAYER_COLORS[p.i]], 0.58),
+                  "--piece-stroke": hexToRgba(playerChars[p.i]?.color || COLOR_HEX[PLAYER_COLORS[p.i]], 0.62),
+                }}>
+                  {getPlayerToken(p.i)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    };
+
     const objMapXY = {};
     objects.forEach(o => { objMapXY[cellKey(o.x,o.y)] = o; });
 
@@ -1606,25 +1675,6 @@ export default function ObryndelMiniGame({ onExit }) {
                   👁️
                 </div>
               ))}
-              {playersHere.map(pi=>(
-                <div key={pi} style={{
-                  position:"absolute",
-                  fontSize:playersHere.length>1?"0.7em":"0.95em",
-                  ...(playersHere.length>1
-                    ?{top:pi%2===0?"1px":undefined,bottom:pi%2===1?"1px":undefined,left:Math.floor(pi/2)===0?"1px":undefined,right:Math.floor(pi/2)===1?"1px":undefined}
-                    :{inset:0,display:"flex",alignItems:"center",justifyContent:"center"}),
-                  display:"flex",alignItems:"center",justifyContent:"center",
-                  zIndex:10,
-                }}>
-                  <div className={`board-piece${pi===cp?" current":""}${dead[pi]?" dead":""}${playersHere.length>1?" mini":""}`} style={{
-                    "--piece-glow": hexToRgba(playerChars[pi]?.color || COLOR_HEX[PLAYER_COLORS[pi]], 0.32),
-                    "--piece-glow-strong": hexToRgba(playerChars[pi]?.color || COLOR_HEX[PLAYER_COLORS[pi]], 0.58),
-                    "--piece-stroke": hexToRgba(playerChars[pi]?.color || COLOR_HEX[PLAYER_COLORS[pi]], 0.62),
-                  }}>
-                    {getPlayerToken(pi)}
-                  </div>
-                </div>
-              ))}
             </div>
           );
         })
@@ -1638,7 +1688,6 @@ export default function ObryndelMiniGame({ onExit }) {
         Array.from({length:gs},(_,kx)=>{
           const key = cellKey(kx,ky);
           const isCastle = kx===cx && ky===Math.floor(KINGDOM_ROWS/2);
-          const playersHere = kPositions.map((p,i)=>inKingdom[i]&&p&&p.x===kx&&p.y===ky?i:-1).filter(i=>i>=0);
           const isEntrance = ky===0 && (kx===cx-1||kx===cx);
           const isTopRow = ky===0;
           const isWall = isTopRow && !isEntrance;
@@ -1676,25 +1725,6 @@ export default function ObryndelMiniGame({ onExit }) {
               {isCastle && !locked && (
                 <span style={{position:"absolute",fontSize:"1.3em",opacity:.9,zIndex:2,filter:"drop-shadow(0 0 8px rgba(213,169,62,1))"}}>🏰</span>
               )}
-              {playersHere.map(pi=>(
-                <div key={pi} style={{
-                  position:"absolute",
-                  fontSize:playersHere.length>1?"0.7em":"0.95em",
-                  ...(playersHere.length>1
-                    ?{top:pi%2===0?"1px":undefined,bottom:pi%2===1?"1px":undefined,left:Math.floor(pi/2)===0?"1px":undefined,right:Math.floor(pi/2)===1?"1px":undefined}
-                    :{inset:0,display:"flex",alignItems:"center",justifyContent:"center"}),
-                  display:"flex",alignItems:"center",justifyContent:"center",
-                  zIndex:10,
-                }}>
-                  <div className={`board-piece${pi===cp?" current":""}${dead[pi]?" dead":""}${playersHere.length>1?" mini":""}`} style={{
-                    "--piece-glow": hexToRgba(playerChars[pi]?.color || COLOR_HEX[PLAYER_COLORS[pi]], 0.32),
-                    "--piece-glow-strong": hexToRgba(playerChars[pi]?.color || COLOR_HEX[PLAYER_COLORS[pi]], 0.58),
-                    "--piece-stroke": hexToRgba(playerChars[pi]?.color || COLOR_HEX[PLAYER_COLORS[pi]], 0.62),
-                  }}>
-                    {getPlayerToken(pi)}
-                  </div>
-                </div>
-              ))}
             </div>
           );
         })
@@ -1753,8 +1783,11 @@ export default function ObryndelMiniGame({ onExit }) {
         <div className="game-layout">
           <div className="grid-wrap">
             <div className="grid-container">
-              <div className="grid grid-wilderness" style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(${gs},${cellPx}px)`}}>
-                {renderWilderness()}
+              <div className="iso-board wilderness-board">
+                <div className="grid grid-wilderness" style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(${gs},${cellPx}px)`}}>
+                  {renderWilderness()}
+                </div>
+                {renderPlayerLayer("wilderness")}
               </div>
 
               {!modChallengeRooms && (
@@ -1767,8 +1800,11 @@ export default function ObryndelMiniGame({ onExit }) {
                 <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(213,169,62,.4),transparent)"}}/>
               </div>
 
-              <div className="grid grid-kingdom kingdom-grid-outer" style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(${KINGDOM_ROWS},${cellPx}px)`}}>
-                {renderKingdom()}
+              <div className="iso-board kingdom-board">
+                <div className="grid grid-kingdom kingdom-grid-outer" style={{gridTemplateColumns:`repeat(${gs},${cellPx}px)`,gridTemplateRows:`repeat(${KINGDOM_ROWS},${cellPx}px)`}}>
+                  {renderKingdom()}
+                </div>
+                {renderPlayerLayer("kingdom")}
               </div>
               </>
               )}
