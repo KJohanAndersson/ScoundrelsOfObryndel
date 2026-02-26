@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import jsQR from 'jsqr';
 import ObryndelMiniGame from './ObryndelMiniGame';
+import SphereQuestGame from './SphereQuestGame';
 
 // Boss sprites
 import bossHead from './assets/boss-head.png';
@@ -694,6 +695,22 @@ export default function App() {
           <p style={{ color: 'rgba(160,190,220,0.3)', fontSize: '0.72rem', margin: '-4px 0 0', letterSpacing: 1 }}>
             Cooperative shard-gathering mini game
           </p>
+
+          <button
+            style={{
+              ...buttonStyle,
+              background: 'linear-gradient(180deg,#27214f,#120c2c)',
+              border: '1px solid rgba(130,110,220,0.3)',
+              color: '#d9d0ff',
+              marginTop: 6,
+            }}
+            onClick={() => { abortNarration(); setScreen('sphereQuest'); }}
+          >
+            Sphere Quest
+          </button>
+          <p style={{ color: 'rgba(180,170,230,0.35)', fontSize: '0.72rem', margin: '-4px 0 0', letterSpacing: 1 }}>
+            3D board prototype
+          </p>
         </div>
 
         {/* Test shortcuts */}
@@ -712,6 +729,10 @@ export default function App() {
   // ─── Co-op Prototype mini game ─────────────────────────────────────────────
   if (screen === 'miniGame') {
     return <ObryndelMiniGame onExit={() => setScreen('main')} />;
+  }
+
+  if (screen === 'sphereQuest') {
+    return <SphereQuestGame onExit={() => setScreen('main')} />;
   }
 
   // ─── Intro ─────────────────────────────────────────────────────────────────
