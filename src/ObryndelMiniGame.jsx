@@ -69,6 +69,19 @@ const COLOR_BG = {
   empty:  "rgba(0,0,0,0)",
 };
 
+function hexToRgba(hex, alpha) {
+  if (!hex) return `rgba(213,169,62,${alpha})`;
+  const raw = hex.replace("#", "");
+  const full = raw.length === 3
+    ? raw.split("").map(ch => ch + ch).join("")
+    : raw;
+  const value = parseInt(full, 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 const EVENT_CARDS = [
   { id: "teleport", icon: "🌀", name: "Teleportation Trap!", desc: "You are teleported to a random location on the map!" },
   { id: "stun",     icon: "💫", name: "Brick to the Head!", desc: "You are stunned and skip your next turn!" },
@@ -365,12 +378,16 @@ h1.og-title{position:relative;font-family:'Cinzel',serif;font-size:clamp(1.6rem,
 .start-btn:disabled{opacity:.3;cursor:not-allowed}
 .game-layout{position:relative;display:grid;grid-template-columns:minmax(360px,1fr) minmax(250px,300px);gap:18px;align-items:flex-start;width:100%;max-width:1220px}
 .grid-wrap{position:relative;flex-shrink:0;padding:10px;border-radius:16px;background:linear-gradient(180deg,rgba(21,14,9,.82),rgba(7,4,3,.88));border:1px solid rgba(213,169,62,.18);box-shadow:0 22px 90px rgba(0,0,0,.82),inset 0 1px 0 rgba(255,255,255,.04)}
+.grid-wrap::before{content:'';position:absolute;inset:0;border-radius:16px;pointer-events:none;background:linear-gradient(180deg,rgba(255,220,170,.06),transparent 24%,transparent 70%,rgba(0,0,0,.3))}
+.grid-wrap::after{content:'';position:absolute;inset:0;border-radius:16px;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),inset 0 0 65px rgba(0,0,0,.45)}
 .grid-container{display:flex;flex-direction:column;gap:0;align-items:center}
 .grid{display:grid;gap:0;background:rgba(0,0,0,.8);border:1px solid rgba(213,169,62,.2);padding:4px;box-shadow:0 20px 80px rgba(0,0,0,.8)}
 .grid-wilderness{border-radius:10px 10px 0 0;border-bottom:none;padding-bottom:0}
 .grid-kingdom{border-radius:0 0 10px 10px;border-top:none;padding-top:0;background:rgba(30,18,8,.8)}
 .kingdom-grid-outer{background:rgba(30,18,8,.8) !important;border:none !important;box-shadow:none !important;border-radius:0 !important}
 .cell{position:relative;display:flex;align-items:center;justify-content:center;font-size:clamp(9px,1.5vw,15px);cursor:default;transition:transform 90ms ease,opacity 350ms ease,box-shadow 120ms ease;border:1px solid rgba(0,0,0,.3);overflow:hidden}
+.cell::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.24;background-image:radial-gradient(circle at 18% 22%,rgba(255,255,255,.25) 0 1px,transparent 2px),radial-gradient(circle at 72% 36%,rgba(0,0,0,.28) 0 1px,transparent 2px),radial-gradient(circle at 40% 78%,rgba(255,255,255,.16) 0 1px,transparent 2px)}
+.cell::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.3;mix-blend-mode:screen;background:linear-gradient(145deg,rgba(255,255,255,.16),transparent 36%,rgba(0,0,0,.2) 85%)}
 .cell.gone{opacity:0;pointer-events:none}
 .cell.sw-able{cursor:pointer;outline:2px dashed rgba(255,255,255,.2);outline-offset:-3px}
 .cell.sw-able:hover{transform:scale(1.07);z-index:2}
@@ -379,6 +396,18 @@ h1.og-title{position:relative;font-family:'Cinzel',serif;font-size:clamp(1.6rem,
 .cell.kingdom-cell{border-color:rgba(213,169,62,.3) !important}
 .cell.dark-cell{background:#0a0806 !important;border-color:rgba(0,0,0,.8) !important}
 .cell.dark-edge{filter:brightness(0.45)}
+.cell.dark-cell::before,.cell.dark-cell::after,.cell.gone::before,.cell.gone::after{display:none}
+.tile-red::after{opacity:.42;background:linear-gradient(165deg,rgba(255,210,190,.2),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.05) 0 2px,transparent 2px 7px)}
+.tile-blue::after{opacity:.42;background:linear-gradient(165deg,rgba(190,220,255,.24),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.05) 0 2px,transparent 2px 7px)}
+.tile-yellow::after{opacity:.42;background:linear-gradient(165deg,rgba(255,240,200,.2),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.05) 0 2px,transparent 2px 7px)}
+.tile-green::after{opacity:.42;background:linear-gradient(165deg,rgba(215,255,215,.2),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.05) 0 2px,transparent 2px 7px)}
+.tile-white::after{opacity:.3;background:linear-gradient(165deg,rgba(255,255,255,.22),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.06) 0 2px,transparent 2px 7px)}
+.tile-black::after{opacity:.15;background:linear-gradient(165deg,rgba(255,255,255,.08),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.04) 0 2px,transparent 2px 8px)}
+.tile-kingdom::after{opacity:.38;background:linear-gradient(165deg,rgba(255,220,150,.2),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.05) 0 2px,transparent 2px 8px)}
+.kingdom-locked::after{opacity:.2;background:repeating-linear-gradient(45deg,rgba(210,120,255,.08) 0 2px,transparent 2px 8px)}
+.tile-hazard-spike::after{opacity:.5;background:linear-gradient(165deg,rgba(255,170,170,.25),transparent 45%),repeating-linear-gradient(45deg,rgba(255,200,200,.08) 0 2px,transparent 2px 6px)}
+.tile-hazard-gap::after{opacity:.08;background:repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0 2px,transparent 2px 9px)}
+.tile-start-sigil::before{opacity:.35;background-image:radial-gradient(circle at 50% 50%,rgba(255,255,255,.26) 0 15%,transparent 35%),repeating-conic-gradient(from 0deg,rgba(255,255,255,.08) 0deg 10deg,transparent 10deg 20deg)}
 .cell-wall-top{border-top:2px solid rgba(85,85,85,.95) !important}
 .cell-wall-right{border-right:2px solid rgba(85,85,85,.95) !important}
 .cell-wall-bottom{border-bottom:2px solid rgba(85,85,85,.95) !important}
@@ -437,24 +466,30 @@ h1.og-title{position:relative;font-family:'Cinzel',serif;font-size:clamp(1.6rem,
 input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:rgba(213,169,62,.3);outline:none;cursor:pointer;flex:1}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#D9B65A;cursor:pointer;box-shadow:0 0 6px rgba(213,169,62,.6)}
 .all-gathered-banner{background:linear-gradient(180deg,rgba(80,30,120,.9),rgba(30,10,50,.9));border:1px solid rgba(180,80,220,.4);border-radius:12px;padding:12px 16px;text-align:center;font-family:'Cinzel',serif;font-size:.78rem;color:#e080ff;letter-spacing:1px;line-height:1.6;margin-bottom:8px;box-shadow:0 0 30px rgba(180,80,220,.15);animation:popIn .5s ease}
+.obj-token{display:inline-block;animation:objHover 2.2s ease-in-out infinite}
+.enemy-token{display:flex;align-items:center;justify-content:center}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+@keyframes objHover{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
 .maze-wall-n{border-top:2px solid rgba(85,85,85,.95) !important}
 .maze-wall-e{border-right:2px solid rgba(85,85,85,.95) !important}
 .maze-wall-s{border-bottom:2px solid rgba(85,85,85,.95) !important}
 .maze-wall-w{border-left:2px solid rgba(85,85,85,.95) !important}
 .stun-badge{background:rgba(255,220,0,.15);border:1px solid rgba(255,220,0,.4);border-radius:5px;padding:1px 6px;font-size:.6rem;color:rgba(255,220,0,.8);margin-left:4px}
 .turn-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(20,16,12,.75);border:1px solid rgba(213,169,62,.45);box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 10px rgba(213,169,62,.2);font-size:1rem}
-.board-piece{width:82%;height:82%;max-width:28px;max-height:28px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.22),rgba(0,0,0,.06));border:1px solid rgba(237,230,207,.28);box-shadow:0 0 0 1px rgba(0,0,0,.45),0 3px 7px rgba(0,0,0,.65);border-radius:50%;font-size:1em;line-height:1}
-.board-piece.current{box-shadow:0 0 0 1px rgba(213,169,62,.45),0 0 12px rgba(213,169,62,.45),0 3px 7px rgba(0,0,0,.7)}
-.board-piece.dead{opacity:.35;filter:grayscale(1)}
-.board-piece.mini{width:14px;height:14px;font-size:.56em}
+.board-piece{--piece-glow:rgba(213,169,62,.3);--piece-glow-strong:rgba(213,169,62,.55);--piece-stroke:rgba(213,169,62,.4);width:82%;height:82%;max-width:28px;max-height:28px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.24),rgba(0,0,0,.05));border:1px solid rgba(237,230,207,.32);box-shadow:0 0 0 1px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.6),0 0 12px var(--piece-glow);border-radius:50%;font-size:1em;line-height:1;transform-origin:center 75%;animation:pieceFloat 2.3s ease-in-out infinite,pieceEnter .25s cubic-bezier(.2,.9,.2,1)}
+.board-piece.current{box-shadow:0 0 0 1px var(--piece-stroke),0 0 14px var(--piece-glow-strong),0 3px 8px rgba(0,0,0,.72);animation:pieceFloat 1.6s ease-in-out infinite,piecePulse 1.8s ease-in-out infinite,pieceEnter .25s cubic-bezier(.2,.9,.2,1)}
+.board-piece.dead{opacity:.35;filter:grayscale(1);animation:none}
+.board-piece.mini{width:14px;height:14px;font-size:.56em;animation:pieceEnter .2s ease-out}
 @media (max-width: 1020px){
   .game-layout{grid-template-columns:1fr;max-width:760px}
   .sidebar{max-width:none}
 }
+@keyframes pieceEnter{0%{transform:translateY(6px) scale(.6);opacity:0}100%{transform:translateY(0) scale(1);opacity:1}}
+@keyframes pieceFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.8px)}}
+@keyframes piecePulse{0%,100%{filter:drop-shadow(0 0 0 transparent)}50%{filter:drop-shadow(0 0 8px var(--piece-glow-strong))}}
 `;
 
 function ModToggle({ active, icon, label, desc, onClick }) {
@@ -1501,10 +1536,14 @@ export default function ObryndelMiniGame({ onExit }) {
                 "cell",
                 isGone?"gone":"",
                 isStart?"start-cell":"",
+                isStart?"tile-start-sigil":"",
                 isSwAble&&!isDark?"sw-able":"",
                 isSwSel?"sw-sel":"",
                 isDark?"dark-cell":"",
                 isEdge&&!isDark?"dark-edge":"",
+                !isDark&&!isGone?`tile-${color}`:"",
+                modChallengeRooms && isSpikeCell && challenge && challenge.spikesActive ? "tile-hazard-spike" : "",
+                modChallengeRooms && isGapCell && challenge && !challenge.bridgeActive ? "tile-hazard-gap" : "",
                 wallClasses,
               ].join(" ")}
               style={{
@@ -1532,7 +1571,7 @@ export default function ObryndelMiniGame({ onExit }) {
               onClick={()=>handleCellClick(x,y)}
             >
               {isObj && obj && !isGone && !isDark && (
-                <span style={{opacity: inventory[PLAYER_COLORS.indexOf(obj.id)] ? 0.12 : 0.9, filter:"drop-shadow(0 1px 3px rgba(0,0,0,.8))"}}>
+                <span className="obj-token" style={{opacity: inventory[PLAYER_COLORS.indexOf(obj.id)] ? 0.12 : 0.9, filter:"drop-shadow(0 1px 3px rgba(0,0,0,.8))"}}>
                   {obj.emoji}
                 </span>
               )}
@@ -1558,12 +1597,12 @@ export default function ObryndelMiniGame({ onExit }) {
                 </span>
               ))}
               {enemyVisible && enemiesHere.map((en,ei)=>(
-                <div key={ei} className="eby" style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1em",zIndex:20,filter:`drop-shadow(0 0 6px rgba(200,20,20,.95))${en.stunned>0?" grayscale(1)":""}`}}>
+                <div key={ei} className="eby enemy-token" style={{position:"absolute",inset:0,fontSize:"1em",zIndex:20,filter:`drop-shadow(0 0 6px rgba(200,20,20,.95))${en.stunned>0?" grayscale(1)":""}`}}>
                   👁️
                 </div>
               ))}
               {modChallengeRooms && challengeEnemiesHere.map((en,ei)=>( 
-                <div key={`ce-${ei}`} className="eby" style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1em",zIndex:20,filter:(en.fleeing>0||en.returnIn>0)?"grayscale(1) drop-shadow(0 0 6px rgba(200,20,20,.95))":"drop-shadow(0 0 6px rgba(200,20,20,.95))"}}>
+                <div key={`ce-${ei}`} className="eby enemy-token" style={{position:"absolute",inset:0,fontSize:"1em",zIndex:20,filter:(en.fleeing>0||en.returnIn>0)?"grayscale(1) drop-shadow(0 0 6px rgba(200,20,20,.95))":"drop-shadow(0 0 6px rgba(200,20,20,.95))"}}>
                   👁️
                 </div>
               ))}
@@ -1577,7 +1616,11 @@ export default function ObryndelMiniGame({ onExit }) {
                   display:"flex",alignItems:"center",justifyContent:"center",
                   zIndex:10,
                 }}>
-                  <div className={`board-piece${pi===cp?" current":""}${dead[pi]?" dead":""}${playersHere.length>1?" mini":""}`}>
+                  <div className={`board-piece${pi===cp?" current":""}${dead[pi]?" dead":""}${playersHere.length>1?" mini":""}`} style={{
+                    "--piece-glow": hexToRgba(playerChars[pi]?.color || COLOR_HEX[PLAYER_COLORS[pi]], 0.32),
+                    "--piece-glow-strong": hexToRgba(playerChars[pi]?.color || COLOR_HEX[PLAYER_COLORS[pi]], 0.58),
+                    "--piece-stroke": hexToRgba(playerChars[pi]?.color || COLOR_HEX[PLAYER_COLORS[pi]], 0.62),
+                  }}>
                     {getPlayerToken(pi)}
                   </div>
                 </div>
@@ -1603,7 +1646,7 @@ export default function ObryndelMiniGame({ onExit }) {
           return (
             <div
               key={key}
-              className="cell kingdom-cell"
+              className={`cell kingdom-cell tile-kingdom${locked ? " kingdom-locked" : ""}`}
               style={{
                 width:cellPx, height:cellPx,
                 background: locked
@@ -1643,7 +1686,11 @@ export default function ObryndelMiniGame({ onExit }) {
                   display:"flex",alignItems:"center",justifyContent:"center",
                   zIndex:10,
                 }}>
-                  <div className={`board-piece${pi===cp?" current":""}${dead[pi]?" dead":""}${playersHere.length>1?" mini":""}`}>
+                  <div className={`board-piece${pi===cp?" current":""}${dead[pi]?" dead":""}${playersHere.length>1?" mini":""}`} style={{
+                    "--piece-glow": hexToRgba(playerChars[pi]?.color || COLOR_HEX[PLAYER_COLORS[pi]], 0.32),
+                    "--piece-glow-strong": hexToRgba(playerChars[pi]?.color || COLOR_HEX[PLAYER_COLORS[pi]], 0.58),
+                    "--piece-stroke": hexToRgba(playerChars[pi]?.color || COLOR_HEX[PLAYER_COLORS[pi]], 0.62),
+                  }}>
                     {getPlayerToken(pi)}
                   </div>
                 </div>
@@ -1751,7 +1798,10 @@ export default function ObryndelMiniGame({ onExit }) {
                 </div>
               )}
               <div className="p-ind">
-                <div className="turn-avatar">{getPlayerToken(cp)}</div>
+                <div className="turn-avatar" style={{
+                  borderColor: hexToRgba(cpChar?.color || COLOR_HEX[cpColor], 0.72),
+                  boxShadow: `0 0 0 1px rgba(0,0,0,.6), 0 0 12px ${hexToRgba(cpChar?.color || COLOR_HEX[cpColor], 0.42)}`
+                }}>{getPlayerToken(cp)}</div>
                 <div className="p-dot" style={{background:COLOR_HEX[cpColor],boxShadow:`0 0 8px ${COLOR_HEX[cpColor]}`}}/>
                 <div className="p-nm">{cpChar?cpChar.name:PLAYER_NAMES[cp]}</div>
                 {inventory[cp]&&<span style={{fontSize:"0.82rem"}} title="Carrying relic">{"\u26A1"}</span>}
