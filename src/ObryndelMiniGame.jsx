@@ -381,21 +381,28 @@ h1.og-title{position:relative;font-family:'Cinzel',serif;font-size:clamp(1.6rem,
 .grid-wrap::before{content:'';position:absolute;inset:0;border-radius:16px;pointer-events:none;background:linear-gradient(180deg,rgba(255,220,170,.06),transparent 24%,transparent 70%,rgba(0,0,0,.3))}
 .grid-wrap::after{content:'';position:absolute;inset:0;border-radius:16px;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),inset 0 0 65px rgba(0,0,0,.45)}
 .grid-container{display:flex;flex-direction:column;gap:0;align-items:center}
-.iso-board{position:relative;transform-style:preserve-3d}
-.iso-board.wilderness-board{transform:perspective(1280px) rotateX(56deg) rotateZ(-8deg) scale(0.98);transform-origin:center center;filter:drop-shadow(0 26px 22px rgba(0,0,0,.62))}
-.iso-board.kingdom-board{transform:perspective(1280px) rotateX(56deg) rotateZ(-8deg) scale(0.96);transform-origin:center center;filter:drop-shadow(0 20px 18px rgba(0,0,0,.54))}
-.grid{display:grid;gap:0;background:rgba(0,0,0,.8);border:1px solid rgba(213,169,62,.2);padding:4px;box-shadow:0 20px 80px rgba(0,0,0,.8)}
-.grid-wilderness{border-radius:10px 10px 0 0;border-bottom:none;padding-bottom:0}
-.grid-kingdom{border-radius:0 0 10px 10px;border-top:none;padding-top:0;background:rgba(30,18,8,.8)}
-.kingdom-grid-outer{background:rgba(30,18,8,.8) !important;border:none !important;box-shadow:none !important;border-radius:0 !important}
+.iso-board{position:relative;transform:none;transform-style:flat}
+.iso-board.wilderness-board{filter:drop-shadow(0 14px 18px rgba(0,0,0,.55))}
+.iso-board.kingdom-board{filter:drop-shadow(0 12px 15px rgba(0,0,0,.5))}
+.grid{display:grid;gap:0;background:linear-gradient(180deg,rgba(12,9,7,.92),rgba(5,4,3,.94));border:1px solid rgba(213,169,62,.24);padding:4px;box-shadow:0 14px 46px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,255,255,.04)}
+.grid-wilderness{border-radius:10px 10px 0 0;border-bottom:none;padding-bottom:0;background:
+  radial-gradient(circle at 20% 18%,rgba(150,115,72,.14),transparent 42%),
+  radial-gradient(circle at 78% 72%,rgba(70,100,88,.12),transparent 45%),
+  repeating-linear-gradient(45deg,rgba(255,255,255,.03) 0 2px,transparent 2px 8px),
+  linear-gradient(180deg,#231b14,#15100c)}
+.grid-kingdom{border-radius:0 0 10px 10px;border-top:none;padding-top:0;background:
+  radial-gradient(circle at 30% 20%,rgba(190,155,105,.14),transparent 42%),
+  repeating-linear-gradient(45deg,rgba(255,255,255,.03) 0 2px,transparent 2px 7px),
+  linear-gradient(180deg,#322213,#1e150d)}
+.kingdom-grid-outer{background:transparent !important;border:none !important;box-shadow:none !important;border-radius:0 !important}
 .actor-layer{position:absolute;top:4px;left:4px;pointer-events:none;z-index:40}
 .actor-node{position:absolute;transform:translate(-50%,-58%);transition:left 260ms cubic-bezier(.2,.9,.2,1),top 260ms cubic-bezier(.2,.9,.2,1),transform 220ms ease;will-change:left,top,transform}
 .actor-node.current{transform:translate(-50%,-62%)}
 .actor-node.mini{transform:translate(-50%,-52%)}
 .actor-node.dead{transform:translate(-50%,-46%)}
 .cell{position:relative;display:flex;align-items:center;justify-content:center;font-size:clamp(9px,1.5vw,15px);cursor:default;transition:transform 90ms ease,opacity 350ms ease,box-shadow 120ms ease;border:1px solid rgba(0,0,0,.3);overflow:hidden}
-.cell::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.24;background-image:radial-gradient(circle at 18% 22%,rgba(255,255,255,.25) 0 1px,transparent 2px),radial-gradient(circle at 72% 36%,rgba(0,0,0,.28) 0 1px,transparent 2px),radial-gradient(circle at 40% 78%,rgba(255,255,255,.16) 0 1px,transparent 2px)}
-.cell::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.3;mix-blend-mode:screen;background:linear-gradient(145deg,rgba(255,255,255,.16),transparent 36%,rgba(0,0,0,.2) 85%)}
+.cell::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.2;background-image:radial-gradient(circle at 22% 28%,rgba(255,255,255,.18) 0 1px,transparent 2px),radial-gradient(circle at 74% 64%,rgba(0,0,0,.24) 0 1px,transparent 2px),repeating-linear-gradient(35deg,rgba(255,255,255,.03) 0 1px,transparent 1px 6px)}
+.cell::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.28;background:linear-gradient(160deg,rgba(255,255,255,.1),transparent 40%,rgba(0,0,0,.22) 100%)}
 .cell.gone{opacity:0;pointer-events:none}
 .cell.sw-able{cursor:pointer;outline:2px dashed rgba(255,255,255,.2);outline-offset:-3px}
 .cell.sw-able:hover{transform:scale(1.07);z-index:2}
@@ -405,13 +412,13 @@ h1.og-title{position:relative;font-family:'Cinzel',serif;font-size:clamp(1.6rem,
 .cell.dark-cell{background:#0a0806 !important;border-color:rgba(0,0,0,.8) !important}
 .cell.dark-edge{filter:brightness(0.45)}
 .cell.dark-cell::before,.cell.dark-cell::after,.cell.gone::before,.cell.gone::after{display:none}
-.tile-red::after{opacity:.42;background:linear-gradient(165deg,rgba(255,210,190,.2),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.05) 0 2px,transparent 2px 7px)}
-.tile-blue::after{opacity:.42;background:linear-gradient(165deg,rgba(190,220,255,.24),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.05) 0 2px,transparent 2px 7px)}
-.tile-yellow::after{opacity:.42;background:linear-gradient(165deg,rgba(255,240,200,.2),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.05) 0 2px,transparent 2px 7px)}
-.tile-green::after{opacity:.42;background:linear-gradient(165deg,rgba(215,255,215,.2),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.05) 0 2px,transparent 2px 7px)}
-.tile-white::after{opacity:.3;background:linear-gradient(165deg,rgba(255,255,255,.22),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.06) 0 2px,transparent 2px 7px)}
-.tile-black::after{opacity:.15;background:linear-gradient(165deg,rgba(255,255,255,.08),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.04) 0 2px,transparent 2px 8px)}
-.tile-kingdom::after{opacity:.38;background:linear-gradient(165deg,rgba(255,220,150,.2),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.05) 0 2px,transparent 2px 8px)}
+.tile-red::after{opacity:.38;background:linear-gradient(165deg,rgba(230,130,110,.16),transparent 46%),repeating-linear-gradient(35deg,rgba(255,255,255,.04) 0 2px,transparent 2px 7px)}
+.tile-blue::after{opacity:.38;background:linear-gradient(165deg,rgba(118,158,210,.18),transparent 46%),repeating-linear-gradient(35deg,rgba(255,255,255,.04) 0 2px,transparent 2px 7px)}
+.tile-yellow::after{opacity:.38;background:linear-gradient(165deg,rgba(215,185,118,.16),transparent 46%),repeating-linear-gradient(35deg,rgba(255,255,255,.04) 0 2px,transparent 2px 7px)}
+.tile-green::after{opacity:.38;background:linear-gradient(165deg,rgba(110,170,125,.16),transparent 46%),repeating-linear-gradient(35deg,rgba(255,255,255,.04) 0 2px,transparent 2px 7px)}
+.tile-white::after{opacity:.28;background:linear-gradient(165deg,rgba(245,235,215,.2),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.05) 0 2px,transparent 2px 8px)}
+.tile-black::after{opacity:.16;background:linear-gradient(165deg,rgba(255,255,255,.07),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.03) 0 2px,transparent 2px 8px)}
+.tile-kingdom::after{opacity:.35;background:linear-gradient(165deg,rgba(235,195,135,.16),transparent 45%),repeating-linear-gradient(35deg,rgba(255,255,255,.04) 0 2px,transparent 2px 8px)}
 .kingdom-locked::after{opacity:.2;background:repeating-linear-gradient(45deg,rgba(210,120,255,.08) 0 2px,transparent 2px 8px)}
 .tile-hazard-spike::after{opacity:.5;background:linear-gradient(165deg,rgba(255,170,170,.25),transparent 45%),repeating-linear-gradient(45deg,rgba(255,200,200,.08) 0 2px,transparent 2px 6px)}
 .tile-hazard-gap::after{opacity:.08;background:repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0 2px,transparent 2px 9px)}
