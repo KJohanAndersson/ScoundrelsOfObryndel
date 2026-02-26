@@ -244,7 +244,7 @@ function makeGrid(gridSize, playerCount, bwMode, hasMaze, hasColors) {
 
 const KINGDOM_ROWS = 5;
 
-function buildChallengeRoom(playerCount) {
+function buildChallengeRoom(chars, playerCount) {
   const gs = 10;
   const grid = {};
   for (let y = 0; y < gs; y++) {
@@ -253,31 +253,43 @@ function buildChallengeRoom(playerCount) {
     }
   }
 
-  const gap = { x: 1, y: 1 };
-  const crackedWall = { x: 3, y: 1, broken: false };
-  const button = { x: 5, y: 1, activated: false, flash: false };
-  const ball = { x: 0, y: 0 };
+  const laneByChar = {
+    gribberth: 2,
+    craglasha: 4,
+    brontarox: 6,
+    rithea: 8,
+  };
+  const defaultLanes = [2, 4, 6, 8];
+  const secondRowFromTop = 1;
+
+  const gap = { x: laneByChar.gribberth, y: secondRowFromTop };
+  const crackedWall = { x: laneByChar.craglasha, y: secondRowFromTop, broken: false };
+  const button = { x: laneByChar.brontarox, y: secondRowFromTop, activated: false, flash: false };
+  const ball = { x: laneByChar.rithea, y: secondRowFromTop };
   grid[cellKey(gap.x, gap.y)] = "empty";
   grid[cellKey(crackedWall.x, crackedWall.y)] = "black";
 
   const startY = gs - 1;
-  const defaultStartRow = [
-    { x: 3, y: startY },
-    { x: 4, y: startY },
-    { x: 5, y: startY },
-    { x: 6, y: startY },
-  ];
-  const startCells = defaultStartRow.slice(0, playerCount);
+  const usedLanes = new Set();
+  const startCells = Array.from({ length: playerCount }, (_, i) => {
+    const preferred = laneByChar[chars?.[i]];
+    let lane = preferred;
+    if (lane == null || usedLanes.has(lane)) {
+      lane = defaultLanes.find(v => !usedLanes.has(v)) ?? Math.min(gs - 1, i + 1);
+    }
+    usedLanes.add(lane);
+    return { x: lane, y: startY };
+  });
 
   const instructions = [
     "Click a character portrait to control that character.",
     "Move with WASD. There is no turn order in this mode.",
     "Press SPACE to target an ability. Red outlined tiles are valid targets.",
     "Press SPACE again to cancel targeting.",
-    "Goblin: jump exactly two tiles in a cardinal direction.",
-    "Orc: break adjacent cracked walls.",
-    "Cyclops: throw at objects exactly four tiles away.",
-    "Witch: pull line-of-sight objects in cardinal directions.",
+    "Goblin: jump one or two tiles in a cardinal direction.",
+    "Orc: can target any tile; only cracked walls are affected.",
+    "Cyclops: throw one to four tiles in a cardinal direction; only the button reacts.",
+    "Witch: can target any tile; only the round ball is affected.",
   ];
 
   return {
@@ -656,7 +668,7 @@ export default function ObryndelMiniGame({ onExit }) {
     if (modChallengeRooms) setGridSize(10);
 
     if (modChallengeRooms) {
-      const challenge = buildChallengeRoom(pc);
+      const challenge = buildChallengeRoom(chars, pc);
       setGrid(challenge.grid);
       setMazeWalls(null);
       setObjects([
@@ -799,51 +811,37 @@ export default function ObryndelMiniGame({ onExit }) {
     const dirs = [[0,-1],[1,0],[0,1],[-1,0]];
 
     if (charId === "gribberth") {
-      dirs.forEach(([dx, dy]) => {
-        const tx = pos.x + dx * 2;
-        const ty = pos.y + dy * 2;
-        if (!inBounds(tx, ty)) return;
-        if (isChallengeBlockedCell(tx, ty, cs)) return;
-        if (occupiedByOthers.has(cellKey(tx, ty))) return;
-        addTarget(tx, ty, { type: "jump" });
+      [1, 2].forEach((distance) => {
+        dirs.forEach(([dx, dy]) => {
+          const tx = pos.x + dx * distance;
+          const ty = pos.y + dy * distance;
+          if (!inBounds(tx, ty)) return;
+          if (isChallengeBlockedCell(tx, ty, cs)) return;
+          if (occupiedByOthers.has(cellKey(tx, ty))) return;
+          addTarget(tx, ty, { type: "jump", distance, from: { x: pos.x, y: pos.y } });
+        });
       });
     } else if (charId === "craglasha") {
-      dirs.forEach(([dx, dy]) => {
-        const tx = pos.x + dx;
-        const ty = pos.y + dy;
-        if (!inBounds(tx, ty)) return;
-        if (cs.crackedWall && !cs.crackedWall.broken && cs.crackedWall.x === tx && cs.crackedWall.y === ty) {
-          addTarget(tx, ty, { type: "breakWall" });
+      for (let y = 0; y < snapshot.gridSize; y++) {
+        for (let x = 0; x < snapshot.gridSize; x++) {
+          addTarget(x, y, { type: "breakWall" });
         }
-      });
+      }
     } else if (charId === "brontarox") {
       dirs.forEach(([dx, dy]) => {
-        const tx = pos.x + dx * 4;
-        const ty = pos.y + dy * 4;
-        if (!inBounds(tx, ty)) return;
-        for (let s = 1; s < 4; s++) {
-          const cx = pos.x + dx * s;
-          const cy = pos.y + dy * s;
-          if (isChallengeBlockedCell(cx, cy, cs)) return;
+        for (let distance = 1; distance <= 4; distance++) {
+          const tx = pos.x + dx * distance;
+          const ty = pos.y + dy * distance;
+          if (!inBounds(tx, ty)) continue;
+          addTarget(tx, ty, { type: "throw", distance });
         }
-        const object = snapshot.objects.find(o => o.x === tx && o.y === ty);
-        if (!object) return;
-        addTarget(tx, ty, { type: "throw", objectId: object.id });
       });
     } else if (charId === "rithea") {
-      dirs.forEach(([dx, dy]) => {
-        for (let s = 1; s < snapshot.gridSize; s++) {
-          const tx = pos.x + dx * s;
-          const ty = pos.y + dy * s;
-          if (!inBounds(tx, ty)) break;
-          if (isChallengeBlockedCell(tx, ty, cs)) break;
-          if (occupiedByOthers.has(cellKey(tx, ty))) break;
-          const object = snapshot.objects.find(o => o.x === tx && o.y === ty);
-          if (!object) continue;
-          if (object.pullable) addTarget(tx, ty, { type: "pull", objectId: object.id });
-          break;
+      for (let y = 0; y < snapshot.gridSize; y++) {
+        for (let x = 0; x < snapshot.gridSize; x++) {
+          addTarget(x, y, { type: "pull" });
         }
-      });
+      }
     }
 
     return { targets, meta };
@@ -882,24 +880,32 @@ export default function ObryndelMiniGame({ onExit }) {
     if (targetMeta.type === "jump") {
       if (!cpPos) return;
       setPositions(prev => prev.map((p, i) => i === cp ? { x, y } : p));
-      nextCs.completed.goblin = true;
-      addLog(`${cpChar?.emoji || "👺"} ${cpChar?.name || PLAYER_NAMES[cp]} jumps across!`);
+      const jumpedTwo = Math.abs(cpPos.x - x) + Math.abs(cpPos.y - y) === 2;
+      if (jumpedTwo && nextCs.gap) {
+        const midX = cpPos.x + Math.sign(x - cpPos.x);
+        const midY = cpPos.y + Math.sign(y - cpPos.y);
+        if (midX === nextCs.gap.x && midY === nextCs.gap.y) {
+          nextCs.completed.goblin = true;
+        }
+      }
+      addLog(`${cpChar?.emoji || "👺"} ${cpChar?.name || PLAYER_NAMES[cp]} jumps ${targetMeta.distance || 1} tile${(targetMeta.distance || 1) > 1 ? "s" : ""}.`);
       used = true;
     }
 
     if (targetMeta.type === "breakWall") {
-      if (!nextCs.crackedWall || nextCs.crackedWall.broken) return;
-      nextCs.crackedWall = { ...nextCs.crackedWall, broken: true };
-      setGrid(prev => ({ ...prev, [cellKey(nextCs.crackedWall.x, nextCs.crackedWall.y)]: "white" }));
-      nextCs.completed.orc = true;
-      addLog(`${cpChar?.emoji || "👹"} ${cpChar?.name || PLAYER_NAMES[cp]} smashes the cracked wall.`);
+      if (nextCs.crackedWall && !nextCs.crackedWall.broken && nextCs.crackedWall.x === x && nextCs.crackedWall.y === y) {
+        nextCs.crackedWall = { ...nextCs.crackedWall, broken: true };
+        setGrid(prev => ({ ...prev, [cellKey(nextCs.crackedWall.x, nextCs.crackedWall.y)]: "white" }));
+        nextCs.completed.orc = true;
+        addLog(`${cpChar?.emoji || "👹"} ${cpChar?.name || PLAYER_NAMES[cp]} smashes the cracked wall.`);
+      } else {
+        addLog(`${cpChar?.emoji || "👹"} ${cpChar?.name || PLAYER_NAMES[cp]} punches the ground. Only cracked walls break.`);
+      }
       used = true;
     }
 
     if (targetMeta.type === "throw") {
-      const object = s.objects.find(o => o.id === targetMeta.objectId && o.x === x && o.y === y);
-      if (!object) return;
-      if (object.id === "challenge-button") {
+      if (nextCs.button && nextCs.button.x === x && nextCs.button.y === y) {
         nextCs.button = { ...nextCs.button, activated: true, flash: true };
         nextCs.completed.cyclops = true;
         addLog(`${cpChar?.emoji || "🌀"} ${cpChar?.name || PLAYER_NAMES[cp]} activates the button with a boulder throw!`);
@@ -910,40 +916,38 @@ export default function ObryndelMiniGame({ onExit }) {
           });
         }, 420);
       } else {
-        addLog(`${cpChar?.emoji || "🌀"} boulder strike lands on ${object.label}.`);
+        addLog(`${cpChar?.emoji || "🌀"} ${cpChar?.name || PLAYER_NAMES[cp]} hurls a boulder, but only the button reacts.`);
       }
       used = true;
     }
 
     if (targetMeta.type === "pull") {
-      const object = s.objects.find(o => o.id === targetMeta.objectId && o.x === x && o.y === y);
-      if (!object || !cpPos) return;
-      const dx = Math.sign(object.x - cpPos.x);
-      const dy = Math.sign(object.y - cpPos.y);
-      const dist = Math.abs(object.x - cpPos.x) + Math.abs(object.y - cpPos.y);
-      let destination = null;
-
-      for (let step = 1; step < dist; step++) {
-        const tx = cpPos.x + dx * step;
-        const ty = cpPos.y + dy * step;
-        if (isChallengeBlockedCell(tx, ty, s.challengeState)) continue;
-        if (s.positions.some((p, i) => i !== cp && p.x === tx && p.y === ty && !s.dead[i])) continue;
-        destination = { x: tx, y: ty };
-        break;
+      if (!cpPos) return;
+      const ballObj = s.objects.find(o => o.id === "challenge-ball");
+      if (ballObj && ballObj.x === x && ballObj.y === y) {
+        const dirs = [[0,-1],[1,0],[0,1],[-1,0]];
+        let destination = null;
+        for (const [dx, dy] of dirs) {
+          const tx = cpPos.x + dx;
+          const ty = cpPos.y + dy;
+          if (tx < 0 || tx >= s.gridSize || ty < 0 || ty >= s.gridSize) continue;
+          if (isChallengeBlockedCell(tx, ty, s.challengeState)) continue;
+          if (s.positions.some((p, i) => i !== cp && p.x === tx && p.y === ty && !s.dead[i])) continue;
+          if (s.objects.some(o => o.id !== "challenge-ball" && o.x === tx && o.y === ty)) continue;
+          destination = { x: tx, y: ty };
+          break;
+        }
+        if (!destination) {
+          addLog("No free adjacent tile to pull the ball into.");
+        } else {
+          setObjects(prev => prev.map(o => o.id === "challenge-ball" ? { ...o, x: destination.x, y: destination.y } : o));
+          nextCs.ball = { x: destination.x, y: destination.y };
+          nextCs.completed.witch = true;
+          addLog(`${cpChar?.emoji || "🧙"} ${cpChar?.name || PLAYER_NAMES[cp]} pulls the round ball closer.`);
+        }
+      } else {
+        addLog(`${cpChar?.emoji || "🧙"} ${cpChar?.name || PLAYER_NAMES[cp]} casts pull, but only the round ball is affected.`);
       }
-
-      if (!destination) {
-        addLog("No free tile to pull that object to.");
-        clearChallengeAbilitySelection();
-        return;
-      }
-
-      setObjects(prev => prev.map(o => o.id === object.id ? { ...o, x: destination.x, y: destination.y } : o));
-      if (object.id === "challenge-ball") {
-        nextCs.ball = { x: destination.x, y: destination.y };
-        nextCs.completed.witch = true;
-      }
-      addLog(`${cpChar?.emoji || "🧙"} ${cpChar?.name || PLAYER_NAMES[cp]} pulls ${object.label}.`);
       used = true;
     }
 
@@ -1548,10 +1552,10 @@ export default function ObryndelMiniGame({ onExit }) {
     );
     const cpChar = playerChars[cp];
     const challengeAbilityText = {
-      gribberth: "Jump exactly 2 tiles in a cardinal direction.",
-      craglasha: "Break an adjacent cracked wall tile.",
-      brontarox: "Throw at an object exactly 4 tiles away in a cardinal direction.",
-      rithea: "Pull a line-of-sight object in a cardinal direction.",
+      gribberth: "Jump 1 or 2 tiles in a cardinal direction.",
+      craglasha: "Target any tile; only cracked walls are affected.",
+      brontarox: "Throw 1 to 4 tiles in cardinal directions; only the button reacts.",
+      rithea: "Target any tile; only the round ball is affected.",
     };
     const challengeObjectiveByChar = {
       gribberth: "goblin",
