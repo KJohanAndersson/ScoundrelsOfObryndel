@@ -662,7 +662,7 @@ export default function App() {
         {/* Primary launch buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginTop: 8 }}>
           <button style={buttonStyle} onClick={() => launchGame(true)}>
-            Start (Requires specific QR-codes)
+            Prototype QR-scan (requires QR-codes)
           </button>
           <button
             style={{
@@ -673,7 +673,7 @@ export default function App() {
             }}
             onClick={() => launchGame(false)}
           >
-            No QR Mode
+            Scan prototype (without QR scan)
           </button>
           <p style={{ color: 'rgba(200,180,130,0.35)', fontSize: '0.72rem', margin: '2px 0 0', letterSpacing: 1 }}>
             Use buttons instead of card scanning
@@ -690,10 +690,10 @@ export default function App() {
             }}
             onClick={() => { abortNarration(); setScreen('miniGame'); }}
           >
-            🗺️ Co-op Prototype
+            2D co-op game mechanics sandbox
           </button>
           <p style={{ color: 'rgba(160,190,220,0.3)', fontSize: '0.72rem', margin: '-4px 0 0', letterSpacing: 1 }}>
-            Cooperative shard-gathering mini game
+            Cooperative shard-gathering sandbox
           </p>
 
           <button
@@ -706,7 +706,7 @@ export default function App() {
             }}
             onClick={() => { abortNarration(); setScreen('sphereQuest'); }}
           >
-            Sphere Quest
+            Sphere Quest (iteration for legibility)
           </button>
           <p style={{ color: 'rgba(180,170,230,0.35)', fontSize: '0.72rem', margin: '-4px 0 0', letterSpacing: 1 }}>
             3D board prototype
@@ -717,9 +717,9 @@ export default function App() {
         <div style={testSectionStyle}>
           <p style={testLabelStyle}>— test shortcuts —</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-            <button style={testButtonStyle} onClick={launchTestCharacterScan}>🎴 Scan Characters</button>
-            <button style={testButtonStyle} onClick={launchTestEventScan}>🗺️ Scan Event Cards</button>
-            <button style={testButtonStyle} onClick={launchTestBoss}>💀 Boss Fight</button>
+            <button style={testButtonStyle} onClick={launchTestCharacterScan}>Scan Characters (requires QR)</button>
+            <button style={testButtonStyle} onClick={launchTestEventScan}>Scan Event Cards (requires QR)</button>
+            <button style={testButtonStyle} onClick={launchTestBoss}>Boss with zones (not finished)</button>
           </div>
         </div>
       </div>
