@@ -662,7 +662,7 @@ export default function App() {
         {/* Primary launch buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginTop: 8 }}>
           <button style={buttonStyle} onClick={() => launchGame(true)}>
-            Start Game
+            Start (Requires specific QR-codes)
           </button>
           <button
             style={{
