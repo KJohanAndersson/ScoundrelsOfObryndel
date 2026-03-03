@@ -86,84 +86,12 @@ function buildTITopology(V) {
   return { faces, centroids, fAdj };
 }
 
-// ── Geodesic sphere builder for 42 and 72 tiles ───────────────────────────
-function buildGeodesicSphere(subdivisions) {
-  // Build icosahedron vertices
-  const t = (1 + Math.sqrt(5)) / 2;
-  const rawVerts = [
-    [-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0],
-    [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
-    [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1],
-  ].map(([x, y, z]) => { const l = Math.sqrt(x*x+y*y+z*z); return new THREE.Vector3(x/l, y/l, z/l); });
-
-  const icoFaces = [
-    [0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],
-    [1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],
-    [3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],
-    [4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1],
-  ];
-
-  // Subdivide
-  const verts = [...rawVerts];
-  const midCache = new Map();
-  const getMid = (a, b) => {
-    const key = a < b ? `${a}_${b}` : `${b}_${a}`;
-    if (midCache.has(key)) return midCache.get(key);
-    const mid = verts[a].clone().add(verts[b]).normalize();
-    verts.push(mid);
-    const idx = verts.length - 1;
-    midCache.set(key, idx);
-    return idx;
-  };
-
-  let faces = icoFaces;
-  for (let s = 0; s < subdivisions; s++) {
-    const newFaces = [];
-    for (const [a, b, c] of faces) {
-      const ab = getMid(a, b), bc = getMid(b, c), ca = getMid(c, a);
-      newFaces.push([a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]);
-    }
-    faces = newFaces;
-  }
-
-  // Group triangular faces into larger polygons by proximity
-  // For gameplay we treat each triangle as a tile
-  const centroids = faces.map(f => {
-    const c = new THREE.Vector3();
-    f.forEach(i => c.add(verts[i]));
-    return c.divideScalar(f.length).normalize();
-  });
-
-  const n = faces.length;
-  const fAdj = Array.from({ length: n }, () => []);
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) {
-      const shared = faces[i].filter(v => faces[j].includes(v));
-      if (shared.length >= 2) { fAdj[i].push(j); fAdj[j].push(i); }
-    }
-  }
-
-  return { faces, centroids, fAdj, verts };
-}
-
 // ── Goldberg polyhedron for exact 42/72 tile counts ───────────────────────
 function buildGoldberg(targetFaces) {
-  // We'll use the TI topology but with extra subdivisions for variety
-  // For 42: use a different geodesic approach
-  // Simple approach: build sphere with approximately right number of triangular faces
-  // then group them. For simplicity, use subdivided icosahedron tiles directly.
-  // sub=1 -> 20 triangles, sub=2 -> 80 triangles
-  // We'll use the triangle faces directly as "tiles" grouped by centroid proximity
-
-  // Actually let's build a proper Goldberg GP(1,1) = 12 pentagons + 20 hexagons = 32 (truncated icosahedron) ✓
-  // GP(2,0) = 12 pentagons + 30 hexagons = 42 ✓
-  // GP(2,2) = 12 pentagons + 60 hexagons = 72 ✓
-
   if (targetFaces === 32) {
     return buildTITopology(buildTIVerts());
   }
 
-  // For 42 and 72, subdivide icosahedron triangles and then dual them
   const subdiv = targetFaces === 42 ? 2 : 3;
 
   const t = (1 + Math.sqrt(5)) / 2;
@@ -202,16 +130,12 @@ function buildGoldberg(targetFaces) {
     triFaces = nf;
   }
 
-  // Build dual: each original vertex -> one dual face
-  // Dual of subdivided icosahedron gives Goldberg polyhedron
-  // Vertices of dual = centroids of triangular faces
   const triCentroids = triFaces.map(f => {
     const c = new THREE.Vector3();
     f.forEach(i => c.add(verts[i]));
     return c.divideScalar(f.length).normalize();
   });
 
-  // For each original vertex, find all triangle faces containing it
   const vertToFaces = new Map();
   triFaces.forEach((f, fi) => {
     f.forEach(vi => {
@@ -220,13 +144,11 @@ function buildGoldberg(targetFaces) {
     });
   });
 
-  // Each vertex -> one dual face (polygon whose vertices are the triangle centroids)
   const dualFaces = [];
   const dualCentroids = [];
 
   vertToFaces.forEach((faceIndices, vi) => {
     if (faceIndices.length < 3) return;
-    // Sort face indices around the vertex
     const norm = verts[vi].clone();
     let ux = 0, uy = 1, uz = 0;
     if (Math.abs(norm.y) > 0.9) { ux = 1; uy = 0; uz = 0; }
@@ -249,7 +171,6 @@ function buildGoldberg(targetFaces) {
     dualCentroids.push(centroid.divideScalar(sorted.length).normalize());
   });
 
-  // Build face adjacency for dual faces
   const nDual = dualFaces.length;
   const fAdj = Array.from({ length: nDual }, () => []);
   for (let i = 0; i < nDual; i++) {
@@ -259,14 +180,7 @@ function buildGoldberg(targetFaces) {
     }
   }
 
-  // Convert dualFaces (which are indices into triCentroids) to a format compatible with buildTileMesh
-  // We need faces as arrays of vertex indices, and a verts array
-  // triCentroids serve as our verts
-  const faces = dualFaces;
-  const verts2 = triCentroids;
-  const centroids = dualCentroids;
-
-  return { faces, centroids, fAdj, verts: verts2 };
+  return { faces: dualFaces, centroids: dualCentroids, fAdj, verts: triCentroids };
 }
 
 function buildTileMesh(face, V, centroid, SR, inset) {
@@ -335,7 +249,11 @@ const OFFSETS = [[-0.07, -0.07], [0.07, -0.07], [-0.07, 0.07], [0.07, 0.07]];
 const MAX_LIVES = 3;
 const ABILITY_COOLDOWN = 8;
 
-// Updated tile colors - brighter blue/purple palette
+// Rift selection phases — explicit state machine avoids ambiguity
+const RIFT_IDLE = 'idle';
+const RIFT_SELECT_TARGET = 'select_target';
+const RIFT_SELECT_DEST = 'select_dest';
+
 const COL_DEFAULT = new THREE.Color(0x0d1a40);
 const COL_HOVER = new THREE.Color(0x1a3a9a);
 const COL_ENEMY_ADJ = new THREE.Color(0x3a0820);
@@ -387,19 +305,16 @@ export default function SphereQuestGame({ onExit }) {
     const dl = new THREE.DirectionalLight(0xaabbff, 3.0); dl.position.set(5, 8, 6); scene.add(dl);
     const rl = new THREE.DirectionalLight(0x8866ff, 1.2); rl.position.set(-6, -3, -5); scene.add(rl);
 
-    // Inner sphere - bright blue/purple
     scene.add(new THREE.Mesh(
       new THREE.SphereGeometry(SR - 0.01, 64, 64),
       new THREE.MeshStandardMaterial({ color: 0x08103a, roughness: 0.8, side: THREE.BackSide, emissive: 0x060e30, emissiveIntensity: 0.5 })
     ));
 
-    // Stars - more and brighter
     const sv = new Float32Array(9000);
     for (let i = 0; i < sv.length; i++) sv[i] = (Math.random() - 0.5) * 160;
     const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sv, 3));
     scene.add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xaabbff, size: 0.055 })));
 
-    // Extra bright star cluster
     const sv2 = new Float32Array(1500);
     for (let i = 0; i < sv2.length; i++) sv2[i] = (Math.random() - 0.5) * 160;
     const sg2 = new THREE.BufferGeometry(); sg2.setAttribute('position', new THREE.BufferAttribute(sv2, 3));
@@ -609,6 +524,7 @@ export default function SphereQuestGame({ onExit }) {
       enemyStunned: gs.enemyStunned,
       taunted: gs.taunted,
       riftMode: gs.riftMode,
+      riftPhase: gs.riftPhase,
       riftTarget: gs.riftTarget,
       sprintActive: gs.sprintActive,
       targetPlayer: gs.targetPlayer,
@@ -635,7 +551,7 @@ export default function SphereQuestGame({ onExit }) {
 
     if (gs.enemyStunned > 0) {
       gs.enemyStunned--;
-      addLog(`⚡ Enemy stunned (${gs.enemyStunned} rounds left)`, '#aa66ff');
+      addLog(`⚡ Baron Thobrick stunned (${gs.enemyStunned} rounds left)`, '#aa66ff');
       return;
     }
 
@@ -648,7 +564,7 @@ export default function SphereQuestGame({ onExit }) {
       targetP = gs.taunted;
       gs.tauntRounds--;
       if (gs.tauntRounds <= 0) {
-        addLog(`😈 Enemy freed from taunt!`, '#ffaa44');
+        addLog(`😈 Baron Thobrick freed from taunt!`, '#ffaa44');
         gs.taunted = -1;
         gs.tauntRounds = 0;
       }
@@ -666,7 +582,7 @@ export default function SphereQuestGame({ onExit }) {
     alivePlayers.forEach(p => {
       if (gs.enemyFace === gs.pp[p]) {
         gs.lives[p] = Math.max(0, gs.lives[p] - 1);
-        addLog(`💀 Enemy caught Player ${p + 1}! -1 life`, '#ff3333');
+        addLog(`💀 Baron Thobrick caught Player ${p + 1}! -1 life`, '#ff3333');
         if (gs.lives[p] <= 0) addLog(`☠ Player ${p + 1} eliminated!`, '#ff1111');
       }
     });
@@ -701,6 +617,7 @@ export default function SphereQuestGame({ onExit }) {
     gs.turnPlayerIdx = next2;
     gs.sprintActive = false;
     gs.riftMode = false;
+    gs.riftPhase = RIFT_IDLE;
     gs.riftTarget = -1;
 
     syncUI();
@@ -809,6 +726,7 @@ export default function SphereQuestGame({ onExit }) {
       sprintActive: false,
       sprintFirstFace: -1,
       riftMode: false,
+      riftPhase: RIFT_IDLE,
       riftTarget: -1,
     };
     GS.current = gs;
@@ -854,29 +772,46 @@ export default function SphereQuestGame({ onExit }) {
     const alive = gs.lives.map(l => l > 0);
     if (!alive[cp]) return;
 
+    // ── RIFT MODE — explicit two-phase state machine ──
     if (gs.riftMode) {
-      if (gs.riftTarget === -1) {
+      if (gs.riftPhase === RIFT_SELECT_TARGET) {
+        // Phase 1: pick who/what to teleport
         const pOnTile = [0, 1, 2, 3].find(p => alive[p] && gs.pp[p] === fi);
         if (pOnTile !== undefined) {
           gs.riftTarget = pOnTile;
-          addLog(`↔ Select destination for Player ${pOnTile + 1}`, PC[pOnTile]);
-          refreshAll(); syncUI(); return;
+          gs.riftPhase = RIFT_SELECT_DEST;
+          addLog(`↔ Now click any empty tile for ${PN[pOnTile]}`, PC[pOnTile]);
+          refreshAll(); syncUI();
         } else if (fi === gs.enemyFace) {
-          gs.riftTarget = 99;
-          addLog(`↔ Select destination for the Enemy`, '#ff4444');
-          refreshAll(); syncUI(); return;
+          gs.riftTarget = 99; // sentinel = enemy
+          gs.riftPhase = RIFT_SELECT_DEST;
+          addLog(`↔ Now click any empty tile for Baron Thobrick`, '#ff4444');
+          refreshAll(); syncUI();
+        } else {
+          addLog(`Click a player or Baron Thobrick to teleport`, '#ff8800');
         }
-      } else {
+        return;
+      }
+
+      if (gs.riftPhase === RIFT_SELECT_DEST) {
+        // Phase 2: teleport directly to the clicked tile
         const isOccupied = gs.pp.some((p, i) => alive[i] && p === fi) || fi === gs.enemyFace;
-        if (isOccupied) { addLog('That tile is occupied!', '#ff8800'); return; }
+        if (isOccupied) {
+          addLog('That tile is occupied! Pick an empty one.', '#ff8800');
+          return;
+        }
+        // Perform the teleport to exactly tile fi
         if (gs.riftTarget === 99) {
           gs.enemyFace = fi;
-          addLog(`🌀 Enemy teleported!`, '#ff6600');
+          addLog(`🌀 Baron Thobrick teleported!`, '#ff6600');
         } else {
           gs.pp[gs.riftTarget] = fi;
-          addLog(`🌀 Player ${gs.riftTarget + 1} teleported!`, PC[gs.riftTarget]);
+          addLog(`🌀 ${PN[gs.riftTarget]} teleported!`, PC[gs.riftTarget]);
         }
-        gs.riftMode = false; gs.riftTarget = -1;
+        // Reset rift state and end turn
+        gs.riftMode = false;
+        gs.riftPhase = RIFT_IDLE;
+        gs.riftTarget = -1;
         gs.abilityCooldowns[3] = ABILITY_COOLDOWN;
         checkQuestRef.current();
         refreshAll(); syncUI();
@@ -886,6 +821,7 @@ export default function SphereQuestGame({ onExit }) {
       return;
     }
 
+    // ── NORMAL MOVE ──
     if (!gs.fAdj[gs.pp[cp]].includes(fi)) return;
     gs.pp[cp] = fi;
 
@@ -919,7 +855,7 @@ export default function SphereQuestGame({ onExit }) {
     } else if (playerIdx === 1) {
       gs.taunted = 1; gs.tauntRounds = 2;
       gs.abilityCooldowns[1] = ABILITY_COOLDOWN;
-      addLog(`😤 ${PN[1]} taunts the enemy!`, PC[1]);
+      addLog(`😤 ${PN[1]} taunts Baron Thobrick!`, PC[1]);
       syncUI(); refreshAll();
       nextTurnRef.current();
     } else if (playerIdx === 2) {
@@ -927,15 +863,17 @@ export default function SphereQuestGame({ onExit }) {
       if (gs.enemyFace === gs.pp[2] || enemyAdj.includes(gs.enemyFace)) {
         gs.enemyStunned = 2;
         gs.abilityCooldowns[2] = ABILITY_COOLDOWN;
-        addLog(`⚡ ${PN[2]} stunned the enemy for 2 rounds!`, PC[2]);
+        addLog(`⚡ ${PN[2]} stunned Baron Thobrick for 2 rounds!`, PC[2]);
         syncUI(); refreshAll();
         nextTurnRef.current();
       } else {
-        addLog(`Enemy too far for stun!`, '#ff8800');
+        addLog(`Baron Thobrick is too far to stun!`, '#ff8800');
       }
     } else if (playerIdx === 3) {
-      gs.riftMode = true; gs.riftTarget = -1;
-      addLog(`🌀 ${PN[3]} opens a rift — click a player or the enemy`, PC[3]);
+      gs.riftMode = true;
+      gs.riftPhase = RIFT_SELECT_TARGET;
+      gs.riftTarget = -1;
+      addLog(`🌀 ${PN[3]} opens a rift — click a player or Baron Thobrick`, PC[3]);
       syncUI(); refreshAll();
     }
   }, [addLog, syncUI, refreshAll]);
@@ -953,12 +891,33 @@ export default function SphereQuestGame({ onExit }) {
       mo.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       rc.setFromCamera(mo, camera);
       const gs = GS.current;
-      if (gs?.riftMode && gs.riftTarget === -1) {
+      // Allow clicking the enemy mesh during rift target-selection phase
+      if (gs?.riftMode && gs.riftPhase === RIFT_SELECT_TARGET) {
         const enemyHits = rc.intersectObject(MR.current.enemy);
         if (enemyHits.length > 0) { handleTileClick(gs.enemyFace); return; }
       }
       const hits = rc.intersectObjects(MR.current.tiles || []);
-      if (hits.length > 0) handleTileClick(hits[0].object.userData.fi);
+      if (hits.length === 0) return;
+
+      // Tile meshes share edge vertices, so hits[0] can be a neighbor's triangle.
+      // Instead, find which tile's centroid is closest to the ray direction —
+      // this always picks the tile the player is actually pointing at.
+      const rayDir = rc.ray.direction.clone().normalize();
+      const q = MR.current.tileGroup ? MR.current.tileGroup.quaternion : new THREE.Quaternion();
+
+      // Collect all unique face indices from hits (usually just 1-3 candidates)
+      const candidateFis = [...new Set(hits.map(h => h.object.userData.fi))];
+
+      let bestFi = candidateFis[0];
+      let bestDot = -Infinity;
+      for (const fi of candidateFis) {
+        // Centroid in world space = centroid rotated by tileGroup quaternion
+        const worldCentroid = gs.centroids[fi].clone().applyQuaternion(q);
+        const dot = worldCentroid.dot(rayDir);
+        if (dot > bestDot) { bestDot = dot; bestFi = fi; }
+      }
+
+      handleTileClick(bestFi);
     };
     renderer.domElement.addEventListener('click', handler);
     return () => renderer.domElement.removeEventListener('click', handler);
@@ -971,9 +930,9 @@ export default function SphereQuestGame({ onExit }) {
 
   const ABILITY_INFO = [
     { name: 'Sprint', desc: 'Move 2 tiles this turn', icon: '👟' },
-    { name: 'Taunt', desc: 'Enemy chases you 2 rounds', icon: '😤' },
-    { name: 'Stun', desc: 'Stun enemy if nearby', icon: '⚡' },
-    { name: 'Rift', desc: 'Teleport enemy or player', icon: '🌀' },
+    { name: 'Taunt', desc: 'Baron Thobrick chases you 2 rounds', icon: '😤' },
+    { name: 'Stun', desc: 'Stun Baron Thobrick if nearby', icon: '⚡' },
+    { name: 'Rift', desc: 'Teleport Baron Thobrick or any player', icon: '🌀' },
   ];
 
   return (
@@ -1013,8 +972,16 @@ export default function SphereQuestGame({ onExit }) {
               }}>
                 {alive[cp] ? `${PN[cp]}'s Turn` : 'Skipped...'}
               </div>
-              {uiState.sprintActive && <span style={{ color: PC[0], fontSize: '0.65rem', background: 'rgba(34,136,255,0.15)', border: '1px solid rgba(34,136,255,0.4)', borderRadius: 6, padding: '2px 8px' }}>SPRINT: move again</span>}
-              {uiState.riftMode && <span style={{ color: PC[3], fontSize: '0.65rem', background: 'rgba(255,153,0,0.15)', border: '1px solid rgba(255,153,0,0.4)', borderRadius: 6, padding: '2px 8px' }}>RIFT: {uiState.riftTarget === -1 ? 'select target' : 'select destination'}</span>}
+              {uiState.sprintActive && (
+                <span style={{ color: PC[0], fontSize: '0.65rem', background: 'rgba(34,136,255,0.15)', border: '1px solid rgba(34,136,255,0.4)', borderRadius: 6, padding: '2px 8px' }}>
+                  SPRINT: move again
+                </span>
+              )}
+              {uiState.riftMode && (
+                <span style={{ color: PC[3], fontSize: '0.65rem', background: 'rgba(255,153,0,0.15)', border: '1px solid rgba(255,153,0,0.4)', borderRadius: 6, padding: '2px 8px' }}>
+                  RIFT: {uiState.riftPhase === RIFT_SELECT_TARGET ? 'click target to teleport' : 'click empty destination tile'}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -1057,7 +1024,6 @@ export default function SphereQuestGame({ onExit }) {
                     <div style={{ color: isAlive ? (isActive ? PC[p] : 'rgba(180,190,255,0.5)') : '#445', fontSize: '0.62rem', letterSpacing: 1.5, marginBottom: 3 }}>
                       {isAlive ? '' : '☠ '}{PN[p]}
                     </div>
-                    {/* Prominent hearts */}
                     <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
                       {Array.from({ length: MAX_LIVES }).map((_, i) => (
                         <span key={i} style={{
@@ -1102,14 +1068,14 @@ export default function SphereQuestGame({ onExit }) {
         </div>
       )}
 
-      {/* ENEMY STATUS — left */}
+      {/* BARON THOBRICK STATUS — left */}
       {phase === 'playing' && uiState && gs && (
         <div style={{
           position: 'absolute', top: 68, left: 14, zIndex: 10,
           background: 'rgba(4,2,16,0.88)', border: '1px solid rgba(255,30,30,0.2)',
-          borderRadius: 10, padding: '8px 12px', minWidth: 110,
+          borderRadius: 10, padding: '8px 12px', minWidth: 140,
         }}>
-          <div style={{ color: 'rgba(255,80,80,0.7)', fontSize: '0.55rem', letterSpacing: 3, marginBottom: 4 }}>ENEMY</div>
+          <div style={{ color: 'rgba(255,80,80,0.7)', fontSize: '0.55rem', letterSpacing: 3, marginBottom: 4 }}>BARON THOBRICK</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 10, height: 10, background: '#000', border: '1px solid #ff333466', borderRadius: 2, transform: 'rotate(45deg)' }} />
             <div style={{
@@ -1127,7 +1093,7 @@ export default function SphereQuestGame({ onExit }) {
         <div style={{
           position: 'absolute', bottom: 90, left: 16, zIndex: 10,
           display: 'flex', flexDirection: 'column-reverse', gap: 3,
-          pointerEvents: 'none', maxWidth: 260,
+          pointerEvents: 'none', maxWidth: 290,
         }}>
           {log.map((entry, i) => (
             <div key={entry.id} style={{
@@ -1189,7 +1155,7 @@ export default function SphereQuestGame({ onExit }) {
                 textShadow: '0 0 40px rgba(100,130,255,0.5), 0 0 80px rgba(80,50,200,0.3)',
               }}>SPHERE QUEST</div>
               <div style={{ color: 'rgba(150,165,255,0.35)', fontSize: '0.65rem', letterSpacing: 2, marginTop: 10, lineHeight: 2 }}>
-                Reach colored tiles to score · Survive the enemy · Use abilities to help your team
+                Reach colored tiles to score · Survive Baron Thobrick · Use abilities to help your team
               </div>
             </div>
 
@@ -1271,7 +1237,7 @@ export default function SphereQuestGame({ onExit }) {
           }}>
             <div style={{ fontSize: '3.5rem', marginBottom: 12 }}>💀</div>
             <div style={{ color: 'rgba(255,80,80,0.9)', fontSize: '2.2rem', fontWeight: 700, letterSpacing: 5 }}>All Fallen</div>
-            <div style={{ color: 'rgba(180,190,255,0.45)', fontSize: '1rem', marginTop: 10, letterSpacing: 2 }}>The enemy consumed the sphere</div>
+            <div style={{ color: 'rgba(180,190,255,0.45)', fontSize: '1rem', marginTop: 10, letterSpacing: 2 }}>Baron Thobrick consumed the sphere</div>
             <div style={{ color: '#ffe066', fontSize: '2rem', fontWeight: 700, marginTop: 18, letterSpacing: 2, textShadow: '0 0 24px #ffcc0088' }}>
               Final Score: {score}
             </div>
