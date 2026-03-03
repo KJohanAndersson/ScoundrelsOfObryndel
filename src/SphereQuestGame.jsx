@@ -330,7 +330,7 @@ function bfsDist(fAdj, start, end) {
 const SR = 2.5;
 const PH = [0x2288ff, 0x22ddbb, 0xff2233, 0xff9900];
 const PC = ['#2288ff', '#22ddbb', '#ff2233', '#ff9900'];
-const PN = ['Vanguard', 'Lure', 'Stasis', 'Rift'];
+const PN = ['Goblin', 'Orc', 'Cyclops', 'Witch'];
 const OFFSETS = [[-0.07, -0.07], [0.07, -0.07], [-0.07, 0.07], [0.07, 0.07]];
 const MAX_LIVES = 3;
 const ABILITY_COOLDOWN = 8;
