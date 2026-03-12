@@ -551,7 +551,7 @@ export default function SphereQuestGame({ onExit }) {
 
     if (gs.enemyStunned > 0) {
       gs.enemyStunned--;
-      addLog(`⚡ Baron Thobrick stunned (${gs.enemyStunned} rounds left)`, '#aa66ff');
+      addLog(`⚡ King Thobrick stunned (${gs.enemyStunned} rounds left)`, '#aa66ff');
       return;
     }
 
@@ -564,7 +564,7 @@ export default function SphereQuestGame({ onExit }) {
       targetP = gs.taunted;
       gs.tauntRounds--;
       if (gs.tauntRounds <= 0) {
-        addLog(`😈 Baron Thobrick freed from taunt!`, '#ffaa44');
+        addLog(`😈 King Thobrick freed from taunt!`, '#ffaa44');
         gs.taunted = -1;
         gs.tauntRounds = 0;
       }
@@ -582,7 +582,7 @@ export default function SphereQuestGame({ onExit }) {
     alivePlayers.forEach(p => {
       if (gs.enemyFace === gs.pp[p]) {
         gs.lives[p] = Math.max(0, gs.lives[p] - 1);
-        addLog(`💀 Baron Thobrick caught Player ${p + 1}! -1 life`, '#ff3333');
+        addLog(`💀 King Thobrick caught Player ${p + 1}! -1 life`, '#ff3333');
         if (gs.lives[p] <= 0) addLog(`☠ Player ${p + 1} eliminated!`, '#ff1111');
       }
     });
@@ -785,10 +785,10 @@ export default function SphereQuestGame({ onExit }) {
         } else if (fi === gs.enemyFace) {
           gs.riftTarget = 99; // sentinel = enemy
           gs.riftPhase = RIFT_SELECT_DEST;
-          addLog(`↔ Now click any empty tile for Baron Thobrick`, '#ff4444');
+          addLog(`↔ Now click any empty tile for King Thobrick`, '#ff4444');
           refreshAll(); syncUI();
         } else {
-          addLog(`Click a player or Baron Thobrick to teleport`, '#ff8800');
+          addLog(`Click a player or King Thobrick to teleport`, '#ff8800');
         }
         return;
       }
@@ -803,7 +803,7 @@ export default function SphereQuestGame({ onExit }) {
         // Perform the teleport to exactly tile fi
         if (gs.riftTarget === 99) {
           gs.enemyFace = fi;
-          addLog(`🌀 Baron Thobrick teleported!`, '#ff6600');
+          addLog(`🌀 King Thobrick teleported!`, '#ff6600');
         } else {
           gs.pp[gs.riftTarget] = fi;
           addLog(`🌀 ${PN[gs.riftTarget]} teleported!`, PC[gs.riftTarget]);
@@ -855,7 +855,7 @@ export default function SphereQuestGame({ onExit }) {
     } else if (playerIdx === 1) {
       gs.taunted = 1; gs.tauntRounds = 2;
       gs.abilityCooldowns[1] = ABILITY_COOLDOWN;
-      addLog(`😤 ${PN[1]} taunts Baron Thobrick!`, PC[1]);
+      addLog(`😤 ${PN[1]} taunts King Thobrick!`, PC[1]);
       syncUI(); refreshAll();
       nextTurnRef.current();
     } else if (playerIdx === 2) {
@@ -863,17 +863,17 @@ export default function SphereQuestGame({ onExit }) {
       if (gs.enemyFace === gs.pp[2] || enemyAdj.includes(gs.enemyFace)) {
         gs.enemyStunned = 2;
         gs.abilityCooldowns[2] = ABILITY_COOLDOWN;
-        addLog(`⚡ ${PN[2]} stunned Baron Thobrick for 2 rounds!`, PC[2]);
+        addLog(`⚡ ${PN[2]} stunned King Thobrick for 2 rounds!`, PC[2]);
         syncUI(); refreshAll();
         nextTurnRef.current();
       } else {
-        addLog(`Baron Thobrick is too far to stun!`, '#ff8800');
+        addLog(`King Thobrick is too far to stun!`, '#ff8800');
       }
     } else if (playerIdx === 3) {
       gs.riftMode = true;
       gs.riftPhase = RIFT_SELECT_TARGET;
       gs.riftTarget = -1;
-      addLog(`🌀 ${PN[3]} opens a rift — click a player or Baron Thobrick`, PC[3]);
+      addLog(`🌀 ${PN[3]} opens a rift — click a player or King Thobrick`, PC[3]);
       syncUI(); refreshAll();
     }
   }, [addLog, syncUI, refreshAll]);
@@ -930,9 +930,9 @@ export default function SphereQuestGame({ onExit }) {
 
   const ABILITY_INFO = [
     { name: 'Sprint', desc: 'Move 2 tiles this turn', icon: '👟' },
-    { name: 'Taunt', desc: 'Baron Thobrick chases you 2 rounds', icon: '😤' },
-    { name: 'Stun', desc: 'Stun Baron Thobrick if nearby', icon: '⚡' },
-    { name: 'Rift', desc: 'Teleport Baron Thobrick or any player', icon: '🌀' },
+    { name: 'Taunt', desc: 'King Thobrick chases you 2 rounds', icon: '😤' },
+    { name: 'Stun', desc: 'Stun King Thobrick if nearby', icon: '⚡' },
+    { name: 'Rift', desc: 'Teleport King Thobrick or any player', icon: '🌀' },
   ];
 
   return (
@@ -1068,14 +1068,14 @@ export default function SphereQuestGame({ onExit }) {
         </div>
       )}
 
-      {/* BARON THOBRICK STATUS — left */}
+      {/* KING THOBRICK STATUS — left */}
       {phase === 'playing' && uiState && gs && (
         <div style={{
           position: 'absolute', top: 68, left: 14, zIndex: 10,
           background: 'rgba(4,2,16,0.88)', border: '1px solid rgba(255,30,30,0.2)',
           borderRadius: 10, padding: '8px 12px', minWidth: 140,
         }}>
-          <div style={{ color: 'rgba(255,80,80,0.7)', fontSize: '0.55rem', letterSpacing: 3, marginBottom: 4 }}>BARON THOBRICK</div>
+          <div style={{ color: 'rgba(255,80,80,0.7)', fontSize: '0.55rem', letterSpacing: 3, marginBottom: 4 }}>KING THOBRICK</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 10, height: 10, background: '#000', border: '1px solid #ff333466', borderRadius: 2, transform: 'rotate(45deg)' }} />
             <div style={{
@@ -1155,7 +1155,7 @@ export default function SphereQuestGame({ onExit }) {
                 textShadow: '0 0 40px rgba(100,130,255,0.5), 0 0 80px rgba(80,50,200,0.3)',
               }}>SPHERE QUEST</div>
               <div style={{ color: 'rgba(150,165,255,0.35)', fontSize: '0.65rem', letterSpacing: 2, marginTop: 10, lineHeight: 2 }}>
-                Reach colored tiles to score · Survive Baron Thobrick · Use abilities to help your team
+                Reach colored tiles to score · Survive King Thobrick · Use abilities to help your team
               </div>
             </div>
 
@@ -1237,7 +1237,7 @@ export default function SphereQuestGame({ onExit }) {
           }}>
             <div style={{ fontSize: '3.5rem', marginBottom: 12 }}>💀</div>
             <div style={{ color: 'rgba(255,80,80,0.9)', fontSize: '2.2rem', fontWeight: 700, letterSpacing: 5 }}>All Fallen</div>
-            <div style={{ color: 'rgba(180,190,255,0.45)', fontSize: '1rem', marginTop: 10, letterSpacing: 2 }}>Baron Thobrick consumed the sphere</div>
+            <div style={{ color: 'rgba(180,190,255,0.45)', fontSize: '1rem', marginTop: 10, letterSpacing: 2 }}>King Thobrick consumed the sphere</div>
             <div style={{ color: '#ffe066', fontSize: '2rem', fontWeight: 700, marginTop: 18, letterSpacing: 2, textShadow: '0 0 24px #ffcc0088' }}>
               Final Score: {score}
             </div>
